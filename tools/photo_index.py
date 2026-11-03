@@ -76,7 +76,7 @@ def main():
     C = course(); R = rules(C)["photos"]; G = GKD(C)
     try: HM = Heightmap(C)
     except Exception as e: HM = None; print("warning: no heightmap (%s); pose_y left blank" % e)
-    root = a.out or C.path("photos_root") if "photos_root" in C.get("paths", {}) else os.path.join(C.dir, R["layout"]["root"])
+    root = a.out or (C.path("photos_root") if "photos_root" in C.get("paths", {}) else os.path.join(C.dir, R["layout"]["root"]))
     os.makedirs(root, exist_ok=True)
     dumps = a.dump or sorted(glob.glob(os.path.join(root, "unsorted", "*")))
     if not dumps: sys.exit("no dump folders under %s/unsorted" % root)

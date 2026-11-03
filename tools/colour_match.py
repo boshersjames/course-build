@@ -107,7 +107,7 @@ def main():
             if "rg" in t: verdict.append(("r/g", in_band(r["rg_corrected"], t["rg"])))
             if "bg" in t: verdict.append(("b/g", in_band(r["bg"], t["bg"]) and r["bg"] >= t.get("bg_floor", 0)))
             if "rgb" in t:
-                d = max(abs(x - y) for x, y in zip(r["rgb"], t["rgb"])); verdict.append(("rgb within 12", d <= 12))
+                tol = R["measure"].get("rgb_tol", 12); d = max(abs(x - y) for x, y in zip(r["rgb"], t["rgb"])); verdict.append(("rgb within %d" % tol, d <= tol))
             p["target"] = a.target; p["checks"] = {k: ("PASS" if ok else "FAIL") for k, ok in verdict}
             p["pass"] = all(ok for _, ok in verdict)
 

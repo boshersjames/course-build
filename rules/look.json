@@ -66,7 +66,8 @@
     "photo_sand_vs_concrete_bg_pct": [
       -8,
       -3
-    ]
+    ],
+    "rgb_tol": 12
   },
   "render_means": {
     "plain": [
