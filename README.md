@@ -48,6 +48,30 @@ python tools\rules.py greens.collar.width_m   # 1.2
 A course that needs a different value sets it in `course.json` under `rule_overrides`, never by editing a script.
 When BoJa changes a rule, change the JSON and the matching line in the skill; the playbook gets the reason.
 
+## Tools (all read course.json and rules; run from the course folder or set COURSE_JSON)
+
+| Tool | What it does | Needs |
+|---|---|---|
+| `tools/gkd_tools.py check` | Limits, stimp, firmness, designer, DZ flags, pins per hole against the rules | GKD |
+| `tools/gkd_tools.py distances / totals [--write]` | Recompute tee distances and totals, text-preserving edit with backup | GKD |
+| `tools/green_report.py [--smooth 0.6] [--sheets]` | LiDAR slope, relief, GreenKeeper pin-area test, usable %, valid areas per green | heightmap, GKD, SVG |
+| `tools/flyover_gate.py --out <dir> [--end-fit]` | Flyover path and first/end frame gate for every hole; writes the shot list for the PC render | GKD, signs, trees, SVG, heightmap |
+| `tools/gate_report.py` | One per-hole pass/fail table from the Unity checks, LiDAR proxy, flyover gate and GKD checks | the outputs above |
+| `tools/colour_match.py` | Photo vs render colour, PASS/FAIL against the rule band, OverallColor multiplier | two images |
+| `tools/fairway_vs_lidar.py`, `scan_compare.py`, `green_edge_measure.py` | Fairway undulation vs LiDAR, phone-scan alignment, collar profiles | Unity exports / LAS on the PC |
+| `tools/new_course.py` | Bootstrap a course folder, course.json, CLAUDE.md, Unity editor set | nothing |
+| Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`) | Edge survey, collider vs render, tiers, crowns over, pin area on every green; writes AutomationOutput/checks | Unity, synced course.json + rules |
+| Unity `Course Look > Apply Tint JSON` (`ApplyTintJson.cs`) | Applies colour_match multipliers to material copies, refuses shared materials | Unity |
+
+Typical headless loop on a course, no Unity, no model in it:
+
+```bash
+python ../course-build/tools/gkd_tools.py check
+python ../course-build/tools/green_report.py --smooth 0.6 --out progress/green_report
+python ../course-build/tools/flyover_gate.py --out progress/flyover_gate --end-fit --no-plots
+python ../course-build/tools/gate_report.py --out progress/gate_report
+```
+
 ## Colour without eyeballing
 
 ```powershell
@@ -60,9 +84,11 @@ named material copies. Loop: render (batch), measure, apply, re-render. No model
 
 ## State of the migration
 
-- Done: playbooks, LiDAR review, skills, shared Unity tools, automation runner, rule extraction, loader, colour tool.
-- Next: generalise the Tierra checkers in `unity/course-templates/` (hole number as a parameter, paths from course.json);
-  rewrite `tools/tierra_scripts/*` to read `course.json` instead of `C:/GSP/...`; shrink each skill to one page that points at
-  a rule file and a tool.
-- The authoritative copies of the Unity scripts were in `C:\GSP\GSPBaseProject_v4_2025_12_02\Assets\Editor` on the PC.
-  Diff that folder against `unity/` once and commit any newer versions here.
+- Done: playbooks, LiDAR review, skills, shared Unity tools, automation runner, rule extraction, loader, colour tool; headless
+  green report, GKD tools, flyover gate and gate report tested against Tierra; CourseGreenChecks.cs written; runner reads course.json.
+- Needs the PC once: compile `CourseGreenChecks.cs` and `ApplyTintJson.cs` (written in the cloud, never compiled), run
+  `Run-CourseAutomation.ps1 -SyncTools` from the Tierra folder, run Course Checks > Greens, then `gate_report.py` has the Unity half.
+  Diff `C:\GSP\...\Assets\Editor` against `unity/shared` and commit anything newer here.
+- Still Tierra-shaped: `tools/tierra_scripts/*` (the originals, kept for reference until each is ported or dropped) and
+  `unity/course-templates/*` (the 2,238-line TierraNight1031 and friends: the generic checks are now in CourseGreenChecks.cs; the
+  rest are per-hole fixes that stay with Tierra).
