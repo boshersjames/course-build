@@ -184,7 +184,7 @@ public class CommercialFlyoverPath : EditorWindow
         // frames
         float dt = 1f / R.fps; var frames = new List<string>(); var shots = new List<string>(); var yaws = new List<float>(); var pitches = new List<float>(); var rolls = new List<float>();
         var posCurveX = new AnimationCurve(); var posCurveY = new AnimationCurve(); var posCurveZ = new AnimationCurve(); var rotX = new AnimationCurve(); var rotY = new AnimationCurve(); var rotZ = new AnimationCurve(); var fovCurve = new AnimationCurve();
-        float d_ = 0, t = 0; int fi = 0; float prevYaw = float.NaN, prevPitch = 0, minClear = 1e9f;
+        float d_ = 0, tf = 0; int fi = 0; float prevYaw = float.NaN, prevPitch = 0, minClear = 1e9f;
         while (d_ <= total && fi < 20000)
         {
             var p = posAt(d_); bool inOrbit = d_ >= orbitArc; var ahead = posAt(Mathf.Min(d_ + R.lookahead_m, total));
@@ -197,21 +197,21 @@ public class CommercialFlyoverPath : EditorWindow
             float yawRate = float.IsNaN(prevYaw) ? 0 : Mathf.DeltaAngle(prevYaw, yaw) / dt; float pitchRate = float.IsNaN(prevYaw) ? 0 : (pitch - prevPitch) / dt;
             float roll = Mathf.Clamp(-R.limits.bank_per_yaw_rate * yawRate, -R.limits.bank_max_deg, R.limits.bank_max_deg);
             yaws.Add(yawRate); pitches.Add(pitchRate); rolls.Add(roll); float v = speedAt(d_);
-            frames.Add(string.Format(CI, "{{\"f\":{0},\"t\":{1:F3},\"d\":{2:F2},\"pos\":[{3:F2},{4:F2},{5:F2}],\"lookAt\":[{6:F2},{7:F2},{8:F2}],\"yaw\":{9:F2},\"pitch\":{10:F2},\"roll\":{11:F2},\"fov\":{12:F1},\"speed\":{13:F2},\"clear\":{14:F2},\"orbit\":{15}}}", fi, t, d_, p.x, p.y, p.z, lookAt.x, lookAt.y, lookAt.z, yaw, pitch, roll, fov, v, hAbove, inOrbit ? "true" : "false"));
+            frames.Add(string.Format(CI, "{{\"f\":{0},\"t\":{1:F3},\"d\":{2:F2},\"pos\":[{3:F2},{4:F2},{5:F2}],\"lookAt\":[{6:F2},{7:F2},{8:F2}],\"yaw\":{9:F2},\"pitch\":{10:F2},\"roll\":{11:F2},\"fov\":{12:F1},\"speed\":{13:F2},\"clear\":{14:F2},\"orbit\":{15}}}", fi, tf, d_, p.x, p.y, p.z, lookAt.x, lookAt.y, lookAt.z, yaw, pitch, roll, fov, v, hAbove, inOrbit ? "true" : "false"));
             shots.Add(string.Format(CI, "{{\"name\":\"H{0:00}_cin_{1:0000}\",\"pos\":[{2:F3},{3:F3},{4:F3}],\"lookAt\":[{5:F3},{6:F3},{7:F3}],\"aboveGround\":false,\"fov\":{8:F2}}}", hole, fi, p.x, p.y, p.z, lookAt.x, lookAt.y, lookAt.z, fov));
-            posCurveX.AddKey(t, p.x); posCurveY.AddKey(t, p.y); posCurveZ.AddKey(t, p.z); rotX.AddKey(t, pitch); rotY.AddKey(t, yaw); rotZ.AddKey(t, roll); fovCurve.AddKey(t, fov);
-            prevYaw = yaw; prevPitch = pitch; d_ += v * dt; t += dt; fi++;
+            posCurveX.AddKey(tf, p.x); posCurveY.AddKey(tf, p.y); posCurveZ.AddKey(tf, p.z); rotX.AddKey(tf, pitch); rotY.AddKey(tf, yaw); rotZ.AddKey(tf, roll); fovCurve.AddKey(tf, fov);
+            prevYaw = yaw; prevPitch = pitch; d_ += v * dt; tf += dt; fi++;
         }
         // worst 1 s window of the rates
         int win = R.fps; float maxYaw = 0, maxPitch = 0;
         for (int i = 0; i + win <= yaws.Count; i++) { float sy = 0, sp = 0; for (int k = i; k < i + win; k++) { sy += yaws[k] * dt; sp += pitches[k] * dt; } maxYaw = Mathf.Max(maxYaw, Mathf.Abs(sy)); maxPitch = Mathf.Max(maxPitch, Mathf.Abs(sp)); }
         bool rateOk = maxYaw <= R.limits.max_yaw_deg_s && maxPitch <= R.limits.max_pitch_deg_s; bool clearOk = minClear >= R.limits.min_clear_m - 0.05f;
         log.Add(string.Format(CI, "{0} frames, {1:F1} s at {2} fps, arc {3:F0} m; worst 1 s yaw {4:F1} deg (limit {5}), pitch {6:F1} deg (limit {7}); min clearance {8:F1} m ({9} samples lifted); max bank {10:F1} deg -> {11}",
-            fi, t, R.fps, total, maxYaw, R.limits.max_yaw_deg_s, maxPitch, R.limits.max_pitch_deg_s, minClear, lifted, rolls.Count > 0 ? rolls.Max(Mathf.Abs) : 0, rateOk && clearOk ? "PASS" : "FAIL"));
+            fi, tf, R.fps, total, maxYaw, R.limits.max_yaw_deg_s, maxPitch, R.limits.max_pitch_deg_s, minClear, lifted, rolls.Count > 0 ? rolls.Max(Mathf.Abs) : 0, rateOk && clearOk ? "PASS" : "FAIL"));
         // outputs
         string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss"); string dir = ProjectDir() + "/AutomationOutput/flyovers"; Directory.CreateDirectory(dir);
         var cpJson = string.Join(",", cps.Select((c, i) => string.Format(CI, "{{\"name\":\"{0}\",\"pos\":[{1:F2},{2:F2},{3:F2}]}}", names[i], c.x, c.y, c.z)).ToArray());
-        File.WriteAllText(dir + "/H" + hole.ToString("00") + "_cinematic_" + stamp + ".json", "{" + string.Format(CI, "\"hole\":{0},\"tee\":\"{1}\",\"fps\":{2},\"frames\":{3},\"seconds\":{4:F2},\"arc_m\":{5:F1},\"orbit_radius_m\":{6:F1},\"max_yaw_deg_s\":{7:F2},\"max_pitch_deg_s\":{8:F2},\"min_clear_m\":{9:F2},\"lifted\":{10},\"pass\":{11},\"control_points\":[{12}],\"frames_data\":[{13}]", hole, tee, R.fps, fi, t, total, radius, maxYaw, maxPitch, minClear, lifted, rateOk && clearOk ? "true" : "false", cpJson, string.Join(",", frames.ToArray())) + "}");
+        File.WriteAllText(dir + "/H" + hole.ToString("00") + "_cinematic_" + stamp + ".json", "{" + string.Format(CI, "\"hole\":{0},\"tee\":\"{1}\",\"fps\":{2},\"frames\":{3},\"seconds\":{4:F2},\"arc_m\":{5:F1},\"orbit_radius_m\":{6:F1},\"max_yaw_deg_s\":{7:F2},\"max_pitch_deg_s\":{8:F2},\"min_clear_m\":{9:F2},\"lifted\":{10},\"pass\":{11},\"control_points\":[{12}],\"frames_data\":[{13}]", hole, tee, R.fps, fi, tf, total, radius, maxYaw, maxPitch, minClear, lifted, rateOk && clearOk ? "true" : "false", cpJson, string.Join(",", frames.ToArray())) + "}");
         File.WriteAllText(dir + "/H" + hole.ToString("00") + "_cinematic_shots.json", "{\"course\":\"" + (C.name ?? "course") + "\",\"saveScene\":false,\"steps\":[],\"inspect\":[],\"teeShots\":false,\"greenShots\":false,\"shotWidth\":" + width + ",\"shotHeight\":" + height + ",\"shots\":[" + string.Join(",", shots.ToArray()) + "]}");
         var clip = new AnimationClip(); clip.frameRate = R.fps;
         clip.SetCurve("", typeof(Transform), "localPosition.x", posCurveX); clip.SetCurve("", typeof(Transform), "localPosition.y", posCurveY); clip.SetCurve("", typeof(Transform), "localPosition.z", posCurveZ);
