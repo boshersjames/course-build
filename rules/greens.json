@@ -48,11 +48,16 @@
       "probe_m": 0.03,
       "radius_m": 0.4,
       "max_move_m": 0.1,
-      "min_share_down": 0.9,
+      "min_share_down": 0.7,
       "passes": 2,
       "max_rows_over": 10,
       "pass_criterion": "collar>rough, collar>fairway and green_blend>collar under checks.edge_survey.max_step_m in mean and fewer than max_rows_over rows over the limit course-wide, measured by edge_profiles.py after a fresh RunAll",
-      "note": "CourseRimReset v2: the edge survey's real steps (edge_profiles.py steps.csv) say where the ball met a step and which collar mesh was in the crossing. For every major-loop rim vertex within radius_m of such a sample the neighbour height is sampled probe_m outside the rim and the move is neighbour_y - vertex_y, signed as measured. A residual over max_move_m is skipped and counted; no vertex ends above the designed surface at its position; only meshes named collar are edited; green mesh and blend never move. The dry run reports vertices down and up, the share down, and the net and mean signed move per collar; a collar under min_share_down or with a non-negative net move is not applied. Why: v1 inferred the sign from the surface-pair category and moved the outer rim up by the defect on Tierra 14 (5.6 to 11.6 cm, 2026-11-03); radius 0.4 and max move 0.10 come from the hole 14 targeted dry run, where 98 rim vertices were reached and the largest residual matched the measured worst step."
+      "note": "CourseRimReset v2: the edge survey's real steps (edge_profiles.py steps.csv) say where the ball met a step and which collar mesh was in the crossing. For every major-loop rim vertex within radius_m of such a sample the neighbour height is sampled probe_m outside the rim and the move is neighbour_y - vertex_y, signed as measured. A residual over max_move_m is skipped and counted; no vertex ends above the designed surface at its position; only meshes named collar are edited; green mesh and blend never move. The dry run reports vertices down and up, the share down, and the net and mean signed move per collar; a collar under min_share_down or with a non-negative net move is not applied. Why: v1 inferred the sign from the surface-pair category and moved the outer rim up by the defect on Tierra 14 (5.6 to 11.6 cm, 2026-11-03); radius 0.4 and max move 0.10 come from the hole 14 targeted dry run, where 98 rim vertices were reached and the largest residual matched the measured worst step. min_share_down is 0.7, not 0.9: on the Tierra course-wide dry run (2026-11-03) eight collars sat between 73% and 90% down with nets of -29 to -252 cm, i.e. proud along most of the rim and sunk along a stretch; an upward move there is the ball's dip and is right. The gate exists for the v1 shape, 0% down with a positive net. collar_name_excludes: a mesh whose name also carries a rough, fairway or green mesh token is not a collar whatever else its name says (Tierra's Spline_rough_17collarR_Rough).",
+      "collar_name_excludes": [
+        "_rough_-_mesh",
+        "_fairway_-_mesh",
+        "_green_-_mesh"
+      ]
     }
   },
   "tiers": {

@@ -25,7 +25,7 @@ using UnityEngine;
 
 public class CourseRimReset : EditorWindow
 {
-    [Serializable] public class ResetRule { public float radius_m = 0.4f, max_move_m = 0.10f, probe_m = 0.03f, min_share_down = 0.9f; public int passes = 2, max_rows_over = 10; }
+    [Serializable] public class ResetRule { public float radius_m = 0.4f, max_move_m = 0.10f, probe_m = 0.03f, min_share_down = 0.7f; public int passes = 2, max_rows_over = 10; public string[] collar_name_excludes = new string[0]; }
     [Serializable] class Collar { public ResetRule rim_reset = new ResetRule(); public CourseCollarFlush.FlushRule flush_tool = new CourseCollarFlush.FlushRule(); }
     [Serializable] class GreensRules { public Collar collar = new Collar(); }
     const string CB = "Assets/CourseBuild";
@@ -33,6 +33,7 @@ public class CourseRimReset : EditorWindow
     public static string only = "", hole = "", stepsPath = "";
     public static float radius = 0f, maxMove = 0f;   // -Set overrides for one call; 0 = the rule value (greens.collar.rim_reset.radius_m / max_move_m)
 
+    public static bool IsCollar(string n, ResetRule R) { var l = n.ToLower(); if (!l.Contains("collar")) return false; foreach (var x in R.collar_name_excludes ?? new string[0]) if (!string.IsNullOrEmpty(x) && l.Contains(x.ToLower())) return false; return true; }
     public static string DryRun() { return Run(false); }
     public static string Apply() { return Run(true); }
     public static string Revert() { return CourseCollarFlush.Revert(); }
@@ -62,7 +63,7 @@ public class CourseRimReset : EditorWindow
         {
             var a = ln.Split(','); if (a.Length <= Math.Max(iSz, iTo)) continue; rows++;
             if (!string.IsNullOrEmpty(hole) && a[iH] != hole) { skippedHole++; continue; }
-            string cname = a[iFrom].ToLower().Contains("collar") ? a[iFrom] : a[iTo].ToLower().Contains("collar") ? a[iTo] : null; if (cname == null) { noCollar++; continue; }
+            string cname = IsCollar(a[iFrom], R) ? a[iFrom] : IsCollar(a[iTo], R) ? a[iTo] : null; if (cname == null) { noCollar++; continue; }
             if (!string.IsNullOrEmpty(only) && cname != only) { skippedHole++; continue; }
             MeshFilter mf; if (!filters.TryGetValue(cname, out mf)) { noMesh++; continue; }
             List<Vector2> l; if (!samples.TryGetValue(mf, out l)) samples[mf] = l = new List<Vector2>(); l.Add(new Vector2(float.Parse(a[iSx], CI), float.Parse(a[iSz], CI)));

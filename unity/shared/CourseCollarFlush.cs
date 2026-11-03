@@ -67,7 +67,7 @@ public class CourseCollarFlush : EditorWindow
 
     static List<MeshFilter> Collars(Transform opcd)
     {
-        return opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh && f.name.ToLower().Contains("collar") && !f.name.StartsWith("SKIRT_") && f.GetComponent<MeshCollider>() && (string.IsNullOrEmpty(only) || f.name == only)).ToList();
+        return opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh && f.name.ToLower().Contains("collar") && !f.name.ToLower().Contains("_rough_-_mesh") && !f.name.ToLower().Contains("_fairway_-_mesh") && !f.name.ToLower().Contains("_green_-_mesh") && !f.name.StartsWith("SKIRT_") && f.GetComponent<MeshCollider>() && (string.IsNullOrEmpty(only) || f.name == only)).ToList();   // a rough/fairway/green spline named collar is not a collar (rules greens.collar.rim_reset.collar_name_excludes)
     }
 
     public static void EnsureFolders()
