@@ -4,6 +4,7 @@ description: "Use before writing any Unity editor script for a GSPro course: the
 ---
 
 ## Tools
+- `tools/run_pipeline.py`: drives the tools below in order through the live bridge (inbox/outbox JSON, same protocol as Send-UnityCommand.ps1) and logs every step; use it instead of hand-sending six invokes. Batch mode cannot replace it: calibration and 4K renders need post-processing, which batch mode does not run.
 - Unity `Course Checks > Physics: audit / apply` (`CoursePhysicsAudit.cs`, bridge `invoke -Tool CoursePhysicsAudit -Method Audit` then `-Method ApplyFixes`): physic material on every collider vs its mesh name per `rules/physics.json`; fixes the name-matched ones, lists the unsure ones with x,z for hand labelling; then `tools/physics_check.py` compares its census to the SVG.
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.

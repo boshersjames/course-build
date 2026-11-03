@@ -4,6 +4,7 @@ description: Use when making showcase or premiere flyover videos of a GSPro cour
 ---
 
 ## Tools
+- `python ../course-build/tools/run_pipeline.py --course . --hole <n> --tee Blue [--audit <json>] [--skip fixer,calibrate]`: the whole premiere chain in one command through the open editor's live bridge (doctor, fixes, calibration, cinematic path, 4K render, package), master log in AutomationOutput/logs; `--dry-run` prints the plan. Editor open, bridge on, ~18 GB disk per hole.
 - Unity `Course Flyover > Render 4K Queue` (`RenderQueue4K.cs`, bridge `invoke -Tool RenderQueue4K -Method RunRenderQueue -Set @{ holes = "10" }`, Dry run first): 4K/60 PNG frames per hole under `flyovers.render_4k` (MSAA, supersample, 180 deg shutter accumulation, forced LOD 0, max shadow distance), ~18 GB per 25 s hole, disk-guarded; log in AutomationOutput/logs. Encode with the ffmpeg line in Defaults.
 - Unity `Course Flyover > Generate Cinematic Path` (`CommercialFlyoverPath.cs`, bridge `invoke -Tool CommercialFlyoverPath -Method RunPathGeneration -Set @{ hole = 10; tee = "Blue" }`): the premiere path with bunker dips and a green orbit under `flyovers.cinematic.limits` (yaw 12 deg/s, bank <= 6 deg); writes the trajectory JSON, a batch shot list for the frames, and an AnimationClip. Review renders keep `flyovers.path` (5 deg/s, no roll).
 

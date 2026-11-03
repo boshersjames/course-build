@@ -109,3 +109,8 @@ Lines that were in `course-build-unity-tools` but not in this playbook when the 
 ## Physics labelling is audited, not assumed (2026-11-03)
 
 GSPro's ball physics come from the physic material on each collider. The names of the OPCD meshes say what each piece is meant to be and the course SVG says what the ground is at every point, so both are ground truth for an audit. `CoursePhysicsAudit.cs` compares every collider's material with the class its name implies (`rules/physics.json` name_rules, first match wins, 'deep' before 'rough'), applies the unambiguous fixes on request, and writes an unsure list with positions for a human to label; its 2 m census is compared with the SVG by `tools/physics_check.py`, which reports the mismatch share per class against `physics.census.mismatch_tolerance_pct` and names the offending meshes. Trees are left to the tree tools (trunk GSPtimber, canopy GSPleaves). Run the audit before every install; the publish skill lists it.
+
+
+## One command for the premiere chain (2026-11-03)
+
+`tools/run_pipeline.py` chains doctor, BatchCourseFixer, GSProPostProfileCalibrator, CommercialFlyoverPath per hole, RenderQueue4K and flyover_packager into one run with a master JSON log, aborting on the first failed step. It talks to the open editor through the live bridge rather than launching Unity in batch mode, because the calibration and the 4K renders need post-processing and batch mode has none. The SpeedTreeOSMImporter slot is checked with `describe` and skipped when the class is absent, which it is today: trees come from PlantLidarTrees and the tree tools, and the slot exists so an OSM-driven importer can drop in without changing the orchestrator.
