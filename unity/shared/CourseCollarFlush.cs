@@ -10,7 +10,7 @@
 // Assets/CourseBuild/generated/collarflush, the MeshCollider follows, and COURSEBUILD_LOG keeps "collarflush|<mesh>|<old asset path>" so
 // Revert puts the previous mesh back. Numbers from Assets/CourseBuild/rules/greens.json collar.flush_tool. Dry run unless Apply.
 //
-// Bridge: invoke -Tool CourseCollarFlush -Method DryRun | Apply | Revert   (optional -Set @{ only = "SPatch_collar1029_h7_-_Mesh" })
+// Bridge: invoke -Tool CourseCollarFlush -Method DryRun | Apply | Revert | RelaxDryRun | RelaxApply (rims held, interior membrane; after CourseRimReset)   (optional -Set @{ only = "SPatch_collar1029_h7_-_Mesh" })
 // Then run CourseGreenChecks.RunAll: step <= greens.checks.edge_survey.max_step_m on every green is the pass.
 using System;
 using System.Collections.Generic;
@@ -23,7 +23,7 @@ using Object = UnityEngine.Object;
 
 public class CourseCollarFlush : EditorWindow
 {
-    [Serializable] public class FlushRule { public float rim_probe_m = 0.12f; public float weld_mm = 5f; public int laplace_iterations = 400; public float sink_under_rim_m = 0.005f, sink_under_in_m = 0.03f, sink_rim_band_m = 0.4f; public float rim_loop_min_frac = 0.25f; public bool conform_max = true; public float conform_probe_m = 0.12f; }
+    [Serializable] public class FlushRule { public float rim_probe_m = 0.12f; public float weld_mm = 5f; public int laplace_iterations = 400; public float sink_under_rim_m = 0.005f, sink_under_in_m = 0.03f, sink_rim_band_m = 0.4f; public float rim_loop_min_frac = 0.25f; public bool conform_max = true; public float conform_probe_m = 0.12f; public float relax_max_move_m = 0.03f; }
     [Serializable] class Collar { public FlushRule flush_tool = new FlushRule(); }
     [Serializable] class GreensRules { public Collar collar = new Collar(); }
     const string CB = "Assets/CourseBuild"; const string GEN = CB + "/generated/collarflush"; const string LOG = "COURSEBUILD_LOG";
@@ -57,6 +57,53 @@ public class CourseCollarFlush : EditorWindow
         return string.Join("\n", o.ToArray());
     }
     public static string Apply() { return Run(true); }
+
+    // interior relax: rims stay exactly where they are (after CourseRimReset), the interior becomes a membrane between them
+    public static string RelaxDryRun() { return Relax(false); }
+    public static string RelaxApply() { return Relax(true); }
+
+    public static string Relax(bool apply)
+    {
+        Physics.SyncTransforms(); var R = Rules(); var opcdGo = GameObject.Find("OPCD Meshes"); if (!opcdGo) return "no 'OPCD Meshes' root in the scene";
+        var opcd = opcdGo.transform; var collars = Collars(opcd); if (collars.Count == 0) return "no collar meshes" + (string.IsNullOrEmpty(only) ? "" : " matching " + only);
+        if (apply) EnsureFolders();
+        var o = new List<string> { (apply ? "RELAX APPLY" : "RELAX DRY RUN") + ": " + collars.Count + " collar meshes, rims held, interior membrane, cap " + (R.relax_max_move_m * 100).ToString("F0", CI) + " cm" + (string.IsNullOrEmpty(only) ? "" : ", only " + only) };
+        foreach (var mf in collars)
+        {
+            try
+            {
+                var src = mf.sharedMesh; var col = mf.GetComponent<Collider>(); var w = src.vertices.Select(v => mf.transform.TransformPoint(v)).ToArray(); var t = src.triangles; int N = w.Length;
+                float wq = 1000f / Mathf.Max(0.1f, R.weld_mm); var wk = new Dictionary<Vector2Int, int>(); var weld = new int[N];
+                for (int i = 0; i < N; i++) { var k = new Vector2Int(Mathf.RoundToInt(w[i].x * wq), Mathf.RoundToInt(w[i].z * wq)); int j; if (!wk.TryGetValue(k, out j)) { j = i; wk[k] = i; } weld[i] = j; }
+                var cnt = new Dictionary<long, int>(); var nb = new Dictionary<int, HashSet<int>>(); Func<int, int, long> K = (a, b) => a < b ? ((long)a << 32) | (uint)b : ((long)b << 32) | (uint)a;
+                for (int i = 0; i < t.Length; i += 3) for (int e = 0; e < 3; e++)
+                {
+                    int a = weld[t[i + e]], b = weld[t[i + (e + 1) % 3]]; if (a == b) continue; var k = K(a, b); int c; cnt[k] = cnt.TryGetValue(k, out c) ? c + 1 : 1;
+                    HashSet<int> hs; if (!nb.TryGetValue(a, out hs)) nb[a] = hs = new HashSet<int>(); hs.Add(b); if (!nb.TryGetValue(b, out hs)) nb[b] = hs = new HashSet<int>(); hs.Add(a);
+                }
+                var bEdges = cnt.Where(kv => kv.Value == 1).Select(kv => new[] { (int)(kv.Key >> 32), (int)(kv.Key & 0xffffffff) }).ToList();
+                var rim = MajorLoops(bEdges, w, R.rim_loop_min_frac); var reps = wk.Values.ToList(); var y = reps.ToDictionary(r => r, r => w[r].y);
+                var free = reps.Where(r => !rim.Contains(r)).ToList(); float resid = 0;
+                for (int it = 0; it < R.laplace_iterations; it++) { resid = 0; foreach (var r in free) { HashSet<int> hs; if (!nb.TryGetValue(r, out hs) || hs.Count == 0) continue; float ny = hs.Average(q => y[weld[q]]); resid = Mathf.Max(resid, Mathf.Abs(ny - y[r])); y[r] = ny; } }
+                int capped = 0;
+                if (R.conform_max) foreach (var r in free)
+                {
+                    float lim = float.NaN;
+                    foreach (var h in Physics.RaycastAll(new Vector3(w[r].x, w[r].y + 5, w[r].z), Vector3.down, 20)) { if (!h.collider.transform.IsChildOf(opcd) || h.collider == col || h.collider.GetComponentInParent<LODGroup>() || h.collider.name.ToLower().Contains("collar") || PinRank(h.collider.name) > 2) continue; if (float.IsNaN(lim) || h.point.y > lim) lim = h.point.y; }
+                    if (!float.IsNaN(lim) && y[r] > lim) { y[r] = lim; capped++; }
+                }
+                float mx = 0, sum = 0; int moved = 0, over = 0; foreach (var r in free) { float d = Mathf.Abs(y[r] - w[r].y); if (d < 0.0005f) continue; moved++; sum += d; mx = Mathf.Max(mx, d); if (d > R.relax_max_move_m) over++; }
+                string line = mf.name + ": " + rim.Count + " rim held, " + free.Count + " interior, " + moved + " moved (mean " + (moved > 0 ? sum / moved * 100 : 0).ToString("F1", CI) + " cm, largest " + (mx * 100).ToString("F1", CI) + " cm), " + capped + " held at the designed surface, residual " + (resid * 1000).ToString("F2", CI) + " mm";
+                if (over > 0) { line += "  <-- " + over + " interior vertices would move over the cap: not applied (a rim is wrong, not the interior)"; o.Add(line); continue; }
+                o.Add(line); if (!apply || moved == 0) continue;
+                var nv = new Vector3[N]; for (int i = 0; i < N; i++) { var p = w[i]; p.y = y[weld[i]]; nv[i] = mf.transform.InverseTransformPoint(p); }
+                var nm = SaveMesh(src, nv, mf.name + "_relax_" + DateTime.Now.ToString("HHmmss"), "_rx"); Swap(mf, nm, "collarflush");
+            }
+            catch (Exception e) { o.Add(mf.name + ": FAILED " + e.Message); }
+        }
+        if (apply) { AssetDatabase.SaveAssets(); Physics.SyncTransforms(); UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene()); o.Add("now CourseGreenChecks.RunAll and edge_profiles.py; Revert puts every collar back"); }
+        var txt = string.Join("\n", o.ToArray()); string outDir = Path.GetDirectoryName(Application.dataPath).Replace('\\', '/') + "/AutomationOutput/checks"; Directory.CreateDirectory(outDir); File.WriteAllText(outDir + "/collar_relax.txt", txt); return txt;
+    }
 
     public static FlushRule Rules()
     {

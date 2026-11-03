@@ -42,7 +42,9 @@
       ],
       "conform_max": true,
       "conform_probe_m": 0.12,
-      "conform_note": "after the membrane, every collar vertex is capped at the highest designed surface found at its position or conform_probe_m to each side (green mesh, green blend, fairway, tee, apron: never the rough, which is sunk instead). A collar is never proud of the surface it meets; a true maximum rule, applied to every collar, no mesh names."
+      "conform_note": "after the membrane, every collar vertex is capped at the highest designed surface found at its position or conform_probe_m to each side (green mesh, green blend, fairway, tee, apron: never the rough, which is sunk instead). A collar is never proud of the surface it meets; a true maximum rule, applied to every collar, no mesh names.",
+      "relax_max_move_m": 0.03,
+      "relax_note": "RelaxDryRun / RelaxApply: after the rims are flush (CourseRimReset dry run reads zero moves), both rims are held exactly where they are and only the interior is solved as a membrane between them, conform cap kept, no sink-under. Removes the 1 cm kinks between the collar's own rim rows. A collar whose interior would move more than relax_max_move_m is not applied: that is a wrong rim, not a wrong interior."
     },
     "rim_reset": {
       "probe_m": 0.03,
