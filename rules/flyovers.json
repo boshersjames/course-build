@@ -88,5 +88,37 @@
     },
     "fps": 25,
     "sample_m": 0.5
+  },
+  "render_4k": {
+    "width": 3840,
+    "height": 2160,
+    "fps": 60,
+    "format": "png (lossless; Unity's encoder has no compression setting)",
+    "msaa": 8,
+    "supersample": 1.5,
+    "supersample_note": "render target = width*supersample, clamped to SystemInfo.maxTextureSize, bilinear downsample",
+    "motion_blur": {
+      "shutter_deg": 180,
+      "subframes": 4,
+      "method": "accumulation across shutter/360 of the frame interval; PPv2 MotionBlur disabled during the pass"
+    },
+    "quality": {
+      "shadow_distance_m": 5000,
+      "shadow_cascades": 4,
+      "lod_bias": 10,
+      "force_lod0_on_lodgroups": true,
+      "tree_distance_m": 5000,
+      "detail_distance_m": 2000,
+      "basemap_distance_m": 5000,
+      "texture_limit": 0,
+      "anisotropic": "ForceEnable"
+    },
+    "disk": {
+      "png_estimate_mb": 12,
+      "min_free_gb_margin": 10
+    },
+    "output": "AutomationOutput/renders_4k/Hole_XX/frame_%05d.png",
+    "log": "AutomationOutput/logs/render_queue_<stamp>.json",
+    "note": "a 25 s hole is ~1,500 frames, ~18 GB; 18 holes ~300 GB; editor only (post-processing needs the editor, batch mode has none)"
   }
 }
