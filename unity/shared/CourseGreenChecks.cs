@@ -27,7 +27,7 @@ using UnityEngine;
 public class CourseGreenChecks : EditorWindow
 {
     // ---------- rule subset (mirrors rules/greens.json; unknown keys are ignored by JsonUtility) ----------
-    [Serializable] public class EdgeSurveyRule { public float sample_along_m = 1f, profile_from_m = -0.5f, profile_to_m = 2f, step_m = 0.05f, max_step_m = 0.01f, max_lip_m = 0.02f; public bool bunker_rims_exempt = true; }
+    [Serializable] public class EdgeSurveyRule { public float sample_along_m = 1f, profile_from_m = -0.5f, profile_to_m = 2f, step_m = 0.05f, max_step_m = 0.01f, max_lip_m = 0.02f; public bool bunker_rims_exempt = true; public int slope_window = 2; }
     [Serializable] public class FallRule { public float grid_m = 0.5f; }
     [Serializable] public class CrownRule { public float block_at_m = 1f, clearance_m = 1f; public int directions = 16; public float[] radii = { 0f, 0.33f, 0.66f, 1f }; }
     [Serializable] public class Checks { public EdgeSurveyRule edge_survey = new EdgeSurveyRule(); public float collider_vs_render_max_dy_m = 0.01f; public FallRule fall_direction = new FallRule(); public CrownRule crown_overhang = new CrownRule(); }
@@ -190,7 +190,14 @@ public class CourseGreenChecks : EditorWindow
                 var ys = new List<float>(); var names = new List<string>(); bool sand = false;
                 for (float d = E.profile_from_m; d <= E.profile_to_m + 1e-4f; d += E.step_m) { var q = m + nrm * d; var t = TopHit(opcd, q.x, q.y); ys.Add(t.ok ? t.y : float.NaN); names.Add(t.ok ? t.name : "-"); if (t.ok && Surface(t.name) == "bunker") sand = true; }
                 if (ys.Any(float.IsNaN) || (sand && E.bunker_rims_exempt)) continue;
-                float st = 0; int si = 0; for (int i = 1; i < ys.Count; i++) { float s = Mathf.Abs(ys[i] - ys[i - 1]); if (s > st) { st = s; si = i; } }
+                // step = one 5 cm rise minus the median rise of its neighbours (rules greens.checks.edge_survey.step_definition): plain slope is not a step
+                var dy = new List<float>(); for (int i = 1; i < ys.Count; i++) dy.Add(ys[i] - ys[i - 1]);
+                float st = 0; int si = 0;
+                for (int i = 0; i < dy.Count; i++)
+                {
+                    var nbv = new List<float>(); for (int j = Mathf.Max(0, i - E.slope_window); j <= Mathf.Min(dy.Count - 1, i + E.slope_window); j++) if (j != i) nbv.Add(dy[j]);
+                    nbv.Sort(); float med = nbv.Count == 0 ? 0 : nbv[nbv.Count / 2]; float s = Mathf.Abs(dy[i] - med); if (s > st) { st = s; si = i + 1; }
+                }
                 float lp = 0; for (int i = 0; i < ys.Count; i++) { float chord = Mathf.Lerp(ys[0], ys[ys.Count - 1], i / (float)(ys.Count - 1)); lp = Mathf.Max(lp, ys[i] - chord); }
                 steps.Add(st); lips.Add(lp);
                 for (int i = 0; i < ys.Count; i++) allProf.Add(string.Join(",", new[] { row.hole.ToString(), m.x.ToString("F2", CI), m.y.ToString("F2", CI), (E.profile_from_m + i * E.step_m).ToString("F2", CI), ys[i].ToString("F4", CI), names[i].Replace(',', ';') }));   // every sample of every profile, for offline analysis

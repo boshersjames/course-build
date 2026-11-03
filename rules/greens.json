@@ -98,7 +98,9 @@
       "step_m": 0.05,
       "max_step_m": 0.01,
       "max_lip_m": 0.02,
-      "bunker_rims_exempt": true
+      "bunker_rims_exempt": true,
+      "slope_window": 2,
+      "step_definition": "one step_m rise minus the median rise of the slope_window samples either side (slope removed): a bank of 1 cm per 5 cm is slope, a 1 cm jump that its neighbours do not share is a step. Before 2026-11-03 the raw rise was used and every bank over 11 deg failed as a step."
     },
     "collider_vs_render_max_dy_m": 0.01,
     "fall_direction": {

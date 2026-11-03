@@ -22,6 +22,7 @@ def main():
     if not os.path.exists(f): sys.exit("edge survey not found: %s (run Course Checks > Greens in Unity)" % f)
     out = a.out or os.path.join(C.dir, "progress", "edge_survey"); os.makedirs(out, exist_ok=True)
     rows = list(csv.DictReader(open(f, encoding="utf-8-sig")))
+    if not rows or "green" not in rows[0]: sys.exit("%s is not an edge_survey.csv (green, x, z, step, lip, stepAt, surfaces); profiles.csv goes to edge_profiles.py" % f)
     byg = defaultdict(list)
     for r in rows: byg[r["green"]].append(r)
     pairs_all = defaultdict(int); md = ["# Green edge survey: where the steps are (%s)" % C["name"], "", "Rules: step <= %.0f cm, lip <= %.0f cm (greens.checks.edge_survey)." % (smax * 100, lmax * 100), ""]
