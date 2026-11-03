@@ -1,6 +1,6 @@
 # course-build toolkit
 
-This repo is the shared toolkit for building real golf courses for GSPro. It holds no course data.
+This repo is the shared toolkit for building real golf courses for GSPro. It holds no course data. Read `docs/BLUEPRINT.md` first: objective, hand-offs as the cost, data layers, coverage per hole.
 
 - Rules live in `rules/*.json`. Never hard-code a threshold in a script or a skill; read it with `tools/rules.py` and cite the key.
 - A change to a rule is a change to the JSON, the one line in the matching `skills/course-build-*/SKILL.md` that quotes it, and a

@@ -1,5 +1,7 @@
 # course-build
 
+Start with `docs/BLUEPRINT.md`: the objective, why hand-offs are the cost, the three data layers, and coverage per hole.
+
 Everything learned building Tierra Rejada, Moorpark, Penmar, Harding, Wilson, Hansen Dam and Angeles National for GSPro,
 in a form a new course can run rather than re-read. One clone gives a course its rules, tools, Unity editor set, skills and
 playbooks. Course repos hold only course data (LiDAR, satellite, SVG, GKD, photos) and a `course.json` that points here.
@@ -65,6 +67,7 @@ When BoJa changes a rule, change the JSON and the matching line in the skill; th
 | `tools/scan_index.py` | Phone LAS scans registered to the LiDAR; MAD, coverage, doubled ground; ACCEPT / RESCAN | LAS, heightmap, SVG |
 | `tools/audit_pairs.py --renders <dir>` | Photo, before, after sheets from the same pose with measured turf colour and a verdict row per photo | renders from the PC |
 | `tools/pose_solve.py [--sheets]` | Skyline fit of each photo against the heightmap + LiDAR trees; diagnostic only (notes + compass flags). Validated on Tierra: applying it is worse than the compass, so the real pose solve stays the Unity panorama fit | heightmap, trees, display JPEGs |
+| `tools/coverage.py` | Share of the site-visit capture checklist each hole has behind it (photos, accepted scans, drone frames); the next-visit list | index.csv, scans/index.csv |
 | `tools/drone_frames.py fetch / segments / cut` | Online flyover to per-hole frames with drafted poses, merged into the photo index at low confidence | yt-dlp, ffmpeg |
 | Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`) | Edge survey, collider vs render, tiers, crowns over, pin area on every green; writes AutomationOutput/checks | Unity, synced course.json + rules |
 | Unity `Course Look > Apply Tint JSON` (`ApplyTintJson.cs`) | Applies colour_match multipliers to material copies, refuses shared materials | Unity |

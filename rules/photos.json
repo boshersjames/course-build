@@ -97,5 +97,11 @@
     "pitch_deg": 25,
     "position_error_m": 50,
     "note": "draft pose on the hole line at the frame's fraction of the hole segment; drone frames are never a colour source"
+  },
+  "coverage": {
+    "min_pct": 80,
+    "spot_radius_m": 25,
+    "feature_near_line_m": 60,
+    "items_note": "per hole: one per playing tee colour, tee_surrounds, landing_zone, one per bunker within feature_near_line_m of the hole line, green, collar, green_surrounds, water if present, trees_near_play, props (course-build-site-visit capture list)"
   }
 }

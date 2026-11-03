@@ -49,7 +49,7 @@ tagged with that spot (tee_<colour>, bunker_<n>, green, collar, surround_<side>,
 
     hole | items | covered | coverage % | missing items
 
-Computed from course_photos/index.csv and scans/index.csv (tool: `tools/coverage.py`, to write; the spot column already exists).
+Computed from course_photos/index.csv and scans/index.csv (tool: `tools/coverage.py`; spots are tagged in index.csv or inferred from the camera position).
 A hole below 80% goes on the next visit list before any polish pass. Drone frames count for position and layout only, never colour.
 
 ## What we do not do

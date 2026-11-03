@@ -4,6 +4,7 @@ description: "Use before walking a golf course for a GSPro build: what to photog
 ---
 
 ## Tools
+- `tools/coverage.py [--min 80]`: share of the capture checklist each hole has behind it from index.csv + scans/index.csv; holes under `photos.coverage.min_pct` are the next visit list (docs/BLUEPRINT.md).
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
 
