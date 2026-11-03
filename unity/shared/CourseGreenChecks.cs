@@ -266,7 +266,7 @@ public class CourseGreenChecks : EditorWindow
         }
 
         File.WriteAllLines(outDir + "/edge_survey.csv", edgeCsv.ToArray()); File.WriteAllLines(outDir + "/pin_area.csv", pinCsv.ToArray());
-        var wp = new List<string> { "hole,edge_x,edge_z,d_m,y,surface" }; foreach (var r in rows) wp.AddRange(r.worstProfile); File.WriteAllLines(outDir + "/worst_profiles.csv", wp.ToArray());   // the full height profile of each green's worst step: read it before touching a collar
+        var wprofRows = new List<string> { "hole,edge_x,edge_z,d_m,y,surface" }; foreach (var rowP in rows) wprofRows.AddRange(rowP.worstProfile); File.WriteAllLines(outDir + "/worst_profiles.csv", wprofRows.ToArray());   // the full height profile of each green's worst step: read it before touching a collar
         var csv = new List<string> { "hole,green,max_step_cm,max_lip_cm,step_pts_over,lip_pts_over,collider_dy_cm,tiers_ok,tiers_note,crown_overhang_m,pins,pins_failing,usable_pct,valid_areas,pass,notes" };
         var md = new List<string> { "# Green checks: all " + rows.Count + " holes (" + C.name + ", " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + ")", "",
             "Rules: step <= " + (E.max_step_m * 100).ToString(CI) + " cm, lip <= " + (E.max_lip_m * 100).ToString(CI) + " cm, collider dy <= " + (R.checks.collider_vs_render_max_dy_m * 100).ToString(CI) + " cm, crown < " + CR.block_at_m.ToString(CI) + " m over green/collar, pins <= " + P.max_lie_angle_deg.ToString(CI) + " deg and >= " + P.min_from_edge_m.ToString(CI) + " m from the edge, >= " + P.min_valid_areas + " areas.", "",
