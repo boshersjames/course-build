@@ -168,7 +168,7 @@ public class CourseGreenChecks : EditorWindow
         var world = greens.ToDictionary(f => f, f => f.sharedMesh.vertices.Select(v => f.transform.TransformPoint(v)).ToArray());
         var cen = greens.ToDictionary(f => f, f => new Vector2(world[f].Average(v => v.x), world[f].Average(v => v.z)));
 
-        var rows = new List<Row>(); var edgeCsv = new List<string> { "green,x,z,step,lip,stepAt,surfaces" }; var allProf = new List<string> { "hole,edge_x,edge_z,d_m,y,surface" }; var pinCsv = new List<string> { "hole,day,x,z,green,worst_deg,edge_m,flags" };
+        var rows = new List<Row>(); var edgeCsv = new List<string> { "green,x,z,step,lip,stepAt,surfaces" }; var allProf = new List<string> { "hole,edge_x,edge_z,d_m,y,surface,sx,sz" }; var pinCsv = new List<string> { "hole,day,x,z,green,worst_deg,edge_m,flags" };
         foreach (var h in g.Holes.OrderBy(ho => ho.HoleNumber))   // desk-check: lambda param renamed, loop var and lambda param shared a name (CS0136 before C# 8)
         {
             if (only.Count > 0 && !only.Contains(h.HoleNumber)) continue;
@@ -200,7 +200,7 @@ public class CourseGreenChecks : EditorWindow
                 }
                 float lp = 0; for (int i = 0; i < ys.Count; i++) { float chord = Mathf.Lerp(ys[0], ys[ys.Count - 1], i / (float)(ys.Count - 1)); lp = Mathf.Max(lp, ys[i] - chord); }
                 steps.Add(st); lips.Add(lp);
-                for (int i = 0; i < ys.Count; i++) allProf.Add(string.Join(",", new[] { row.hole.ToString(), m.x.ToString("F2", CI), m.y.ToString("F2", CI), (E.profile_from_m + i * E.step_m).ToString("F2", CI), ys[i].ToString("F4", CI), names[i].Replace(',', ';') }));   // every sample of every profile, for offline analysis
+                for (int i = 0; i < ys.Count; i++) { var sq = m + nrm * (E.profile_from_m + i * E.step_m); allProf.Add(string.Join(",", new[] { row.hole.ToString(), m.x.ToString("F2", CI), m.y.ToString("F2", CI), (E.profile_from_m + i * E.step_m).ToString("F2", CI), ys[i].ToString("F4", CI), names[i].Replace(',', ';'), sq.x.ToString("F3", CI), sq.y.ToString("F3", CI) })); }   // every sample of every profile, for offline analysis
                 if (st >= steps.Max())
                 {
                     row.stepAt = (names[Mathf.Max(si - 1, 0)] + ">" + names[si]).Replace("_-_Mesh", "").Replace("Spline_", "");   // the two colliders the worst step crosses

@@ -58,7 +58,7 @@ public class CourseCollarFlush : EditorWindow
     }
     public static string Apply() { return Run(true); }
 
-    static FlushRule Rules()
+    public static FlushRule Rules()
     {
         var rp = CB + "/rules/greens.json";
         if (!File.Exists(rp)) return new FlushRule();
@@ -70,14 +70,14 @@ public class CourseCollarFlush : EditorWindow
         return opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh && f.name.ToLower().Contains("collar") && !f.name.StartsWith("SKIRT_") && f.GetComponent<MeshCollider>() && (string.IsNullOrEmpty(only) || f.name == only)).ToList();
     }
 
-    static void EnsureFolders()
+    public static void EnsureFolders()
     {
         if (!AssetDatabase.IsValidFolder(CB)) AssetDatabase.CreateFolder("Assets", "CourseBuild");
         if (!AssetDatabase.IsValidFolder(CB + "/generated")) AssetDatabase.CreateFolder(CB, "generated");
         if (!AssetDatabase.IsValidFolder(GEN)) AssetDatabase.CreateFolder(CB + "/generated", "collarflush");
     }
 
-    static void Swap(MeshFilter f, Mesh nm, string kind)
+    public static void Swap(MeshFilter f, Mesh nm, string kind)
     {
         var src = f.sharedMesh; var log = GameObject.Find(LOG) ?? new GameObject(LOG);
         new GameObject(kind + "|" + f.name + "|" + AssetDatabase.GetAssetPath(src) + "|" + src.name).transform.SetParent(log.transform, false);
@@ -85,7 +85,7 @@ public class CourseCollarFlush : EditorWindow
         f.sharedMesh = nm; EditorUtility.SetDirty(f);
     }
 
-    static Mesh SaveMesh(Mesh src, Vector3[] verts, string assetName, string suffix)
+    public static Mesh SaveMesh(Mesh src, Vector3[] verts, string assetName, string suffix)
     {
         var nm = Object.Instantiate(src); nm.name = src.name.Replace("(Clone)", "") + suffix; nm.vertices = verts; nm.RecalculateNormals(); nm.RecalculateBounds();
         var ap = GEN + "/" + assetName + ".asset"; if (AssetDatabase.GetAssetPath(src) == ap) ap = ap.Replace(".asset", "_" + DateTime.Now.ToString("HHmmss") + ".asset");
@@ -109,10 +109,10 @@ public class CourseCollarFlush : EditorWindow
         return txt;
     }
 
-    static int PinRank(string n) { n = n.ToLower(); if (n.Contains("_green_-_mesh")) return 0; if (n.Contains("green") && n.Contains("blend")) return 1; if (n.Contains("fairway") || n.Contains("_tee_-_mesh") || n.Contains("apron")) return 2; return 3; }
+    public static int PinRank(string n) { n = n.ToLower(); if (n.Contains("_green_-_mesh")) return 0; if (n.Contains("green") && n.Contains("blend")) return 1; if (n.Contains("fairway") || n.Contains("_tee_-_mesh") || n.Contains("apron")) return 2; return 3; }
 
     // boundary loops by total length; vertices on loops shorter than minFrac x the longest are not rim (seams, slivers)
-    static HashSet<int> MajorLoops(List<int[]> edges, Vector3[] w, float minFrac)
+    public static HashSet<int> MajorLoops(List<int[]> edges, Vector3[] w, float minFrac)
     {
         var adj = new Dictionary<int, List<int>>(); foreach (var e in edges) { List<int> l; if (!adj.TryGetValue(e[0], out l)) adj[e[0]] = l = new List<int>(); l.Add(e[1]); if (!adj.TryGetValue(e[1], out l)) adj[e[1]] = l = new List<int>(); l.Add(e[0]); }
         var seen = new HashSet<int>(); var loops = new List<KeyValuePair<float, List<int>>>();
@@ -126,6 +126,17 @@ public class CourseCollarFlush : EditorWindow
         if (loops.Count == 0) return new HashSet<int>(); float longest = loops.Max(l => l.Key); var keep = new HashSet<int>();
         foreach (var l in loops) if (l.Key >= longest * minFrac) foreach (var v in l.Value) keep.Add(v);
         return keep;
+    }
+
+    // raw vertex indices on the major rim loops (every raw vertex whose welded position is on a kept loop)
+    public static HashSet<int> RimIndices(MeshFilter mf, float minFrac)
+    {
+        var src = mf.sharedMesh; var w = src.vertices.Select(v => mf.transform.TransformPoint(v)).ToArray(); var t = src.triangles; int N = w.Length;
+        var wk = new Dictionary<Vector2Int, int>(); var weld = new int[N]; for (int i = 0; i < N; i++) { var k = new Vector2Int(Mathf.RoundToInt(w[i].x * 200), Mathf.RoundToInt(w[i].z * 200)); int j; if (!wk.TryGetValue(k, out j)) { j = i; wk[k] = i; } weld[i] = j; }
+        var cnt = new Dictionary<long, int>(); Func<int, int, long> K = (a, b) => a < b ? ((long)a << 32) | (uint)b : ((long)b << 32) | (uint)a;
+        for (int i = 0; i < t.Length; i += 3) for (int e = 0; e < 3; e++) { int a = weld[t[i + e]], b = weld[t[i + (e + 1) % 3]]; if (a == b) continue; var k = K(a, b); int c; cnt[k] = cnt.TryGetValue(k, out c) ? c + 1 : 1; }
+        var bEdges = cnt.Where(kv => kv.Value == 1).Select(kv => new[] { (int)(kv.Key >> 32), (int)(kv.Key & 0xffffffff) }).ToList();
+        var reps = MajorLoops(bEdges, w, minFrac); var outIdx = new HashSet<int>(); for (int i = 0; i < N; i++) if (reps.Contains(weld[i])) outIdx.Add(i); return outIdx;
     }
 
     // world positions of a mesh's major rim vertices (welded), for the outside-band cap in SinkUnder
@@ -236,7 +247,7 @@ public class CourseCollarFlush : EditorWindow
         var fs = opcdGo.GetComponentsInChildren<MeshFilter>(true).ToList(); var o = new List<string>(); int n = 0;
         foreach (var e in log.transform.Cast<Transform>().Reverse().ToList())
         {
-            var p = e.name.Split('|'); if (p.Length < 4 || (p[0] != "collarflush" && p[0] != "sinkunder")) continue;
+            var p = e.name.Split('|'); if (p.Length < 4 || (p[0] != "collarflush" && p[0] != "sinkunder" && p[0] != "rimreset")) continue;
             if (!string.IsNullOrEmpty(only) && !(p[1] == only || p[1].Contains(only.Replace("SPatch_", "").Replace("_-_Mesh", "")))) continue;
             var f = fs.FirstOrDefault(x => x.name == p[1]); if (!f) { o.Add(p[1] + " not in the scene"); continue; }
             var src = AssetDatabase.LoadAssetAtPath<Mesh>(p[2]) ?? AssetDatabase.LoadAllAssetsAtPath(p[2]).OfType<Mesh>().FirstOrDefault(m => m.name == p[3]) ?? AssetDatabase.LoadAllAssetsAtPath(p[2]).OfType<Mesh>().FirstOrDefault();

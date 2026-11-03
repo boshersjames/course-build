@@ -28,7 +28,7 @@ def cls(n):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--profiles"); ap.add_argument("--out"); a = ap.parse_args()
+    ap.add_argument("--profiles"); ap.add_argument("--out"); ap.add_argument("--steps-out", help="also write steps.csv here (default <automation_output>/checks/steps.csv, read by CourseRimReset)"); a = ap.parse_args()
     C = course(); E = rules(C)["greens"]["checks"]["edge_survey"]; smax = E["max_step_m"]; W = int(E.get("slope_window", 2))
     f = a.profiles or os.path.join(C.path("automation_output"), "checks", "profiles.csv")
     if not os.path.exists(f): sys.exit("profiles not found: %s (run Course Checks > Greens in Unity; it writes checks/profiles.csv)" % f)
@@ -36,14 +36,16 @@ def main():
     rows = list(csv.DictReader(open(f, encoding="utf-8-sig")))
     if "hole" not in rows[0] or "d_m" not in rows[0]: sys.exit("%s is not a profiles.csv (hole, edge_x, edge_z, d_m, y, surface); edge_survey.csv goes to edge_survey_summary.py" % f)
     prof = defaultdict(list)
-    for r in rows: prof[(int(r["hole"]), r["edge_x"], r["edge_z"])].append((float(r["d_m"]), float(r["y"]), r["surface"]))
+    has_s = "sx" in rows[0]
+    if not has_s: print("WARNING: no sample positions (sx, sz) in %s: steps.csv will carry the edge point, not the sample; re-run Course Checks > Greens with the current CourseGreenChecks.cs before CourseRimReset" % f)
+    for r in rows: prof[(int(r["hole"]), r["edge_x"], r["edge_z"])].append((float(r["d_m"]), float(r["y"]), r["surface"], float(r["sx"]) if has_s else float(r["edge_x"]), float(r["sz"]) if has_s else float(r["edge_z"])))
     per = defaultdict(list); pairs = defaultdict(list); steps = []
     for (h, x, z), P in prof.items():
         P.sort(); d = [P[i][1] - P[i - 1][1] for i in range(1, len(P))]; best = (0.0, "-", 0.0)
         for i in range(len(d)):
             nb = [d[j] for j in range(max(0, i - W), min(len(d), i + W + 1)) if j != i]
             st = d[i] - (statistics.median(nb) if nb else 0); pair = cls(P[i][2]) + ">" + cls(P[i + 1][2])
-            if abs(st) > smax: pairs[pair].append(st); steps.append((h, x, z, P[i + 1][0], st, P[i][2], P[i + 1][2]))
+            if abs(st) > smax: pairs[pair].append(st); steps.append((h, x, z, P[i + 1][0], st, P[i][2], P[i + 1][2], P[i + 1][3], P[i + 1][4], pair))
             if abs(st) > abs(best[0]): best = (st, pair, P[i + 1][0])
         per[h].append(best)
     md = ["# Green edge profiles: real steps (%s)" % C["name"], "", "Step = rise over one sample minus the median rise of %d neighbours either side (greens.checks.edge_survey.step_definition); limit %.0f cm. Positive = rising outward from the green." % (W, smax * 100), "",
@@ -57,8 +59,15 @@ def main():
     for pair, v in sorted(pairs.items(), key=lambda kv: -len(kv[1]))[:15]: md.append("- `%s`: %d, %+.1f cm, %d%% up" % (pair, len(v), 100 * sum(v) / len(v), 100 * sum(1 for q in v if q > 0) / len(v)))
     md += ["", "Reading: a pair on every green with one sign is a convention (a collar proud at its rim); a pair on one green is that green's edit."]
     open(os.path.join(out, "edge_profiles.md"), "w").write("\n".join(md) + "\n")
-    with open(os.path.join(out, "steps.csv"), "w", newline="") as fh:
-        wr = csv.writer(fh); wr.writerow(["hole", "x", "z", "d_m", "step_cm", "from", "to"]); [wr.writerow([h, x, z, "%.2f" % dm, "%.1f" % (st * 100), a_, b_]) for h, x, z, dm, st, a_, b_ in sorted(steps)]
+    targets = [os.path.join(out, "steps.csv"), a.steps_out or os.path.join(C.path("automation_output"), "checks", "steps.csv")]
+    for tgt in targets:
+        try:
+            os.makedirs(os.path.dirname(tgt), exist_ok=True)
+            with open(tgt, "w", newline="") as fh:
+                wr = csv.writer(fh); wr.writerow(["hole", "edge_x", "edge_z", "d_m", "step_cm", "from", "to", "sx", "sz", "pair"])
+                for h, x, z, dm, st, a_, b_, sx, sz, pair in sorted(steps): wr.writerow([h, x, z, "%.2f" % dm, "%.2f" % (st * 100), a_, b_, "%.3f" % sx, "%.3f" % sz, pair])
+        except OSError as e: print("could not write", tgt, e)
+    md.append(""); md.append("steps.csv: %d rows -> %s" % (len(steps), ", ".join(targets)))
     print("\n".join(md)); print("wrote", out); sys.exit(0 if allok else 1)
 
 

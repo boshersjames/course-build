@@ -49,3 +49,6 @@ Any compile message: fix in `Assets\Editor`, copy the file back to `course-build
 
 ## CourseCollarFlush.cs (2026-11-03, cloud)
 Generalised from TierraNight1031.CollarLaplace / SinkUnder / CollarRevert, which compiled and ran on the PC 11/1. Changes: rules from greens.json collar.flush_tool via JsonUtility (nested classes Collar > FlushRule), assets under Assets/CourseBuild/generated/collarflush, log object COURSEBUILD_LOG with a 4th field (source mesh name), LODGroup colliders skipped when pinning the rim, static `only` field for the bridge -Set. Not yet compiled on the PC.
+
+## CourseRimReset.cs (2026-11-03, cloud)
+New. Reads checks/steps.csv (edge_profiles.py --steps-out), moves collar major-loop rim vertices by the survey residual. Reuses CourseCollarFlush.RimIndices / PinRank / SaveMesh / Swap / EnsureFolders / Revert (made public; the revert filter now also accepts "rimreset" log entries). Nested JsonUtility classes GreensRules > Collar > ResetRule + FlushRule. Not yet compiled on the PC.
