@@ -87,11 +87,11 @@ def main():
             row["colour_ok"] = "n/a"; row["notes"] = (row["notes"] + " no turf region").strip()
         panels = [("photo", photo)] + ([("before", bef)] if bef else []) + [("after" if bef else "render", ren)]
         tiles = [im.resize((int(im.width * H / im.height), H)) for _, im in panels]
-        sheet = Image.new("RGB", (sum(t.width for t in tiles) + 8 * (len(tiles) - 1), H + 26), "white"); d = ImageDraw.Draw(sheet); x = 0
+        sheet = Image.new("RGB", (sum(t.width for t in tiles) + 8 * (len(tiles) - 1), H + 44), "white"); d = ImageDraw.Draw(sheet); x = 0
         for (lab, _), t in zip(panels, tiles):
-            sheet.paste(t, (x, 26)); d.text((x + 4, 6), lab, fill="black"); x += t.width + 8
+            sheet.paste(t, (x, 44)); d.text((x + 4, 24), lab, fill="black"); x += t.width + 8
         col = ("r/g %.3f b/g %.3f vs render %.3f %.3f (gap %+.3f %+.3f) %s" % (sp[1], sp[2], sr[1], sr[2], row["gap_rg"], row["gap_bg"], "OK" if row["colour_ok"] == "yes" else "OFF")) if sp and sr else "no turf region"
-        d.text((tiles[0].width // 2, 6), "%s hole %s pose %s | turf %s" % (img, row["hole"], row["pose_conf"], col), fill="black")
+        d.text((4, 6), "%s  hole %s  pose %s  |  turf %s" % (img, row["hole"], row["pose_conf"], col), fill="black")
         hd = os.path.join(out, str(row["hole"] or "none")); os.makedirs(hd, exist_ok=True); sheet.save(os.path.join(hd, img + ".jpg"), quality=85); made += 1
         rows.append(row)
     for k, o in old.items():
