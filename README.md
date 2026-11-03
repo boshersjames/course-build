@@ -64,6 +64,7 @@ When BoJa changes a rule, change the JSON and the matching line in the skill; th
 | `tools/photo_index.py [--sheets --shots]` | iPhone dump (HEIC/JPG) to index.csv: GPS to course frame, hole, confidence, draft pose; contact sheets; render shot list | dump, GKD, heightmap |
 | `tools/scan_index.py` | Phone LAS scans registered to the LiDAR; MAD, coverage, doubled ground; ACCEPT / RESCAN | LAS, heightmap, SVG |
 | `tools/audit_pairs.py --renders <dir>` | Photo, before, after sheets from the same pose with measured turf colour and a verdict row per photo | renders from the PC |
+| `tools/pose_solve.py [--sheets]` | Skyline fit of each photo against the heightmap + LiDAR trees; diagnostic only (notes + compass flags). Validated on Tierra: applying it is worse than the compass, so the real pose solve stays the Unity panorama fit | heightmap, trees, display JPEGs |
 | `tools/drone_frames.py fetch / segments / cut` | Online flyover to per-hole frames with drafted poses, merged into the photo index at low confidence | yt-dlp, ffmpeg |
 | Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`) | Edge survey, collider vs render, tiers, crowns over, pin area on every green; writes AutomationOutput/checks | Unity, synced course.json + rules |
 | Unity `Course Look > Apply Tint JSON` (`ApplyTintJson.cs`) | Applies colour_match multipliers to material copies, refuses shared materials | Unity |

@@ -35,8 +35,29 @@
   },
   "pose_solve": {
     "grid_search_m": 6,
+    "grid_step_m": 2.0,
     "heading_search_deg": 30,
-    "skyline_fit_px_max": 10
+    "heading_step_deg": 1.0,
+    "pitch_range_deg": [
+      -20,
+      15
+    ],
+    "azimuth_step_deg": 1.0,
+    "horizon_m": 1500,
+    "skyline_fit_px_max": 10,
+    "px_ref_height": 720,
+    "accept_vs_draft": 0.75,
+    "note": "skyline = heightmap horizon + LiDAR tree crowns (spheres at the crown top); px = median |elevation error| / vfov * px_ref_height; the pose moves off the GPS spot only when the best score beats the GPS-spot score by accept_vs_draft; heading/move penalties keep the fit near the compass and GPS unless the skyline clearly says otherwise (the far ridge barely moves with position, so without them the search drifts to the grid edge)",
+    "heading_penalty_deg_per_deg": 0.03,
+    "move_penalty_deg_per_m": 0.08,
+    "heading_distinct_ratio": 0.8,
+    "min_gain_deg": 0.3,
+    "flip_check": true,
+    "flip_step_deg": 2.0,
+    "flip_ratio": 0.5,
+    "flip_max_deg": 3.0,
+    "default_mode": "diagnostic (notes only); --apply to write poses",
+    "validated": "Tierra 2026-11-03: applying it worsened headings vs the compass; see pose_solve.py docstring"
   },
   "contact_sheet": {
     "thumb_px": 320,
