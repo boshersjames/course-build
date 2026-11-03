@@ -6,6 +6,7 @@ description: "Use when tinting turf, grading the satellite, setting sand or conc
 Rules file: `rules/look.json` (every number below is defined there; read it with `tools/rules.py look`). Course overrides: `course.json` → `rule_overrides.look`.
 
 ## Tools
+- Unity `Course Fixes > Calibrate Post Profile` (`GSProPostProfileCalibrator.cs`, bridge `invoke -Tool GSProPostProfileCalibrator -Method RunCalibration`, editor open, never batch): sun locked from `course.json` lat/lon at `look.calibration.sun.audit_time_local`, course copy of the post profile with `look.calibration.tonemapper` (Neutral) and exposure found by measurement against `look.calibration.targets`; run it before any audit render or `brightness_check.py`.
 - `tools/brightness_check.py <gspro screenshot>`: green luminance, sky luminance and putt-line contrast against `look.brightness` (provisional targets); settle the post profile with this BEFORE any tint pass. Batch renders have no post and must not be used for it.
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.

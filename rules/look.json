@@ -97,5 +97,63 @@
     "source": "BoJa playtest: shipped v4_Sunny_Pop (+2.3 EV) washed greens near white (putt lines unreadable) and the sky so the tracer vanished; greens skill: TR_Sunny_C at +1.2 EV. Targets PROVISIONAL: calibrate on the first screenshot BoJa accepts, then freeze.",
     "order": "settle the post profile by this check first, then judge turf tint (colour_match / audit_pairs) under that look"
   },
-  "post_profile_rejected_reason": "v4_Sunny_Pop: +2.3 EV ACES; render mean 199/212/163 vs plain 106/134/103"
+  "post_profile_rejected_reason": "v4_Sunny_Pop: +2.3 EV ACES; render mean 199/212/163 vs plain 106/134/103",
+  "calibration": {
+    "pipeline": "Unity 2018.2 built-in + Post Processing Stack v2 (PostProcessVolume / PostProcessProfile.ColorGrading). Not URP/HDRP.",
+    "tonemapper": "Neutral",
+    "tonemapper_note": "ACES at +2.3 EV (shipped v4_Sunny_Pop) washed greens near white; Neutral at +1.2 EV read putt lines (TR_Sunny_C). ACES is allowed: the exposure loop then finds its own EV.",
+    "exposure_ev": {
+      "start": 1.2,
+      "min": -1.0,
+      "max": 2.5,
+      "max_iterations": 6,
+      "damping": 0.7
+    },
+    "targets": {
+      "sky_luma_mean": [
+        120,
+        185
+      ],
+      "green_luma": [
+        100,
+        160
+      ],
+      "sky_rows_fraction": 0.25,
+      "green_box_fraction": [
+        0.3,
+        0.55,
+        0.4,
+        0.3
+      ]
+    },
+    "auto_exposure": "disabled (deterministic audit renders)",
+    "high_sun_deg": 50,
+    "turf_specular_clamp": {
+      "glossiness_max": 0.25,
+      "metallic_max": 0.0,
+      "spec_color_max": 0.15,
+      "green_channel_scale": 0.92,
+      "applies_to_names": [
+        "green",
+        "fairway",
+        "tee",
+        "collar",
+        "rough",
+        "blend"
+      ],
+      "method": "MaterialPropertyBlock on renderers (scene-only, never the shared material asset)"
+    },
+    "sun": {
+      "audit_time_local": "2026-05-15T10:30:00",
+      "tz_offset_hours": -7,
+      "kelvin_horizon": 3400,
+      "kelvin_noon": 5600,
+      "kelvin_elevation_full_deg": 45,
+      "shadow_bias": 0.05,
+      "shadow_normal_bias": 0.4,
+      "shadow_strength": 0.85,
+      "intensity": 1.25
+    },
+    "snapshot_camera": "the scene's Main Camera (needs a PostProcessLayer); batch mode has no post-processing, so calibration snapshots must be rendered from an open editor via the bridge"
+  }
 }
