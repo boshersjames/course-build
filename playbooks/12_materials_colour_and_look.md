@@ -90,3 +90,8 @@ Lines that were in `course-build-look` but not in this playbook when the skill w
 
 ### Decision points (ask once, with a default)
 1. Plain vs post-processed look (once per course, from one pair; default plain).
+
+
+## Brightness is measured, not judged (2026-11-02)
+
+The first photo-pose audit measured turf tint on batch renders, which carry no post-processing. In GSPro the shipped post profile washed the greens so the auto-putt lines could not be read and lifted the sky so the ball tracer vanished (BoJa playtest). Those are two different layers: material tint and post exposure. Order of work: settle the post profile first with `tools/brightness_check.py` on an in-game screenshot (green luminance band, sky luminance max, white-line contrast; targets in `rules/look.json` brightness, provisional until BoJa accepts one screenshot), then judge turf tint under that look. A tint tuned against plain renders under a different exposure chases the wrong thing.

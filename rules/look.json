@@ -1,12 +1,100 @@
 {
-  "element": "look", "skill": "course-build-look", "playbook": "playbooks/12_materials_colour_and_look.md",
-  "theme": {"name": "OPCD v4_satellite", "satellite_max_size": 4096, "graded_upscale": 8192, "black_point_pct": 0.5},
-  "tint_mul": {"green": [1.85, 1.68, 1.42], "green_desat": 0.2, "rough": [1.4, 1.22, 1.08], "rough_desat": 0.12, "fairway": [1.45, 1.38, 1.2], "tee": [1.42, 1.36, 1.18], "blend": [1.42, 1.3, 1.14]},
-  "sand_rgb": [0.70, 0.66, 0.56], "sand_bg_vs_concrete_pct": [-10, -5],
-  "lighting_batch": {"sun_deg": 32, "sun_rejected_deg": 59, "ambient_mul": 1.3, "fill": 0.28},
-  "look_default": "plain", "post_rejected": "v4_Sunny_Pop",
+  "element": "look",
+  "skill": "course-build-look",
+  "playbook": "playbooks/12_materials_colour_and_look.md",
+  "theme": {
+    "name": "OPCD v4_satellite",
+    "satellite_max_size": 4096,
+    "graded_upscale": 8192,
+    "black_point_pct": 0.5
+  },
+  "tint_mul": {
+    "green": [
+      1.85,
+      1.68,
+      1.42
+    ],
+    "green_desat": 0.2,
+    "rough": [
+      1.4,
+      1.22,
+      1.08
+    ],
+    "rough_desat": 0.12,
+    "fairway": [
+      1.45,
+      1.38,
+      1.2
+    ],
+    "tee": [
+      1.42,
+      1.36,
+      1.18
+    ],
+    "blend": [
+      1.42,
+      1.3,
+      1.14
+    ]
+  },
+  "sand_rgb": [
+    0.7,
+    0.66,
+    0.56
+  ],
+  "sand_bg_vs_concrete_pct": [
+    -10,
+    -5
+  ],
+  "lighting_batch": {
+    "sun_deg": 32,
+    "sun_rejected_deg": 59,
+    "ambient_mul": 1.3,
+    "fill": 0.28
+  },
+  "look_default": "plain",
+  "post_rejected": "v4_Sunny_Pop",
   "frame_time_ms_max": 33,
-  "measure": {"method": "same box, same pose, same light; report RGB, r/g, b/g", "render_warm_offset": 0.04, "green_photo_median_rgb": [180, 196, 127], "photo_sand_vs_concrete_bg_pct": [-8, -3]},
-  "render_means": {"plain": [106, 134, 103], "post": [199, 212, 163]},
-  "tone_order": ["rough darkest", "fairway/tee lighter striped", "greens brightest"]
+  "measure": {
+    "method": "same box, same pose, same light; report RGB, r/g, b/g",
+    "render_warm_offset": 0.04,
+    "green_photo_median_rgb": [
+      180,
+      196,
+      127
+    ],
+    "photo_sand_vs_concrete_bg_pct": [
+      -8,
+      -3
+    ]
+  },
+  "render_means": {
+    "plain": [
+      106,
+      134,
+      103
+    ],
+    "post": [
+      199,
+      212,
+      163
+    ]
+  },
+  "tone_order": [
+    "rough darkest",
+    "fairway/tee lighter striped",
+    "greens brightest"
+  ],
+  "brightness": {
+    "green_luma": [
+      100,
+      160
+    ],
+    "sky_luma_max": 200,
+    "line_contrast_min": 0.25,
+    "measured_on": "GSPro screenshot or editor Game view with the post volume ON; never a batch render (batch has no post)",
+    "source": "BoJa playtest: shipped v4_Sunny_Pop (+2.3 EV) washed greens near white (putt lines unreadable) and the sky so the tracer vanished; greens skill: TR_Sunny_C at +1.2 EV. Targets PROVISIONAL: calibrate on the first screenshot BoJa accepts, then freeze.",
+    "order": "settle the post profile by this check first, then judge turf tint (colour_match / audit_pairs) under that look"
+  },
+  "post_profile_rejected_reason": "v4_Sunny_Pop: +2.3 EV ACES; render mean 199/212/163 vs plain 106/134/103"
 }

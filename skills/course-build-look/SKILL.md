@@ -6,6 +6,7 @@ description: "Use when tinting turf, grading the satellite, setting sand or conc
 Rules file: `rules/look.json` (every number below is defined there; read it with `tools/rules.py look`). Course overrides: `course.json` → `rule_overrides.look`.
 
 ## Tools
+- `tools/brightness_check.py <gspro screenshot>`: green luminance, sky luminance and putt-line contrast against `look.brightness` (provisional targets); settle the post profile with this BEFORE any tint pass. Batch renders have no post and must not be used for it.
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
 
