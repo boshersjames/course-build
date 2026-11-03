@@ -1,0 +1,15 @@
+{
+  "element": "photos", "skill": "course-build-photo-index", "playbook": "playbooks/17_photo_index_and_audit.md",
+  "layout": {"root": "course_photos", "unsorted": "unsorted/<date>", "index": "index.csv", "scans": "scans", "drone": "drone/by_hole"},
+  "hole_assignment": {"corridor_m": 70, "second_hole_within_m": 70, "line": "back tee -> aims -> green centre"},
+  "gps_confidence": {
+    "high_pair_agree_m": 5, "pair_window_s": 15,
+    "low_after_gap_s": 300, "low_offset_m": [40, 80],
+    "note": "high = agrees with a photo taken within pair_window_s to within high_pair_agree_m; medium = single shot; low = first shot after a cart ride (gap) or no neighbour agrees; unknown = no EXIF GPS"
+  },
+  "pose": {"eye_height_m": 1.6, "heading_source": "GPSImgDirection + magnetic declination (course.json gps.magnetic_declination_deg)", "verdict_confidence": ["high", "medium"], "terrain_height_tol_m": 0.02},
+  "pose_solve": {"grid_search_m": 6, "heading_search_deg": 30, "skyline_fit_px_max": 10},
+  "contact_sheet": {"thumb_px": 320, "cols": 4, "satellite_crop_margin_m": 60},
+  "scan": {"accept_mad_m": 0.05, "coverage_min_pct": 80, "doubled_areas": false, "phone_alt_error_m": [2, 4], "phone_xy_error_m": 1.5},
+  "sources": {"iphone": {"position_conf": "gps"}, "drone_online": {"position_conf": "low", "note": "frames from online flyovers: hole by content, pose from the hole line, never used for colour"}}
+}

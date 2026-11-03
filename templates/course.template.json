@@ -7,12 +7,26 @@
     "square_m": 2000,
     "heightmap_px": 2049,
     "crs": "EPSG:6340",
-    "sw_corner": [0.0, 0.0],
-    "centre_latlon": [0.0, 0.0],
+    "sw_corner": [
+      0.0,
+      0.0
+    ],
+    "centre_latlon": [
+      0.0,
+      0.0
+    ],
     "base_elevation_m": 0.0
   },
-  "lidar": {"survey": "", "quality_level": 2, "pts_per_m2": 4},
-  "satellite": {"source": "NAIP", "px": 4096, "date": ""},
+  "lidar": {
+    "survey": "",
+    "quality_level": 2,
+    "pts_per_m2": 4
+  },
+  "satellite": {
+    "source": "NAIP",
+    "px": 4096,
+    "date": ""
+  },
   "holes": 18,
   "visit": "planned",
   "control_hole": null,
@@ -26,10 +40,23 @@
     "gkd": "greenkeeper/NewCourse.GKD",
     "photos": "course_photos",
     "flyovers": "~/Documents/NewCourse/flyovers",
-    "backups": "~/Documents/NewCourse/Backups"
+    "backups": "~/Documents/NewCourse/Backups",
+    "satellite": "imagery/satellite.jpg",
+    "photos_root": "course_photos",
+    "signs": "progress/hole_signs.json",
+    "trees_csv": "trees/trees.csv"
   },
-  "gkd": {"city": "", "altitude_ft": 0, "wind": "", "keyword": ""},
+  "gkd": {
+    "city": "",
+    "altitude_ft": 0,
+    "wind": "",
+    "keyword": ""
+  },
   "tee_slot_map": {},
   "shared_tee_box_exceptions": [],
-  "rule_overrides": {}
+  "rule_overrides": {},
+  "gps": {
+    "magnetic_declination_deg": 0.0,
+    "note": "EXIF compass is magnetic; set the local declination (NOAA) so headings become true"
+  }
 }
