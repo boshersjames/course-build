@@ -122,5 +122,51 @@
     "output": "AutomationOutput/renders_4k/Hole_XX/frame_%05d.png",
     "log": "AutomationOutput/logs/render_queue_<stamp>.json",
     "note": "a 25 s hole is ~1,500 frames, ~18 GB; 18 holes ~300 GB; editor only (post-processing needs the editor, batch mode has none)"
+  },
+  "package": {
+    "codec": "hevc",
+    "crf": 18,
+    "preset": "slow",
+    "pix_fmt": "yuv420p",
+    "tag": "hvc1",
+    "prores_profile": 3,
+    "fps": 60,
+    "width": 3840,
+    "height": 2160,
+    "intro": {
+      "seconds": 3.0,
+      "fade_s": 0.5,
+      "font_px": 96,
+      "sub_font_px": 56,
+      "color": "white",
+      "shadow": "black@0.6"
+    },
+    "watermark": {
+      "opacity": 0.35,
+      "width_px": 360,
+      "margin_px": 48,
+      "corner": "top-right",
+      "logo_path_key": "logo"
+    },
+    "hud": {
+      "interval_s": 0.25,
+      "font_px": 44,
+      "bar_px": [
+        720,
+        10
+      ],
+      "margin_px": 72,
+      "label": "PIN {yd} yd",
+      "show_after_s": 3.0
+    },
+    "verify": {
+      "check_png_integrity": true,
+      "frame_pattern": "frame_%05d.png",
+      "dimensions_must_match": true
+    },
+    "cleanup": {
+      "purge_frames_after_verified_encode": true,
+      "keep_frames_flag": "--keep-frames"
+    }
   }
 }

@@ -13,7 +13,7 @@ Run from the course folder (or with `COURSE_JSON` set). Every number these enfor
 - Unity `Course Tools > Flyover Preview` (`CourseFlyoverPreview.cs`): frame-by-frame render with the speed guard.
 - `python ../course-build/tools/audit_pairs.py --renders latest --holes <showcase holes>`: the known photo gaps in frame, measured, before the showcase render.
 - `flyover_review.py` (`automation/`): frame sheets from the rendered flyover for the review.
-- (no tool yet: MP4 assembly with poster frames and a title card; candidate for `tools/`)
+- `python ../course-build/tools/flyover_packager.py --holes <holes> [--codec hevc|prores] [--keep-frames] [--dry-run]`: verify the 4K frames, intro card (course, hole, par, yardages from the GKD), logo watermark (`course.json` paths.logo), distance-to-pin HUD from the cinematic trajectory, HEVC crf `flyovers.package.crf` at 60 fps, MP4 frame count verified, PNGs purged, log in AutomationOutput/logs.
 
 # Premiere flyovers (DRAFT, to finalise after the Nov 3 renders are reviewed)
 
