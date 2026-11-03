@@ -46,3 +46,6 @@ report loop; each carries a `// desk-check:` comment. No behaviour change.
    Then `python ..\course-build\tools\gate_report.py` reads them.
 5. Tint test: write `Assets\CourseLook\tint.json` from `colour_match.py --json`, menu `Course Look > Apply Tint JSON`.
 Any compile message: fix in `Assets\Editor`, copy the file back to `course-build\unity\shared\`, commit.
+
+## CourseCollarFlush.cs (2026-11-03, cloud)
+Generalised from TierraNight1031.CollarLaplace / SinkUnder / CollarRevert, which compiled and ran on the PC 11/1. Changes: rules from greens.json collar.flush_tool via JsonUtility (nested classes Collar > FlushRule), assets under Assets/CourseBuild/generated/collarflush, log object COURSEBUILD_LOG with a 4th field (source mesh name), LODGroup colliders skipped when pinning the rim, static `only` field for the bridge -Set. Not yet compiled on the PC.

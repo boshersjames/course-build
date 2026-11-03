@@ -1,0 +1,179 @@
+// CourseCollarFlush: make every collar flush (course-build-greens, rules/greens.json collar.height = "flush").
+//
+// Generalised from TierraNight1031.CollarLaplace / SinkUnder / CollarRevert (Tierra, 11/1: BoJa "greens and collars act like bumpers").
+// A collar mesh is any active MeshFilter under "OPCD Meshes" whose name contains "collar" (case-insensitive) and carries a MeshCollider.
+// For each one: (1) every boundary vertex is pinned to the surface right beside it (first other OPCD collider rim_probe_m off the edge: green or
+// green blend inside, approach / rough / bunker blend outside); (2) the interior is solved as a membrane between them (Laplace on the welded
+// mesh), so there is no step at either edge and no lip inside (a membrane cannot rise above its rim); (3) every other turf mesh (not green,
+// collar, bunker, water, hazard) with vertices under the collar footprint is sunk sink_under_in_m below the collar (sink_under_rim_m within
+// sink_rim_band_m of the rim) so rough or blend never pokes through. Green meshes are never touched. New meshes are assets under
+// Assets/CourseBuild/generated/collarflush, the MeshCollider follows, and COURSEBUILD_LOG keeps "collarflush|<mesh>|<old asset path>" so
+// Revert puts the previous mesh back. Numbers from Assets/CourseBuild/rules/greens.json collar.flush_tool. Dry run unless Apply.
+//
+// Bridge: invoke -Tool CourseCollarFlush -Method DryRun | Apply | Revert   (optional -Set @{ only = "SPatch_collar1029_h7_-_Mesh" })
+// Then run CourseGreenChecks.RunAll: step <= greens.checks.edge_survey.max_step_m on every green is the pass.
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Linq;
+using UnityEditor;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+public class CourseCollarFlush : EditorWindow
+{
+    [Serializable] public class FlushRule { public float rim_probe_m = 0.12f; public float weld_mm = 5f; public int laplace_iterations = 400; public float sink_under_rim_m = 0.005f, sink_under_in_m = 0.03f, sink_rim_band_m = 0.4f; }
+    [Serializable] class Collar { public FlushRule flush_tool = new FlushRule(); }
+    [Serializable] class GreensRules { public Collar collar = new Collar(); }
+    const string CB = "Assets/CourseBuild"; const string GEN = CB + "/generated/collarflush"; const string LOG = "COURSEBUILD_LOG";
+    static readonly CultureInfo CI = CultureInfo.InvariantCulture;
+    public static string only = "";   // bridge -Set: one collar mesh name, or "" for every collar
+
+    [MenuItem("Course Tools/Greens/Collar flush (dry run)")] static void MenuDry() { Debug.Log(DryRun()); }
+    [MenuItem("Course Tools/Greens/Collar flush (apply)")] static void MenuApply() { Debug.Log(Apply()); }
+    [MenuItem("Course Tools/Greens/Collar flush (revert all)")] static void MenuRevert() { Debug.Log(Revert()); }
+
+    public static string DryRun() { return Run(false); }
+    public static string Apply() { return Run(true); }
+
+    static FlushRule Rules()
+    {
+        var rp = CB + "/rules/greens.json";
+        if (!File.Exists(rp)) return new FlushRule();
+        var g = JsonUtility.FromJson<GreensRules>(File.ReadAllText(rp).TrimStart('﻿')); return g != null && g.collar != null && g.collar.flush_tool != null ? g.collar.flush_tool : new FlushRule();
+    }
+
+    static List<MeshFilter> Collars(Transform opcd)
+    {
+        return opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh && f.name.ToLower().Contains("collar") && !f.name.StartsWith("SKIRT_") && f.GetComponent<MeshCollider>() && (string.IsNullOrEmpty(only) || f.name == only)).ToList();
+    }
+
+    static void EnsureFolders()
+    {
+        if (!AssetDatabase.IsValidFolder(CB)) AssetDatabase.CreateFolder("Assets", "CourseBuild");
+        if (!AssetDatabase.IsValidFolder(CB + "/generated")) AssetDatabase.CreateFolder(CB, "generated");
+        if (!AssetDatabase.IsValidFolder(GEN)) AssetDatabase.CreateFolder(CB + "/generated", "collarflush");
+    }
+
+    static void Swap(MeshFilter f, Mesh nm, string kind)
+    {
+        var src = f.sharedMesh; var log = GameObject.Find(LOG) ?? new GameObject(LOG);
+        new GameObject(kind + "|" + f.name + "|" + AssetDatabase.GetAssetPath(src) + "|" + src.name).transform.SetParent(log.transform, false);
+        var mc = f.GetComponent<MeshCollider>(); if (mc && mc.sharedMesh == src) { mc.sharedMesh = null; mc.sharedMesh = nm; }
+        f.sharedMesh = nm; EditorUtility.SetDirty(f);
+    }
+
+    static Mesh SaveMesh(Mesh src, Vector3[] verts, string assetName, string suffix)
+    {
+        var nm = Object.Instantiate(src); nm.name = src.name.Replace("(Clone)", "") + suffix; nm.vertices = verts; nm.RecalculateNormals(); nm.RecalculateBounds();
+        var ap = GEN + "/" + assetName + ".asset"; if (AssetDatabase.GetAssetPath(src) == ap) ap = ap.Replace(".asset", "_" + DateTime.Now.ToString("HHmmss") + ".asset");
+        AssetDatabase.DeleteAsset(ap); AssetDatabase.CreateAsset(nm, ap); return nm;
+    }
+
+    public static string Run(bool apply)
+    {
+        Physics.SyncTransforms(); var R = Rules(); var opcdGo = GameObject.Find("OPCD Meshes"); if (!opcdGo) return "no 'OPCD Meshes' root in the scene";
+        var opcd = opcdGo.transform; var collars = Collars(opcd); if (collars.Count == 0) return "no collar meshes (name contains 'collar', MeshCollider)" + (string.IsNullOrEmpty(only) ? "" : " matching " + only);
+        if (apply) EnsureFolders();
+        var o = new List<string> { (apply ? "APPLY" : "DRY RUN") + ": " + collars.Count + " collar meshes (rim probe " + R.rim_probe_m.ToString(CI) + " m, sink " + (R.sink_under_in_m * 100).ToString(CI) + " cm / " + (R.sink_under_rim_m * 1000).ToString(CI) + " mm within " + R.sink_rim_band_m.ToString(CI) + " m of the rim)" };
+        foreach (var cm in collars)
+        {
+            try { o.Add(Laplace(opcd, cm, R, apply)); if (apply) { Physics.SyncTransforms(); o.Add(SinkUnder(opcd, cm, R)); } }
+            catch (Exception e) { o.Add(cm.name + ": FAILED " + e.Message); }
+        }
+        if (apply) { AssetDatabase.SaveAssets(); Physics.SyncTransforms(); UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene()); o.Add("now run CourseGreenChecks.RunAll; Revert puts every collar and sunk mesh back"); }
+        var txt = string.Join("\n", o.ToArray());
+        string outDir = Path.GetDirectoryName(Application.dataPath).Replace('\\', '/') + "/AutomationOutput/checks"; Directory.CreateDirectory(outDir); File.WriteAllText(outDir + "/collar_flush.txt", txt);
+        return txt;
+    }
+
+    // boundary vertices pinned to the neighbouring surface, interior = membrane between them
+    static string Laplace(Transform opcd, MeshFilter mf, FlushRule R, bool apply)
+    {
+        var src = mf.sharedMesh; var col = mf.GetComponent<Collider>(); var w = src.vertices.Select(v => mf.transform.TransformPoint(v)).ToArray(); var t = src.triangles; int N = w.Length;
+        float wq = 1000f / Mathf.Max(0.1f, R.weld_mm);
+        var wk = new Dictionary<Vector2Int, int>(); var weld = new int[N];
+        for (int i = 0; i < N; i++) { var k = new Vector2Int(Mathf.RoundToInt(w[i].x * wq), Mathf.RoundToInt(w[i].z * wq)); int j; if (!wk.TryGetValue(k, out j)) { j = i; wk[k] = i; } weld[i] = j; }
+        var cnt = new Dictionary<long, int>(); var nb = new Dictionary<int, HashSet<int>>(); Func<int, int, long> K = (a, b) => a < b ? ((long)a << 32) | (uint)b : ((long)b << 32) | (uint)a;
+        for (int i = 0; i < t.Length; i += 3) for (int e = 0; e < 3; e++)
+        {
+            int a = weld[t[i + e]], b = weld[t[i + (e + 1) % 3]]; if (a == b) continue; var k = K(a, b); int c; cnt[k] = cnt.TryGetValue(k, out c) ? c + 1 : 1;
+            HashSet<int> s; if (!nb.TryGetValue(a, out s)) nb[a] = s = new HashSet<int>(); s.Add(b); if (!nb.TryGetValue(b, out s)) nb[b] = s = new HashSet<int>(); s.Add(a);
+        }
+        var bnd = new HashSet<int>(); foreach (var kv in cnt) if (kv.Value == 1) { bnd.Add((int)(kv.Key >> 32)); bnd.Add((int)(kv.Key & 0xffffffff)); }
+        var reps = wk.Values.ToList(); var y = reps.ToDictionary(r => r, r => w[r].y); var pinned = new HashSet<int>(); int unpinned = 0; float maxPin = 0;
+        foreach (var r in bnd)
+        {
+            var bn = nb[r].Where(q => bnd.Contains(q) && cnt.ContainsKey(K(r, q)) && cnt[K(r, q)] == 1).ToList(); if (bn.Count < 2) { unpinned++; continue; }
+            var tan = new Vector2(w[bn[1]].x - w[bn[0]].x, w[bn[1]].z - w[bn[0]].z).normalized; var nrm = new Vector2(-tan.y, tan.x); float best = float.NaN;
+            foreach (var sgn in new[] { 1f, -1f })
+            {
+                var q = new Vector2(w[r].x, w[r].z) + nrm * R.rim_probe_m * sgn;
+                var hits = Physics.RaycastAll(new Vector3(q.x, w[r].y + 5, q.y), Vector3.down, 20).Where(h => h.collider.transform.IsChildOf(opcd) && !h.collider.GetComponentInParent<LODGroup>()).OrderBy(h => h.distance).ToList();
+                if (hits.Count == 0 || hits[0].collider == col) continue; best = hits[0].point.y; break;
+            }
+            if (float.IsNaN(best)) { unpinned++; continue; } maxPin = Mathf.Max(maxPin, Mathf.Abs(best - w[r].y)); y[r] = best; pinned.Add(r);
+        }
+        var free = reps.Where(r => !pinned.Contains(r) && !bnd.Contains(r)).ToList();
+        for (int it = 0; it < R.laplace_iterations; it++) foreach (var r in free) { HashSet<int> s; if (!nb.TryGetValue(r, out s) || s.Count == 0) continue; y[r] = s.Average(q => y[weld[q]]); }
+        float mx = 0, up = 0; foreach (var r in reps) { float d = y[r] - w[r].y; mx = Mathf.Max(mx, Mathf.Abs(d)); up = Mathf.Max(up, d); }
+        string res = mf.name + ": " + reps.Count + " vertices, " + pinned.Count + " rim pinned (largest rim move " + (maxPin * 100).ToString("F1", CI) + " cm), " + unpinned + " rim left as is, interior moved up to " + (mx * 100).ToString("F1", CI) + " cm (max rise " + (up * 100).ToString("F1", CI) + " cm)";
+        if (!apply) return res;
+        var nv = new Vector3[N]; for (int i = 0; i < N; i++) { var p = w[i]; p.y = y[weld[i]]; nv[i] = mf.transform.InverseTransformPoint(p); }
+        var nm = SaveMesh(src, nv, mf.name + "_flush", "_cf"); Swap(mf, nm, "collarflush"); return res;
+    }
+
+    // other turf meshes under the collar footprint sink below it
+    static string SinkUnder(Transform opcd, MeshFilter cm, FlushRule R)
+    {
+        var all = opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh).ToList(); var cc = cm.GetComponent<MeshCollider>(); if (!cc) return cm.name + ": no MeshCollider, nothing sunk";
+        var cb = cm.GetComponent<Renderer>().bounds; var o = new List<string>();
+        foreach (var f in all)
+        {
+            if (f == cm) continue; var ln = f.name.ToLower(); if (ln.Contains("_green_-_mesh") || ln.Contains("collar") || ln.Contains("bunker") || ln.Contains("water") || ln.Contains("hazard") || f.name.StartsWith("SKIRT_")) continue;
+            var rr = f.GetComponent<Renderer>(); if (!rr || !rr.bounds.Intersects(cb)) continue;
+            var src = f.sharedMesh; var w = src.vertices.Select(v => f.transform.TransformPoint(v)).ToArray(); int n = 0;
+            for (int i = 0; i < w.Length; i++)
+            {
+                if (w[i].x < cb.min.x || w[i].x > cb.max.x || w[i].z < cb.min.z || w[i].z > cb.max.z) continue;
+                RaycastHit h; if (!cc.Raycast(new Ray(new Vector3(w[i].x, cb.max.y + 5, w[i].z), Vector3.down), out h, cb.size.y + 20)) continue;
+                bool nearRim = false; for (int k = 0; k < 8 && !nearRim; k++) { RaycastHit h2; var q = new Vector3(w[i].x + Mathf.Cos(k * Mathf.PI / 4) * R.sink_rim_band_m, cb.max.y + 5, w[i].z + Mathf.Sin(k * Mathf.PI / 4) * R.sink_rim_band_m); if (!cc.Raycast(new Ray(q, Vector3.down), out h2, cb.size.y + 20)) nearRim = true; }
+                float tg = h.point.y - (nearRim ? R.sink_under_rim_m : R.sink_under_in_m);
+                bool move = nearRim ? (Mathf.Abs(w[i].y - tg) > 0.002f && w[i].y > h.point.y - 2 * R.sink_under_in_m) : (w[i].y > h.point.y - 0.02f);
+                if (move) { w[i].y = tg; n++; }
+            }
+            if (n == 0) continue;
+            var nm = SaveMesh(src, w.Select(v => f.transform.InverseTransformPoint(v)).ToArray(), f.name + "_under_" + cm.name.Replace("SPatch_", "").Replace("_-_Mesh", ""), "_su"); Swap(f, nm, "sinkunder"); o.Add(f.name + " " + n);
+        }
+        return cm.name + ": sunk " + (o.Count == 0 ? "nothing" : string.Join(", ", o.ToArray()));
+    }
+
+    // every collarflush / sinkunder swap in COURSEBUILD_LOG goes back, newest first (or only those of one collar when `only` is set)
+    public static string Revert()
+    {
+        var log = GameObject.Find(LOG); if (!log) return "no " + LOG + " in the scene: nothing to revert"; var opcdGo = GameObject.Find("OPCD Meshes"); if (!opcdGo) return "no 'OPCD Meshes' root";
+        var fs = opcdGo.GetComponentsInChildren<MeshFilter>(true).ToList(); var o = new List<string>(); int n = 0;
+        foreach (var e in log.transform.Cast<Transform>().Reverse().ToList())
+        {
+            var p = e.name.Split('|'); if (p.Length < 4 || (p[0] != "collarflush" && p[0] != "sinkunder")) continue;
+            if (!string.IsNullOrEmpty(only) && !(p[1] == only || p[1].Contains(only.Replace("SPatch_", "").Replace("_-_Mesh", "")))) continue;
+            var f = fs.FirstOrDefault(x => x.name == p[1]); if (!f) { o.Add(p[1] + " not in the scene"); continue; }
+            var src = AssetDatabase.LoadAssetAtPath<Mesh>(p[2]) ?? AssetDatabase.LoadAllAssetsAtPath(p[2]).OfType<Mesh>().FirstOrDefault(m => m.name == p[3]) ?? AssetDatabase.LoadAllAssetsAtPath(p[2]).OfType<Mesh>().FirstOrDefault();
+            if (!src) { o.Add(p[1] + ": source " + p[2] + " not found"); continue; }
+            var cur = f.sharedMesh; var mc = f.GetComponent<MeshCollider>(); if (mc && mc.sharedMesh == cur) { mc.sharedMesh = null; mc.sharedMesh = src; } f.sharedMesh = src; EditorUtility.SetDirty(f); Object.DestroyImmediate(e.gameObject); n++;
+        }
+        Physics.SyncTransforms(); UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEngine.SceneManagement.SceneManager.GetActiveScene());
+        return n + " meshes reverted" + (o.Count > 0 ? "\n" + string.Join("\n", o.ToArray()) : "");
+    }
+
+    void OnGUI()
+    {
+        GUILayout.Label("Collar flush (course-build-greens: collar.height = flush). Rim pinned to the neighbours, interior a membrane, turf under it sunk.", EditorStyles.boldLabel);
+        only = EditorGUILayout.TextField("Only this collar (blank = all)", only);
+        if (GUILayout.Button("Dry run")) Debug.Log(DryRun());
+        if (GUILayout.Button("Apply")) Debug.Log(Apply());
+        if (GUILayout.Button("Revert")) Debug.Log(Revert());
+    }
+    [MenuItem("Course Tools/Greens/Collar flush window")] static void Open() { GetWindow<CourseCollarFlush>("Collar flush"); }
+}
