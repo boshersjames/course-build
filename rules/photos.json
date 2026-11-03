@@ -68,5 +68,13 @@
     "colour_gap_max": 0.05,
     "turf_mask": "green-dominant pixels below the skyline, top quarter excluded",
     "note": "gap = render ratio (minus the look.measure.render_warm_offset on r/g) minus photo ratio"
+  },
+  "drone": {
+    "height_m": 35,
+    "frames_per_hole": 6,
+    "vfov_deg": 60,
+    "pitch_deg": 25,
+    "position_error_m": 50,
+    "note": "draft pose on the hole line at the frame's fraction of the hole segment; drone frames are never a colour source"
   }
 }
