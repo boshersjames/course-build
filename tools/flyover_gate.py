@@ -240,11 +240,23 @@ def main():
     ap.add_argument('--end-fit', action='store_true', help='per hole, pull the end spot back (and up, to keep ~30 deg down) until the whole green is in frame')
     ap.add_argument('--end-short', type=float, default=_R['end']['short_of_pin_m'], help='end spot this far short of the pin (rules end.short_of_pin_m)'); ap.add_argument('--end-height', type=float, default=_R['end']['height_m'], help='end height over the ground (rules end.height_m)')
     a = ap.parse_args(); rp = _C.dir
-    gkd = a.gkd or _C.path('gkd'); signs_p = a.signs or _C.path('signs'); trees_p = a.trees or _C.path('trees_csv'); svg_p = a.svg or _C.path('course_svg'); hm_p = a.heightmap or _C.path('heightmap')
+    gkd = a.gkd or _C.path('gkd'); signs_p = a.signs or (_C.path('signs') if 'signs' in _C.get('paths', {}) else None); trees_p = a.trees or _C.path('trees_csv'); svg_p = a.svg or _C.path('course_svg'); hm_p = a.heightmap or _C.path('heightmap')
     if os.path.getsize(hm_p) < 1000000: sys.exit('heightmap %s is an LFS pointer: run git lfs pull --include=%s' % (hm_p, os.path.relpath(hm_p, rp)))
     HM = Heightmap(_C, hm_p); gy = make_gy(HM)
     def gmax(x, z, r=12): return max(gy(x + dx, z + dz) for dx in (-r, 0, r) for dz in (-r, 0, r))
-    g = json.load(open(gkd, encoding='utf-8-sig')); signs = {s['hole']: s for s in json.load(open(signs_p, encoding='utf-8-sig'))}
+    g = json.load(open(gkd, encoding='utf-8-sig'))
+    if signs_p and os.path.exists(signs_p): signs = {s['hole']: s for s in json.load(open(signs_p, encoding='utf-8-sig'))}
+    else:
+        # no hole-sign file yet (new course): open beside the back tee, 3 m forward and 6 m to the side, facing the line of play
+        # (course-build-props default placement); flagged so the sheet says the opening is provisional
+        signs = {}
+        for h in g['Holes']:
+            T = {t['TeeType']: t['Position'] for t in h.get('Tees', []) if t.get('Position')}; gc = T.get('GreenCenterPoint')
+            tee = next((T[k] for k in ('Black', 'Blue', 'White', 'Green', 'Yellow', 'Red') if k in T), None)
+            if not tee or not gc: continue
+            dx, dz = gc['x'] - tee['x'], gc['z'] - tee['z']; L = math.hypot(dx, dz) or 1; ux, uz = dx / L, dz / L
+            signs[h['HoleNumber']] = {'hole': h['HoleNumber'], 'par': h.get('Par'), 'x': tee['x'] + 3 * ux - 6 * uz, 'z': tee['z'] + 3 * uz + 6 * ux, 'yaw': math.degrees(math.atan2(ux, uz)) % 360, 'source': 'provisional: no signs file, placed from the back tee'}
+        print('no signs file at %s: provisional sign spots from the back tees' % signs_p)
     trees = load_trees(trees_p); greens = load_svg_greens(svg_p)
     os.makedirs(a.out, exist_ok=True); holes = [int(h) for h in a.holes.split(',')]
     recs = []; shots = []; posters = {}; log = []

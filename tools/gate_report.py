@@ -105,7 +105,9 @@ def main():
         if f:
             r["source"].append("flyover"); r["flyover"] = "PASS" if f.get("ok") else "FAIL"
             if not f.get("ok"): r["fails"].append("flyover")
-        r["pass"] = not r["fails"] and bool(r["source"]) and ("unity" in r["source"] or "flyover" in r["source"])
+        gated = "unity" in r["source"] or "flyover" in r["source"]
+        r["pass"] = not r["fails"] and gated
+        r["status"] = ("PASS" if r["pass"] else "FAIL") if gated else "NO GATE DATA"
         rows.append(r)
 
     md = ["# Gate report: %s (%d holes)" % (C["name"], len(rows)), "",
@@ -116,7 +118,7 @@ def main():
         g = lambda k, f="%s": (f % r[k]) if k in r else "-"
         fd = r.get("fall"); fds = ("%.0f deg %s" % (fd["median_aspect_diff_deg"], "ok" if fd["pass"] else "FAIL")) if fd else "-"
         md.append("| %d | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (r["hole"], "+".join(r["source"]) or "none", g("step_cm", "%.1f"), g("lip_cm", "%.1f"), g("col_dy_cm", "%.1f"),
-                  ("ok" if r.get("tiers") else "FAIL") if "tiers" in r else "-", g("crown_m", "%.2f"), g("pins_fail"), g("usable", "%.0f"), g("areas"), fds, g("flyover"), ("PASS" if r["pass"] else "**FAIL** " + ",".join(r["fails"])) + (" warn: " + ",".join(r["warn"]) if r.get("warn") else "")))
+                  ("ok" if r.get("tiers") else "FAIL") if "tiers" in r else "-", g("crown_m", "%.2f"), g("pins_fail"), g("usable", "%.0f"), g("areas"), fds, g("flyover"), (r["status"] if r["status"] != "FAIL" else "**FAIL** " + ",".join(r["fails"])) + (" warn: " + ",".join(r["warn"]) if r.get("warn") else "")))
     open(os.path.join(out, "gate_report.md"), "w").write("\n".join(md) + "\n")
     json.dump({"holes": rows, "missing": missing, "gkd_fail": gkd_fail}, open(os.path.join(out, "gate_report.json"), "w"), indent=1)
     print("\n".join(md)); print("wrote", out)

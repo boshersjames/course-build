@@ -8,7 +8,7 @@
 
 A course may override any rule in its own course.json under "rule_overrides": {"greens": {"collar": {"width_m": 1.5}}}.
 """
-import json, os, sys, copy, functools
+import json, os, re, sys, copy, functools
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES_DIR = os.path.join(ROOT, "rules")
@@ -31,6 +31,11 @@ def _base_rules():
             with open(os.path.join(RULES_DIR, f), encoding="utf-8") as fh:
                 out[f[:-5]] = json.load(fh)
     return out
+
+
+def is_abs(p):
+    """Absolute on this machine, or a Windows drive path written in course.json (C:/...) seen from Linux."""
+    return os.path.isabs(p) or bool(re.match(r"^[A-Za-z]:[\\/]", p))
 
 
 def find_course_json(start=None):
@@ -60,7 +65,7 @@ class Course(dict):
         if v is None:
             raise KeyError("course.json has no paths.%s" % key)
         v = os.path.expandvars(os.path.expanduser(v))
-        return v if os.path.isabs(v) else os.path.normpath(os.path.join(self.dir, v))
+        return v if is_abs(v) else os.path.normpath(os.path.join(self.dir, v))
 
     @property
     def square_m(self):

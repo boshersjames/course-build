@@ -60,6 +60,11 @@ When BoJa changes a rule, change the JSON and the matching line in the skill; th
 | `tools/colour_match.py` | Photo vs render colour, PASS/FAIL against the rule band, OverallColor multiplier | two images |
 | `tools/fairway_vs_lidar.py`, `scan_compare.py`, `green_edge_measure.py` | Fairway undulation vs LiDAR, phone-scan alignment, collar profiles | Unity exports / LAS on the PC |
 | `tools/new_course.py` | Bootstrap a course folder, course.json, CLAUDE.md, Unity editor set | nothing |
+| `tools/doctor.py` | Ten-second readiness check of a course folder: course.json, heightmap (LFS pointer?), GKD, SVG match, deps, tools | nothing |
+| `tools/photo_index.py [--sheets --shots]` | iPhone dump (HEIC/JPG) to index.csv: GPS to course frame, hole, confidence, draft pose; contact sheets; render shot list | dump, GKD, heightmap |
+| `tools/scan_index.py` | Phone LAS scans registered to the LiDAR; MAD, coverage, doubled ground; ACCEPT / RESCAN | LAS, heightmap, SVG |
+| `tools/audit_pairs.py --renders <dir>` | Photo, before, after sheets from the same pose with measured turf colour and a verdict row per photo | renders from the PC |
+| `tools/drone_frames.py fetch / segments / cut` | Online flyover to per-hole frames with drafted poses, merged into the photo index at low confidence | yt-dlp, ffmpeg |
 | Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`) | Edge survey, collider vs render, tiers, crowns over, pin area on every green; writes AutomationOutput/checks | Unity, synced course.json + rules |
 | Unity `Course Look > Apply Tint JSON` (`ApplyTintJson.cs`) | Applies colour_match multipliers to material copies, refuses shared materials | Unity |
 
@@ -71,6 +76,20 @@ python ../course-build/tools/green_report.py --smooth 0.6 --out progress/green_r
 python ../course-build/tools/flyover_gate.py --out progress/flyover_gate --end-fit --no-plots
 python ../course-build/tools/gate_report.py --out progress/gate_report
 ```
+
+## Photos, scans and drone frames: one index
+
+```bash
+python ../course-build/tools/photo_index.py --sheets --shots       # course_photos/unsorted/<date> -> index.csv, sheets/, shots_photo_poses.json
+python ../course-build/tools/scan_index.py                          # course_photos/scans/*.las -> scans/index.csv (+ fit sheets)
+python ../course-build/tools/drone_frames.py segments --video course_photos/drone/front_nine.mp4 --holes 1-9   # then edit the seconds
+python ../course-build/tools/drone_frames.py cut --video course_photos/drone/front_nine.mp4 --segments course_photos/drone/segments_front_nine.csv --index
+# PC: render the shot list in one batch (CourseAutomation shots = shots_photo_poses.json), then
+python ../course-build/tools/audit_pairs.py --renders latest [--before <previous run>/shots]
+```
+
+Every image, scan and drone frame ends up as a row in `course_photos/index.csv` with a hole, a position confidence and a pose; the
+audit adds measured colour and a verdict per photo. The rules are in `rules/photos.json`; drone frames never set colour.
 
 ## Colour without eyeballing
 
