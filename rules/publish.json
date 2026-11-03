@@ -1,0 +1,9 @@
+{
+  "element": "publish", "skill": "course-build-publish", "playbook": "playbooks/21_publish_to_gspro.md",
+  "gspcrse_max_bytes": 2147483647, "gspcrse_target_max_gb": 1.95,
+  "gkd": {"Designer": "jboshers", "DefaultStimp": 2, "MaxStimp": 5, "altitude_unit": "feet"},
+  "limits": {"hazards_max": 120, "pOOB_points_max": 880},
+  "backup_dir": "Backups\\gspro_<date>\\",
+  "playtest": ["one shot into every DZ hazard", "one full hole per nine per tee colour", "flyover start on 3 holes", "sign readability", "bunker lie"],
+  "benchmark_target_fps": 100
+}

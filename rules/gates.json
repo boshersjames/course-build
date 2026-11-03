@@ -1,0 +1,11 @@
+{
+  "element": "gates", "skill": "course-build-gates", "playbook": "playbooks/00_process_and_gates.md",
+  "unit_of_work": "one hole, one edit, photo pair each",
+  "per_hole_items_max": 8, "fix_rounds_max": 1,
+  "editors": {"A": "edits and saves", "B": "packages + test renders", "C": "pose renders, gate sheets, flyovers", "min_free_ram_gb_for_two": 4},
+  "control_hole_turf_change": 0.0,
+  "automated_checks": ["bunker_islands", "plants_on_turf", "floating_objects", "bins_unsupported", "fence_gaps", "vertex_paint", "null_magenta_materials", "z_fighting_30_80m", "height_gaps_fairway_over_rough", "control_hole_diff", "prop_placement"],
+  "height_gap_seen_m": 0.14,
+  "backup_before_change": ["scene", "terrain", "GKD"],
+  "never_touch_without_go": "C:\\GSProV1\\Core\\GSP\\Courses\\"
+}

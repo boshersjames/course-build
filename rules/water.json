@@ -1,0 +1,11 @@
+{
+  "element": "water", "skill": "course-build-water", "playbook": "playbooks/08_water_creeks_and_ponds.md",
+  "pond": {"below_shore_m": 0.05, "plane_under_bank_m": 2, "shelf_slope_deg": 11, "material": "OPCD-WaterPlane_AquasLite", "physics": "GSPwater"},
+  "stream": {"channel_w_m": 3, "dig_m": 0.35, "above_bed_min_m": 0.04, "photo_w_m": [1.5, 2.0], "bed_sample_m": 1.0, "monotone": true},
+  "default_channel": {"w_m": 1.5, "depth_m": 0.4},
+  "reeds_band_m": [1.0, 4.5],
+  "wash_floor_below_fairway_m": [0.5, 1.0],
+  "waterfall": {"falls": [2, 3], "pool_drop_m": 1.0},
+  "join_overlap_m": 0.5,
+  "hazard": {"buffer_m": 0.6, "simplify_m": 0.1, "dz_min_from_edge_m": 6}
+}

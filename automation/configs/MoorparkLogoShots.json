@@ -1,0 +1,6 @@
+﻿{ "course": "Moorpark", "scene": "Moorpark", "repo": "{Documents}/moorpark", "saveScene": false, "steps": [], "inspect": [],
+  "shots": [
+    { "name": "logo_overhead", "pos": [1501, 40, 1440], "lookAt": [1501, 0, 1411], "aboveGround": true, "fov": 50 },
+    { "name": "logo_from_range", "pos": [1501, 2, 1640], "lookAt": [1501, 0, 1411], "aboveGround": true, "fov": 25 },
+    { "name": "logo_from_range_wide", "pos": [1480, 2, 1660], "lookAt": [1501, 0, 1411], "aboveGround": true, "fov": 50 }
+  ], "gkd": "", "teeShots": false, "greenShots": false, "shotWidth": 1600, "shotHeight": 900 }

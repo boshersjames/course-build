@@ -1,0 +1,61 @@
+# 00. Process and gates
+
+Use this before starting a hole or a course, and before anything is shown to BoJa. It is the order of work and the checks that stop a hole going back for a second or third round.
+
+## Defaults that worked
+
+| Setting | Value | Source |
+|---|---|---|
+| Unit of work | One hole at a time, one edit at a time, each with a photo pair | BoJa 10/31 "we are going in circles" |
+| Per-hole scope | Top 8 items first ("Top items now, details later"), one check at the end, at most one fix round; everything else on a detail list | BoJa 10/31 |
+| Editors | A = edits and saves the scene. B = builds packages (bunker rebuilds, seams, tints) and test-renders on a sync of A's save; commits scripts and json only. C = photo-pose renders, gate sheets, flyovers | BoJa 10/30-31, 32 GB RAM, 12 GB GPU |
+| Editor fallback | One editor if free RAM drops under ~4 GB; never a batch job while BoJa has an editor open | 10/28-29 PC freezes |
+| Backups | Scene + terrain + GKD before each change (`SceneBackups\`, `Backups\<name>_<time>`) | every pass |
+| Review frame | Full-size frames, photo \| before \| after from the same pose | 10/30 |
+| Package apply | `TierraApply_<pkg>.Apply` on a fresh reload of A's named save; the apply refuses if the meshes moved since the package was built | h11b, h12b, h15c, h16fw |
+
+## Procedure for a hole
+
+1. **Photo inventory.** List every geotagged photo for the hole (`new_photos_index.csv` style: photo, hole, GPS, heading, confidence). Note which have no GPS or a bad heading. Search BoJa's originals (EXIF intact) in `Documents\tierra-rejada\reference` first, every time.
+2. **Step 0: poses.** Render the game from each photo's position and heading. Fix the poses by content (skyline, sign, path corner, tee markers), not just GPS: GPS put the 10 Blue tee photos 80 m away on the patio; the 13 tee compass headings never agreed. Log the fix per photo. Only high/medium confidence poses are used for verdicts.
+3. **Blind reviews, then one edit list.** Several independent reviews of the pairs, merged with a critic pass, into a numbered edit list with per-edit spec, evidence, measured colours (r/g, b/g) and the photos to check on. Then cut it to the top 8 build items.
+4. **Rules check before building.** Read the "rules that apply to every edit" at the top of the list; the standing ones are in the README. Mark which items are rule breaks (plants on turf, gaps in turf, islands): those go first.
+5. **Build, one edit at a time.** Back up, edit, render the after-pairs at the same poses, run the automated checks (below), save, commit, send the hash. Course-wide items (a shared material tint, the pepper colour) are done once, on the hole that needs them, and shown on the control hole before and after.
+6. **Gate.** One sheet with every pair, the automated checks all green, every standing rule ticked, plus the flyover. Only a passing hole goes to BoJa. Record a verdict per photo.
+7. **BoJa answers.** Apply them in a "BoJa's answers applied" block on the list so nothing is answered twice. Unanswered questions build their default.
+8. **Sign-off, then freeze.** After "10 looks great", that hole only changes when a later pass is shown on it before/after.
+
+## Automated checks (run every time; names from TierraGate10)
+
+- Bunker islands (turf inside sand): clean, except approved noses.
+- Plants on turf (shrubs, cards, detail grass on tee/fairway/green/collar/sand/path): 0, including the own-soil-patch case.
+- Floating overlays and objects (anything above its ground by more than its own height, e.g. the 5.0 m floating flag, the sky grass-card strip on 14).
+- Unsupported bins (bins where no photo shows one).
+- Broken or gapped fences; fence pieces with a free end.
+- Objects on turf inside a rope line.
+- Vertex paint present on every rebuilt mesh (meshes without it draw as bare dirt).
+- Null or error-shader (magenta) materials; z-fighting surfaces (bunker undersides, rim skirts, path edge strips) at low angles from 30-80 m.
+- Height gaps where fairway/collar sits above the neighbouring rough (dark jagged seams; up to 14 cm on Tierra 1).
+- Hole 10 turf control: mean turf colour change on the signed-off hole = 0.0 unless the pass is meant to change it.
+- Prop placement: nothing on paths, bunkers, tee surfaces, greens or water; nothing in a hitting line unless photographed.
+
+## Pitfalls we paid for
+
+- Multi-hole passes "to save time" produced three rounds of rework; BoJa stopped them on 10/31. Course-wide passes are fine only for a shared material or model, done once.
+- A knowingly saved "good enough" with visible defects (16 bunker creases, spikes, black pocket) came straight back. Fix visible defects before saving and before showing.
+- A re-run of a scene setup tool wiped Harding's trees and meshes. Any tool that rebuilds or wipes must ask, and is never re-run on a built scene.
+- Four open editors froze the PC (10/28); batch jobs while BoJa reviewed had to be killed twice (10/29).
+- Tools copied from another course kept its constants (3000 m square, Moorpark names); grep for them before running (`S = 2000` in surrounds.py).
+- The flyover tool read the GSPro Courses folder instead of the project GKD; make every tool read the project's own files.
+- Build pixel-box specs on *old* renders go stale once poses are refined; always say which save and which pose set a spec was measured on.
+
+## Decision points for BoJa (ask once per course, with a default)
+
+1. Which look is the target: plain render or the shipped post-processing volume (Tierra: plain, 10/31)?
+2. Per-course "spring vibe" vs dormant: do dry-season hillsides and rough stay green (Tierra 15/16: green rough, dormant hillsides)?
+3. Which holes are signature holes that get the extra passes first?
+4. Who signs off: one hole at a time (default), or a nine at a time?
+
+## Sources
+
+`course-build/BOJA_FEEDBACK_CHECKLIST.md` (Setup and process, Process gate, Workflow one hole at a time, Two editors, Quality over frame time); `progress/tierra/gate/hole_1[1-8]/top_items.md`; `progress/tierra/holes/hole_10_state.md`; `progress/tierra/morning_1031/morning_report.md`.

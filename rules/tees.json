@@ -1,0 +1,15 @@
+{
+  "element": "tees", "skill": "course-build-tees", "playbook": "playbooks/05_tees.md",
+  "shared_box_rule": {"black_and_grey_share": true, "grey_ahead_of_black_yd": 2, "exceptions_tierra": [5, 8], "source": "BoJa 10/31"},
+  "yardage": {"source": "scorecard yards", "card_runs_long_pct_tierra": 3, "slide_if_off_card_m": 7, "colour_spacing_same_box_m": 3, "inside_edge_m": 1.5},
+  "pad": {"size_m": [9, 7], "first_cut_m": 2, "height": "levelled tee-shape mean", "placement": "fully inside fairway or clear of edge, never straddling"},
+  "clearances": {"cart_path_m": 2, "far_from_box_question_m": 15, "fake_tee_question_m": 45},
+  "banks": {"max_slope": "3:1", "ease_mul": 3, "under_0_5m_slope": "4:1", "fillet_m": 1.5, "falloff": "smootherstep"},
+  "corridor": {"side_m": 2, "opening_deg": 5, "length_m": 120, "crown_under_m": 25, "nudge_first_m": 12, "scale": [0.8, 0.9], "max_deletes_per_course": 20},
+  "tee_line_clear_zone_m": [60, 4],
+  "aim": {"driver_carry_yd": 250, "from_tee_yd": 6000, "par3": "green centre or front edge per BoJa"},
+  "markers": {"via": "CourseOverrides prefabs", "TeeMarkerWidth_m": 5},
+  "gkd": {"unused_slot": "Enabled: false", "slot_map_tierra": {"Grey": "Green", "Gold": "Yellow"}},
+  "checks": ["every colour on its own box within a few yards", "black+grey same box except listed", "flyover first frame clear", "no pad seams", "no stacked tees", "tee tone close to fairway"],
+  "ask_once": ["slot per card colour", "pins for tees far from a box", "par-3 aim centre/front", "marker style", "holes where black and grey differ"]
+}

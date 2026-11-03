@@ -1,0 +1,10 @@
+{
+  "element": "ob", "skill": "course-build-ob", "playbook": "playbooks/10_ob_hazards_and_drop_zones.md",
+  "perimeter": {"ray_step_m": 2, "max_ob_side_m": 40, "max_other_m": 55, "green_m": 25, "past_cart_path_m": 3, "dense_brush_m2": 400},
+  "interior": {"brush_island_m2": 400, "deep_brush_ob_m2": 60, "off_play_m": 2, "cut_open_around_tee_pin_m": 6, "within_layout_m": 120},
+  "clean": {"close_corridor_m": 8, "drop_sliver_m": 5, "simplify_m": 2.5, "min_from_play_m": 8},
+  "limits": {"pOOB_points_max": 880, "pOOB_buffer": 1024, "hazards_max": 120, "hazards_hard_max": 128},
+  "drop_zone": {"innerOOB": false, "noAIL": true, "freeDrop": false, "hasDZ": true, "min_from_water_m": 6, "band_max_m": 50, "fan_deg": 40, "keep_out_tee_m": 25, "keep_out_green_m": 50},
+  "gkd": {"Designer": "jboshers", "altitude_unit": "feet"},
+  "classify": {"pond": "hazard+DZ", "river": "none", "wash": "interior OB + DZ where crossing play", "habitat": "red penalty"}
+}

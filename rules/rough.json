@@ -1,0 +1,12 @@
+{
+  "element": "rough", "skill": "course-build-rough", "playbook": "playbooks/04_fairways_rough_and_first_cut.md",
+  "fairway_trace": {"smooth": 7, "min_green": 0.36, "fw_corridor": 45},
+  "gkd": {"FairwayFirmnessDefault": 0},
+  "first_cut_m": 4,
+  "deep_rough": {"physics": "GSPdeeprough", "patch_height_m": 0.03, "min_off_green_m": 6, "keep_patch_m2": 2500, "keep_patch_from_fairway_m": 12, "lidar_veg_mask_over_m": 0.8, "play_buffer_m": 5},
+  "edge_grade_m": {"turf_to_deep": 4, "deep_to_golden": 9},
+  "tint_mul": {"rough": [1.4, 1.22, 1.08], "rough_desat": 0.12, "fairway": [1.45, 1.38, 1.2], "tee": [1.42, 1.36, 1.18], "blend": [1.42, 1.3, 1.14], "base": "OPCD MAHS defaults", "done_marker": "tone_done.txt", "source": "green_rollout"},
+  "turf_normals_mul": 1.5,
+  "native_bank_restore": {"slope_min_deg": 15, "off_turf_m": 2.5},
+  "ask_once": ["season rough colour", "penal vs playable per side", "firmness after medium test (default 0)"]
+}

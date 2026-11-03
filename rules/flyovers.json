@@ -1,0 +1,10 @@
+{
+  "element": "flyovers", "skill": "course-build-flyovers", "playbook": "playbooks/13_flyovers_and_review_renders.md",
+  "render": {"length_s": 20, "fps": 25, "min_res": [1280, 720], "pose_height_tol_m": 0.02},
+  "path": {"max_yaw_deg_s": 5, "max_pitch_deg_s": 5, "roll": 0, "no_flips": true, "min_clear_m": 6, "key_min_height_m": 10},
+  "end": {"short_of_pin_m": 12, "height_m": 8, "hold_s": 2.5, "whole_green_in_frame": true},
+  "first_frame": {"on_sign": true, "move_camera_m": [2, 5]},
+  "pins_shown": false,
+  "poster_frames": ["first", "rise", "mid", "approach", "end"],
+  "pose_confidence_for_verdict": ["high", "medium"]
+}

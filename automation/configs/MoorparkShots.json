@@ -1,0 +1,16 @@
+﻿{
+  "course": "Moorpark", "scene": "Moorpark", "repo": "{Documents}/moorpark", "saveScene": false,
+  "steps": [], "inspect": [],
+  "shots": [
+    { "name": "R1_tees_overhead", "pos": [1300, 45, 1600], "lookAt": [1342, 0, 1640], "aboveGround": true, "fov": 50 },
+    { "name": "R1_tees_golfer",  "pos": [1343, 2.2, 1672], "lookAt": [1335, 1, 1610], "aboveGround": true, "fov": 55 },
+    { "name": "R1_forward_tee",  "pos": [1318, 2.2, 1505], "lookAt": [1300, 1, 1440], "aboveGround": true, "fov": 55 },
+    { "name": "C1_tees_overhead", "pos": [1200, 40, 1830], "lookAt": [1245, 0, 1875], "aboveGround": true, "fov": 55 },
+    { "name": "C1_tee_golfer",  "pos": [1190, 2.2, 1862], "lookAt": [1260, 1, 1885], "aboveGround": true, "fov": 55 },
+    { "name": "C1_green",  "pos": [1630, 22, 2010], "lookAt": [1675, 0, 2032], "aboveGround": true, "fov": 45 },
+    { "name": "R9_black_tee",  "pos": [1120, 2.2, 1786], "lookAt": [1310, 1, 1776], "aboveGround": true, "fov": 55 },
+    { "name": "R9_green",  "pos": [1265, 25, 1760], "lookAt": [1310, 0, 1776], "aboveGround": true, "fov": 45 },
+    { "name": "cartpath",  "pos": [1535, 6, 1755], "lookAt": [1556, 0, 1740], "aboveGround": true, "fov": 50 }
+  ],
+  "gkd": "", "teeShots": false, "greenShots": false, "shotWidth": 1600, "shotHeight": 900
+}

@@ -1,0 +1,19 @@
+{
+  "element": "bunkers", "skill": "course-build-bunkers", "playbook": "playbooks/03_bunkers.md",
+  "depth_reference": "plane fitted to the rim",
+  "greenside": {"depth_m": [0.8, 1.2], "deep_bowl_m": [1.3, 1.4], "face_deg": 38, "floor_max_deg": 2.9, "lip_height_m": 0.15, "lip_rejected_m": 0.3},
+  "fairway": {"depth_m": [0.4, 0.7], "face_deg": 30, "lip_height_m": 0.12},
+  "mown_lip_max_m": 0.3,
+  "lip": {"grass_on_face_m": 0.1, "soil_cut_m": [0.05, 0.10], "soil_cut_cap_m": 0.10, "dirt_fade_m": 0.12, "shape": "rounded kidney ends, one clean curve"},
+  "sand": {"color_rgb": [0.70, 0.66, 0.56], "color_hex": "#D8C99B", "bg_ratio_vs_concrete_pct": [-10, -5], "rake_normal_map": true, "rake_props": false, "physics": "TVGsand", "material_name_match": ["sand", "Bunk"]},
+  "islands": "none; nose only with BoJa approval per bunker",
+  "nose": {"dome_m": 0.4, "rim_bury_m": 0.02, "material": "plain semi-rough, white vertex colour"},
+  "tree_clearance": {"crown_radius_mul": 1.3, "plus_m": 0.5},
+  "terrain_under": {"lower_by_depth_plus_m": 0.05},
+  "seams": {"surround_stretch_ok": [0.75, 1.5], "shared_normal": true, "vertex_match": true, "neighbour_flap_drop_within_m": 0.03},
+  "checks": {"black_pocket_max_channel": 28, "black_pocket_within_px": 6, "photo_face_ratio_question": 3.0},
+  "photo_match": {"heading_tol_deg": 30, "distance_m": [6, 110]},
+  "lower_lip_by_raising_margin_m": [0.12, 0.18],
+  "bunker_studio_presets_too_shallow_m": [0.28, 0.70],
+  "ask_once": ["course bunker style from 2-3 photos", "nose/mound per bunker", "face height where LiDAR and photos disagree (default scan)", "sand colour once", "rakes (default none)"]
+}

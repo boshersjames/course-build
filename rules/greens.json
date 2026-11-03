@@ -1,0 +1,65 @@
+{
+  "$schema": "../rules/_schema.json",
+  "element": "greens",
+  "skill": "course-build-greens",
+  "playbook": "playbooks/02_greens_and_collars.md",
+  "gkd": {
+    "DefaultStimp": 2, "DefaultStimp_note": "= stimp 10",
+    "MaxStimp": 5, "greens_speed": "Normal",
+    "source": "BoJa approved on every course"
+  },
+  "collar": {
+    "width_m": 1.2,
+    "wide_sides_m": 3.0, "wide_back_m": 5.0, "wide_note": "only where the surround is flat and BoJa approved (Tierra 6, 8, 15)",
+    "bank_behind_width_m": 1.5,
+    "height": "flush", "proud_step_max_m": 0.0,
+    "material": "OPCD Fairway Apron", "physics": "GSPfairway",
+    "render_darker_than_green_pct": [10, 20],
+    "source": "BoJa 11/1; green_edges_1029"
+  },
+  "tiers": {
+    "green": "GSPgreen", "collar": "GSPfairway", "next_band": "GSPrough first cut",
+    "note": "tiers differ in material and physics only, never in height"
+  },
+  "sink_under": {
+    "near_rim_m": 0.4, "near_rim_drop_m": 0.005, "inner_drop_m": 0.03,
+    "source": "Tierra 14, 11/1 (SinkUnder)"
+  },
+  "edge_blend_strip_m": 0.12,
+  "deep_rough_min_off_green_m": 6.0,
+  "pins": {
+    "min_from_edge_m": 3.0,
+    "max_lie_angle_deg": 1.7, "max_lie_angle_pct": 3.0,
+    "probe_radius_m": 0.3, "ring1_m": 0.45, "ring2_m": 0.9, "ring_points": 8,
+    "min_valid_areas": 4, "min_area_spacing_m": 3.0,
+    "usable_grid_m": 0.75, "usable_inset_m": 1.2,
+    "source": "GreenKeeper method; Green Studio review 10/31"
+  },
+  "internal_slope_pct": {"min": 1, "max": 3, "flag_over": 3},
+  "contour_edit": {
+    "falloff": "smootherstep 6t^5-15t^4+10t^3",
+    "core_min_m": 1.25, "outer_min_m": 6.0, "outer_with_surround_m": 10.0,
+    "dz_max_green_m": 0.35, "dz_max_with_surround_m": 0.6,
+    "fade_to_zero_within_edge_m": 1.5, "boundary_fixed_tol_m": 0.0001,
+    "split_edges_over_m": 0.75, "split_within_m": 1.8
+  },
+  "checks": {
+    "edge_survey": {"sample_along_m": 1.0, "profile_from_m": -0.5, "profile_to_m": 2.0, "step_m": 0.05, "max_step_m": 0.01, "max_lip_m": 0.02, "bunker_rims_exempt": true},
+    "collider_vs_render_max_dy_m": 0.01,
+    "fall_direction": {"grid_m": 0.5, "median_aspect_diff_max_deg": 20, "within_45_min_pct": 80, "reversed_max_pct": 5, "slope_corr_min": 0.7, "run_mirror_tests": true},
+    "approach_profile": {"sample_m": 0.25, "lateral_lines_m": 5, "max_step_m": 0.03, "max_slope_deg": 25},
+    "crown_overhang": {"block_at_m": 1.0, "clearance_m": 1.0, "directions": 16, "radii": [0, 0.33, 0.66, 1.0]},
+    "crown_fix": {"max_move_m": 8.0, "shrink_margin_m": 0.3, "min_shrink_per_pass": 0.5},
+    "noise_lowpass": {"sigma_m": [0.6, 1.5], "allowed_only_if_mesh_steeper_than_lidar": true, "edge_fixed": true, "ease_m": 1.5},
+    "outline_vs_lidar_pad_stop_m": 1.5,
+    "clean_green_reference": {"step_m": 0.008, "lip_m": 0.012, "source": "Tierra green_12/13"}
+  },
+  "tint": {
+    "green_overall_color_mul": [1.85, 1.68, 1.42], "green_desaturate": 0.2,
+    "note": "on *_<Course> copies per green/blend/collar; milder stayed grey, no-desaturate went neon",
+    "source": "green_test"
+  },
+  "scan": {"apply_when_median_m": 0.001, "apply_when_p90_m": 0.006, "photo_only_colmap_on_greens": false},
+  "post_profile": {"name": "TR_Sunny_C", "tonemap": "Neutral", "exposure_ev": 1.2, "contrast": 22, "saturation": 8, "bloom": 0.6, "rejected": "v4_Sunny_Pop (+2.3 EV ACES washes greens)"},
+  "ask_once": ["collars wider than 1.2 m (which, why)", "photo outline vs scan (default keep scan)", "pins failing >1.7 deg (default keep, listed)", "relief exaggeration on flat crest (Tierra 9: x1.3-1.5)"]
+}

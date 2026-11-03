@@ -1,0 +1,8 @@
+{
+  "element": "props", "skill": "course-build-props", "playbook": "playbooks/11_props_signs_and_buildings.md",
+  "sign": {"post_h_m_tierra": 2.1, "from_photo_gps_m": 2.5, "fallback_forward_m": 3, "fallback_side_m": 6, "colliders": false, "faces": "vector, never photo crops"},
+  "enclosure_yard_m": [3, 3], "board_w_m": 0.15,
+  "physics_required": ["GSPstone", "GSPwood", "GSPconcrete"],
+  "furniture": "only where photographed, flush, never on paths/tees/greens",
+  "gkd": {"Designer": "jboshers", "location_format": "City, State, USA"}
+}

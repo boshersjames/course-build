@@ -1,0 +1,223 @@
+{
+  "course": "Tierra Rejada",
+  "scene": "TierraRejada",
+  "repo": "{Documents}/tierra-rejada",
+  "saveScene": true,
+  "steps": [
+    {
+      "name": "Vegetation prefabs",
+      "note": "Only needed after the vegetation assets change. Rebuilds materials and prefabs in place.",
+      "disabled": true,
+      "tool": "TierraVegetationSetup",
+      "method": "Build"
+    },
+    {
+      "name": "Plant LiDAR trees",
+      "note": "Only after the tree CSV changes; run Swap trees after it.",
+      "disabled": true,
+      "tool": "PlantLidarTrees",
+      "method": "Plant",
+      "expectObject": "LIDAR_TREES",
+      "expectMinChildren": 100
+    },
+    {
+      "name": "Fences",
+      "tool": "BuildFences",
+      "method": "Build",
+      "expectObject": "FENCES",
+      "expectMinChildren": 1
+    },
+    {
+      "name": "Walls",
+      "tool": "BuildFences",
+      "method": "BuildWalls",
+      "expectObject": "WALLS",
+      "expectMinChildren": 1
+    },
+    {
+      "name": "Nets",
+      "tool": "BuildFences",
+      "method": "BuildNets",
+      "expectObject": "NETS",
+      "expectMinChildren": 1
+    },
+    {
+      "name": "Load shrub mix",
+      "tool": "TierraVegetationSetup",
+      "method": "SendShrubs"
+    },
+    {
+      "name": "Plant shrubs",
+      "tool": "TierraPlantShrubs",
+      "method": "Plant",
+      "set": [
+        {
+          "field": "csv",
+          "value": "{Repo}/trees/tierra_shrubs_clean.csv"
+        }
+      ],
+      "requireFiles": [
+        "{Repo}/trees/tierra_shrubs_clean.csv"
+      ],
+      "expectObject": "SHRUBS",
+      "expectMinChildren": 1
+    },
+    {
+      "name": "Load grass layers",
+      "tool": "TierraVegetationSetup",
+      "method": "SendGrass"
+    },
+    {
+      "name": "Paint grass",
+      "tool": "TierraPaintGrass",
+      "method": "Paint",
+      "set": [
+        {
+          "field": "folder",
+          "value": "{Repo}/terrain_masks"
+        },
+        {
+          "field": "terrain",
+          "value": "scene:Terrain (Inner)"
+        }
+      ],
+      "requireFiles": [
+        "{Repo}/terrain_masks"
+      ],
+      "expectTerrainDetails": "Terrain (Inner)"
+    },
+    {
+      "name": "Swap trees",
+      "note": "Replaces the LiDAR trees with SoCal oaks, peppers and eucalyptus. Run once after Plant LiDAR Trees.",
+      "disabled": true,
+      "tool": "TierraVegetationSetup",
+      "method": "SwapTrees",
+      "expectObject": "LIDAR_TREES",
+      "expectMinChildren": 100
+    },
+    {
+      "name": "Import deep rough",
+      "tool": "TierraImportDeepRough",
+      "method": "Import",
+      "set": [
+        {
+          "field": "folder",
+          "value": "{Repo}/deep_rough/areas"
+        }
+      ],
+      "requireFiles": [
+        "{Repo}/deep_rough/areas"
+      ],
+      "expectObject": "DEEP_ROUGH",
+      "expectMinChildren": 1
+    },
+    {
+      "name": "Cart paths",
+      "note": "Rebuilds CART_PATHS from Assets/TierraRejada/cartpaths.csv; Cart path look runs after it.",
+      "tool": "BuildCartPaths",
+      "method": "Build",
+      "set": [
+        { "field": "csvPath", "value": "Assets/TierraRejada/cartpaths.csv" },
+        { "field": "concrete", "value": "Assets/Course Furniture/SpeedBumpPathSeamJoiner/FBX/SpeedBumpPathSeamJoiner.fbx#OPCD MAHS Concrete - Asphalt default" },
+        { "field": "phys", "value": "resources:Physics/GSPconcrete" }
+      ],
+      "expectObject": "CART_PATHS",
+      "expectMinChildren": 1
+    },
+    {
+      "name": "Cart path look",
+      "tool": "CourseLook",
+      "method": "ApplyPaths",
+      "expectObject": "CART_PATHS"
+    },
+    {
+      "name": "Grade satellite",
+      "note": "One time (about a minute). Back to original: method RestoreSatellite.",
+      "disabled": true,
+      "tool": "CourseLook",
+      "method": "GradeSatellite"
+    }
+  ],
+  "inspect": [
+    "Terrain (Inner)",
+    "LIDAR_TREES",
+    "SHRUBS",
+    "DEEP_ROUGH",
+    "CART_PATHS",
+    "FENCES",
+    "WALLS",
+    "NETS"
+  ],
+  "shots": [
+    {
+      "name": "overview_from_south",
+      "pos": [
+        1000,
+        650,
+        -250
+      ],
+      "lookAt": [
+        1000,
+        0,
+        1000
+      ],
+      "aboveGround": false,
+      "fov": 55
+    },
+    {
+      "name": "hole02_ridge_fence",
+      "frameObject": "Fence_3"
+    },
+    {
+      "name": "hole07_green_fence",
+      "pos": [
+        895,
+        14,
+        1190
+      ],
+      "lookAt": [
+        914,
+        1,
+        1222
+      ],
+      "aboveGround": true,
+      "fov": 50
+    },
+    {
+      "name": "range_net",
+      "pos": [
+        1120,
+        18,
+        860
+      ],
+      "lookAt": [
+        1120,
+        9,
+        922
+      ],
+      "aboveGround": true,
+      "fov": 55
+    },
+    {
+      "name": "fences",
+      "frameObject": "FENCES",
+      "eachChild": true
+    },
+    {
+      "name": "walls",
+      "frameObject": "WALLS",
+      "eachChild": true
+    },
+    {
+      "name": "nets",
+      "frameObject": "NETS",
+      "eachChild": true
+    }
+  ],
+  "gkd": "C:/GSProV1/Core/GSP/Courses/TierraRejada/TierraRejada.GKD",
+  "teeType": "Blue",
+  "teeShots": true,
+  "greenShots": true,
+  "shotWidth": 1600,
+  "shotHeight": 900
+}

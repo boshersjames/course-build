@@ -1,0 +1,131 @@
+﻿{
+    "course":  "Moorpark",
+    "scene":  "Moorpark",
+    "repo":  "{Documents}/moorpark",
+    "saveScene":  true,
+    "inspect":  [
+                    "Terrain (Inner)",
+                    "OPCD Meshes",
+                    "LIDAR_TREES",
+                    "SHRUBS",
+                    "CART_PATHS"
+                ],
+    "steps":  [
+                  {
+                      "name":  "Vegetation prefabs",
+                      "tool":  "TierraVegetationSetup",
+                      "method":  "Build"
+                  },
+                  {
+                      "name":  "Plant LiDAR trees",
+                      "tool":  "PlantLidarTrees",
+                      "method":  "Plant",
+                      "set":  [
+                                  {
+                                      "field":  "csvPath",
+                                      "value":  "Assets/Moorpark/trees.csv"
+                                  },
+                                  {
+                                      "field":  "treeFolder",
+                                      "value":  "Assets/TierraRejada/Vegetation/Prefabs/Trees"
+                                  },
+                                  {
+                                      "field":  "nameMustContain",
+                                      "value":  "Oak"
+                                  },
+                                  {
+                                      "field":  "timber",
+                                      "value":  "resources:Physics/GSPtimber"
+                                  },
+                                  {
+                                      "field":  "leaves",
+                                      "value":  "resources:Physics/GSPleaves"
+                                  }
+                              ],
+                      "expectObject":  "LIDAR_TREES",
+                      "expectMinChildren":  100
+                  },
+                  {
+                      "name":  "Swap trees",
+                      "tool":  "TierraVegetationSetup",
+                      "method":  "SwapTrees",
+                      "expectObject":  "LIDAR_TREES",
+                      "expectMinChildren":  100
+                  },
+                  {
+                      "name":  "Load shrub mix",
+                      "tool":  "TierraVegetationSetup",
+                      "method":  "SendShrubs"
+                  },
+                  {
+                      "name":  "Plant shrubs",
+                      "tool":  "TierraPlantShrubs",
+                      "method":  "Plant",
+                      "set":  [
+                                  {
+                                      "field":  "csv",
+                                      "value":  "{Repo}/shrubs_clean.csv"
+                                  }
+                              ],
+                      "requireFiles":  [
+                                           "{Repo}/shrubs_clean.csv"
+                                       ],
+                      "expectObject":  "SHRUBS",
+                      "expectMinChildren":  1
+                  },
+                  {
+                      "name":  "Load grass layers",
+                      "tool":  "TierraVegetationSetup",
+                      "method":  "SendGrass"
+                  },
+                  {
+                      "name":  "Paint grass",
+                      "tool":  "TierraPaintGrass",
+                      "method":  "Paint",
+                      "set":  [
+                                  {
+                                      "field":  "folder",
+                                      "value":  "{Repo}/terrain_masks"
+                                  },
+                                  {
+                                      "field":  "terrain",
+                                      "value":  "scene:Terrain (Inner)"
+                                  }
+                              ],
+                      "requireFiles":  [
+                                           "{Repo}/terrain_masks"
+                                       ],
+                      "expectTerrainDetails":  "Terrain (Inner)"
+                  },
+                  {
+                      "name":  "Cart paths",
+                      "tool":  "BuildCartPaths",
+                      "method":  "Build",
+                      "set":  [
+                                  {
+                                      "field":  "csvPath",
+                                      "value":  "Assets/Moorpark/cartpaths.csv"
+                                  },
+                                  {
+                                      "field":  "concrete",
+                                      "value":  "Assets/Course Furniture/SpeedBumpPathSeamJoiner/FBX/SpeedBumpPathSeamJoiner.fbx#OPCD MAHS Concrete - Asphalt default"
+                                  },
+                                  {
+                                      "field":  "phys",
+                                      "value":  "resources:Physics/GSPconcrete"
+                                  }
+                              ],
+                      "expectObject":  "CART_PATHS",
+                      "expectMinChildren":  1
+                  }
+              ],
+    "shots":  [
+
+              ],
+    "gkd":  "C:/Users/user/Documents/moorpark/build/gspro/Moorpark_RidgelineCreekside/Moorpark_RidgelineCreekside.GKD",
+    "teeType":  "Blue",
+    "teeShots":  true,
+    "greenShots":  true,
+    "shotWidth":  1600,
+    "shotHeight":  900
+}

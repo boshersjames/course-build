@@ -1,0 +1,9 @@
+{
+  "element": "pipeline", "skill": "course-build-pipeline", "playbook": "playbooks/14_data_pipeline_coursekit.md",
+  "satellite": {"px": 4096, "m_per_px_2000": 0.49, "m_per_px_3000": 0.73},
+  "svg_flags": "--collar --collar-back --deep-off-green [--smooth 7 --min-green 0.36 --fw-corridor 45]",
+  "card_flags": "card [--loops] --ob --line-tees [--habitat-penalty --drop-holes]",
+  "mask_px_m": 1, "mask_orientation": "north up",
+  "grep_before_run": ["2000", "3000", "182", "Tierra", "Moorpark"],
+  "limits": {"hazards_max": 120, "pOOB_points_max": 880}
+}

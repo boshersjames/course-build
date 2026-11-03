@@ -1,0 +1,8 @@
+﻿{ "course": "Moorpark", "scene": "Moorpark", "repo": "{Documents}/moorpark", "saveScene": false, "steps": [], "inspect": [],
+  "shots": [
+    { "name": "club_S", "pos": [1500, 18, 1600], "lookAt": [1490, 4, 1755], "aboveGround": true, "fov": 40 },
+    { "name": "club_SE", "pos": [1620, 20, 1640], "lookAt": [1490, 4, 1755], "aboveGround": true, "fov": 40 },
+    { "name": "club_N", "pos": [1480, 15, 1900], "lookAt": [1490, 4, 1755], "aboveGround": true, "fov": 40 },
+    { "name": "club_close", "pos": [1505, 3, 1700], "lookAt": [1505, 5, 1760], "aboveGround": true, "fov": 55 },
+    { "name": "club_top", "pos": [1470, 120, 1700], "lookAt": [1470, 0, 1755], "aboveGround": true, "fov": 50 }
+  ], "gkd": "", "teeShots": false, "greenShots": false, "shotWidth": 1600, "shotHeight": 900 }

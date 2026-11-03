@@ -1,0 +1,8 @@
+{
+  "element": "backdrop", "skill": "course-build-backdrop", "playbook": "playbooks/18_backdrop_and_surroundings.md",
+  "outer_plot_km": 8, "far_backdrop_km": 140, "far_clip_km": 150,
+  "fog": {"inner_km": [1.8, 6], "outer_km": [8, 140]},
+  "offsite_trees_m": 300, "homes_as_blocks_beyond_m": 300,
+  "skyline_fit_rms_px_max": 10,
+  "dem": {"outer": "3DEP 1/3 arc-second or 1 m to 1-2 km", "far": "10 m DEM"}
+}

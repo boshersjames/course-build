@@ -1,0 +1,49 @@
+{
+  "name": "Moorpark",
+  "center_lat": 34.302124,
+  "center_lon": -118.897612,
+  "size": 3000.0,
+  "epsg": 6340,
+  "arcgis_wkid": 26911,
+  "utm_zone": 11,
+  "sw_e": 323870.75,
+  "sw_n": 3795785.77,
+  "y_offset": 156.0,
+  "loops": [
+    {
+      "name": "Ridgeline",
+      "osm_prefix": "Ridgeline"
+    },
+    {
+      "name": "Creekside",
+      "osm_prefix": "Creekside"
+    },
+    {
+      "name": "Canyon Crest",
+      "osm_prefix": null
+    }
+  ],
+  "vegetation": {
+    "brush_assets": "SoCal brush set (shared with Tierra Rejada, refined in its own thread)",
+    "trees": "trees.csv",
+    "shrubs": "shrubs.csv"
+  },
+  "lidar_survey": "USGS_LPC_CA_SoCal_Wildfires_B3_2018_LAS_2019",
+  "terrain_height": 151.0,
+  "club": "Moorpark Country Club",
+  "gkd": {
+    "Location": "Moorpark, California, USA",
+    "CityTown": "Moorpark",
+    "StateCountyProvince": "California",
+    "Country": "USA",
+    "Designer": "jboshers",
+    "altitudeV2": 781.0,
+    "altitude": 0.0,
+    "unitOfMeasure": 2,
+    "WindDirectionDefault": 68.0,
+    "WindStrengthDefault": 2,
+    "KeywordMountain": true,
+    "KeywordsString": "Mountain",
+    "CourseInfo": "Built from 2018 USGS LiDAR, NAIP imagery and OpenStreetMap. Draft: tees from the club scorecard, OB drafted from homes and brush."
+  }
+}

@@ -1,0 +1,12 @@
+# Tierra Rejada GSPro course
+
+Real course rebuilt for GSPro (Unity 2018.2.8f1, OPCD). `HANDOFF.md` has the machines, paths, coordinate frame and open items.
+
+## Driving Unity on the PC
+Use the course automation instead of asking for clicks in the Unity windows: see `automation/README.md`.
+- Unity closed: `.\automation\Run-CourseAutomation.ps1 [-Steps "a,b"]` (batch mode, prints `summary.md`).
+- Unity open: `.\automation\Send-UnityCommand.ps1 <ping|run|shots|invoke|describe|menu|save|refresh>` (live bridge).
+- After a run, read `C:\GSP\GSPBaseProject_v4_2025_12_02\AutomationOutput\latest.txt`, then that folder's `summary.md` and the PNGs in `shots\`.
+- Editor tools go in `C:\GSP\GSPBaseProject_v4_2025_12_02\Assets\Editor\`. After copying in a new .cs, run `refresh`, then `ping` until it answers.
+- Never change the GSPro course folder (`C:\GSProV1\Core\GSP\Courses\`) without backing up the GKD first.
+- Keep `TierraRejada.gspcrse` under 1.95 GB. GSPro decrypts courses in memory and hangs at "course decrypting" on files over 2 GiB (2,147,483,647 bytes); the 2.16 GB builds of 2026-11-01 did this. Check the size before every install.

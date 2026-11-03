@@ -1,0 +1,70 @@
+﻿# Tierra Rejada GSPro build: handoff notes (Oct 23, 2026, updated after the Mac shrub/OB/deep-rough session)
+
+Real course: Tierra Rejada Golf Club, Moorpark CA (Bob Cupp, 1999). Built by James for GSPro with the free OPCD toolset. Status: **playable in GSPro** with satellite colours, 1,412 LiDAR trees, split-rail fence, stone wall on 3, range net. Cart paths built in data, not yet confirmed in Unity.
+
+## Machines and locations
+- **PC (Windows):** Unity 2018.2.8f1 (exact version the base project needs), GSPro, Greenkeeper 4.1.0.
+  - Unity project: `C:\GSP\GSPBaseProject_v4_2025_12_02` (scene `TierraRejada.unity`, our files in `Assets\TierraRejada\`, editor tools in `Assets\Editor\`)
+  - GSPro course folder: `C:\GSProV1\Core\GSP\Courses\TierraRejada\` (`TierraRejada.gspcrse`, `TierraRejada.GKD`, `coursedetails.txt`, `.gspcrse.csv`, scorecard jpgs, `TR.jpg` splash)
+  - Greenkeeper: `C:\GSP\GreenKeeper\GreenKeeper.exe`
+  - Git repo: `Documents\tierra-rejada` â†’ github.com/boshersjames/tierra-rejada
+- **Mac:** repo copy `~/Tierra` (run `git pull` before committing). LiDAR work in `~/tierra-lidar` with Python venv `~/venv` (always run `~/venv/bin/python`, not `python3`).
+  - `tierra_points.npz` (17.25 M points, 2018 USGS SoCal Wildfires B3 survey), `TierraRejada_satellite.jpg` (NAIP, 4096 px, 0.49 m/px)
+  - Scripts (also in repo `lidar_scripts/`): `get_lidar.py`, `get_satellite.py`, `find_trees.py`, `find_brush.py`
+
+## Coordinate frame (everything uses this)
+- 2000 m square. SW corner EPSG:6340 (NAD83(2011) UTM 11N) = 328865.84 E, 3792716.77 N; centre 34.2707005, -118.848084.
+- Unity x = metres east of SW corner, z = metres north, y = elevation âˆ’ 182 m.
+- Heightmap `terrain/tierra_rejada_2049.raw`: 2049Ã—2049, 16-bit little-endian (Windows), rows = z, size 2000 Ã— 207 Ã— 2000.
+- Convert Google Maps lat/long with pyproj EPSG:4326 â†’ EPSG:6340, then subtract the SW corner.
+
+## Unity workflow that works
+- GSP â†’ Add OPCD Meshes (FBX from `TierraRejada_fbx`), SetMeshMaterials v4, Lower Terrain Under Meshes (1 m), Build Course (scene TierraRejada; both "disable collider" boxes checked).
+- **Materials:** theme `TierraRejada_sat` = v4_satellite with Terrain Satellite = `TierraRejada_satellite` (Max Size 4096), Terrain Size 2000, BUT Green / Fairway / Tee on **default** materials (the real ones under `Assets/Resources`, not the white placeholders in `SampleScenefbx`). Bunker = Sand Raked Dirt Lip Thin.
+- Physics materials in `Assets/Resources/Physics`: GSPtimber, GSPleaves, GSPstone, GSPconcrete, GSPdeeprough, GSPrough, GSPsemirough, etc. Build fails/warns if colliders lack one.
+- Rebuilding the course only replaces `.gspcrse`; GKD and other files stay.
+
+## Our Unity editor tools (menu **Tierra**)
+- `PlantLidarTrees.cs`: plants `trees/tierra_trees.csv` (1,412 trees within 150 m of play, LiDAR heights) from `Assets/Trees/Broadleaf` (Desktop SpeedTree only, skips "Mobile"); trunk colliders â†’ GSPtimber, canopy â†’ GSPleaves. Parent `LIDAR_TREES`.
+- `BuildFences.cs`: one window with fences (`fences.csv`, split-rail 1.07 m, 3 runs), stone walls (`walls.csv`, hole 3 retaining wall, GSPstone), range nets (`nets.csv`, 19 m poles, 170 m, GSPleaves, transparency slider; real net looks darker, try ~0.5).
+- `BuildCartPaths.cs`: `cartpaths.csv` from OpenStreetMap (25 golf cart paths, 8,655 m), 2.4 m concrete strips, GSPconcrete.
+- `DrawArea.cs`: click points in Scene view to make Deep Rough / Rough / Semi Rough patches (draped, proper physics) or OB outlines; saves to `Assets/TierraRejada/areas/*.csv`. Not yet tested.
+
+## Greenkeeper (GKD) lessons
+- Unused tee slots must be `"Enabled": false` when Position is null, or GSPro shows "500 yds par 0".
+- Save from Greenkeeper itself (it writes coursedetails.txt, .gspcrse.csv, scorecards). Altitude field is feet: 800.
+- Splash must be .jpg in the course folder (phone photos need EXIF rotation; current TR.jpg may still be sideways, delete `image_altered*` cache after fixing).
+
+## Course data
+- Tee markers â†’ GSPro slots: Professional/Black â†’ Black, Championship/Grey â†’ **Green**, Tournament/Blue â†’ Blue, Players/White â†’ White, Forward/Gold â†’ **Yellow**, Red unused.
+- Ratings: Black 73.5/135, Grey 70.9/129, Blue 68.7/124, White 66.4/118, Gold 64.3/111. Pars 5 3 4 5 4 4 3 4 5 / 4 3 5 4 3 4 5 3 4 (72). Men's SI 5 11 1 7 15 13 17 3 9 / 6 10 16 2 12 8 18 14 4.
+- All tees confirmed by James except Blue/White/Gold on 6 and Gold on 5. Card runs ~3% long vs true distances (verified with Google Maps on hole 2). 10/28: BoJa now wants yardages to match the card where possible; they will photograph the full card (all colours) and pin any further-back boxes on 3, 18, 4, 12, 6 and 1. Biggest Black gaps: 3 (-28), 18 (-21), 4 and 12 (-20), 6 (-19), 1 (-15).
+- Aim points set: 3 (driver line, 250 carry from 6,000-yd tees), 4 (left side + layup), 5 (left side), 6 (mid fairway 130â€“150 out), 10 (flat shelf 85 yds out), 12 (left of bunker), 15 (left side landing), 18 (driver landing). Rule: aim at widest part of fairway, driver line.
+
+## Out of bounds (DRAFT now in repo `greenkeeper/TierraRejada.GKD`, needs review in Greenkeeper)
+- 2 left (to freeway) Â· 3 both sides + ravine off tee (drop zone 277 yds from green) Â· 4 both sides Â· 5 left Â· 6 canyon off tee Â· 7 left (drop zone 35 yds short of green) and long past back bunker except hole 8's Black tee box Â· 9 left Â· 10 both sides Â· 11 left of fairway and right of cart path, ~20 yds safe left of green (drop zone 57 yds short) Â· 12 right Â· 14 right, 10â€“25 yds room right of green Â· 15 right of cart path Â· 16 right of cart path Â· **brush between 18 and 10 = interior OB** (and brush generally = lost ball).
+- Done (draft): pOOB 602 pts following dense brush, freeway, Tierra Rejada Rd and the 15/16 cart path; 16 interior OB hazards (brush between 3/4, 4/5/6, 10/18/11/17; clubhouse + parking + maintenance yard = "12 right"); OB with drop zones (innerOOB + hasDZ): 3 ravine (DZ at White tee, 277 yds), 6 canyon (DZ 34.274928, -118.850001 = Unity 832.0, 1472.1, given by James), 7 left (35 yds short), 11 left (57 yds short). The 3 water hazards unchanged. All tees, pins and DZs checked in bounds. Details and method: `ob/README.md`, preview `ob/ob_shrubs_preview.jpg`.
+- To check in GSPro: does a drop-zone hazard with innerOOB ticked actually use the DZ? If not, untick Inner OOB on those 4.
+
+## Open items / next steps
+1. **NEXT ON PC:** back up the course GKD, copy repo `greenkeeper/TierraRejada.GKD` to `C:\GSProV1\Core\GSP\Courses\TierraRejada\`, review OB in Greenkeeper, save from Greenkeeper, test drop zones on 3/6/7/11 in GSPro, then copy the saved GKD back to the repo and commit. (Shrubs done: `trees/tierra_shrubs_clean.csv` = 11,533 of 12,240; removed list with reasons in `trees/tierra_shrubs_removed.csv`; raw list `trees/tierra_shrubs_raw.csv`, brush mask `trees/tierra_brush_mask.png`, script `lidar_scripts/find_brush.py`.)
+2. Run Tierra â†’ Build Cart Paths; check alignment vs painted paths.
+3. Deep rough: draft in `deep_rough/` (31 patches, 3.2 ha; patch 28 = hole 1 right mound and bank to pond). One outline per patch in `deep_rough/areas/DeepRough_NN.csv` (x, y, z). Format was guessed: compare with a CSV that DrawArea.cs saves and adapt (or have DrawArea load these). Found from the satellite photo (LiDAR is too coarse for grass) with LiDAR/brush/OB masks; some tan browned-turf strips left out on purpose (see README).
+4. Plant shrubs from `trees/tierra_shrubs_clean.csv` (needs instancing / Arborist for ~11.5k).
+5. Hole 13 waterfall: main drop between (801.0, 43.1, 906.7) and (807.0, 40.1, 905.3), Y rotation ~103Â°, rocks down to (823.9, 38.5, 912.6). Use WaterFall from SampleScene.
+6. Second aim point on 18 (double bend), aim points for 1, 8, 9, 13, 16 (fairway outlines in OSM for 11 holes).
+7. Green shaping: 4 (two tiers), 6 (false front), 9 (undulating), 10 (steep front); pins on both tiers of 4.
+8. Tree species: mostly coast live oak (Broadleaf OK), pepper trees and tall eucalyptus-like trees (try Elm), pampas grass near greens on 1 and 11.
+9. Fix splash photo rotation; course name/builder in GSPro list.
+10. Reagan Library on the ridge as a background landmark.
+
+## Scene ownership notes (Oct 31)
+- Clubhouse (h18i7): the visible clubhouse roof, dining patio (`H18I7/Plaza/DiningPatio`, path layer + GSPconcrete collider), its planters and every reseated part are H18I7 copies (the patio umbrella tables are switched off and recorded); the CLUBHOUSE originals are switched off and recorded in `H18I7/_records`. Later clubhouse edits must target the H18I7 copies (or re-run `TierraApply_h18i7.Apply`, which undoes its own records first).
+- Shared rough copies: rough_0_4 uses Rough12Tee_h12tee (h12tee v2) and rough_0_0 uses Rough12Sur_h12sur (h12sur); any later edit to the shared satellite rough material has to be copied into both.
+- Hole 6: `FENCES/Fence_13` (tee-side split rail) is switched off on BoJa's word ("There is no fence here along the 6 tee box"), not deleted.
+
+## Data notes
+- OSM layers (parking, roads, land use, buildings) came from Overture Maps release 2026-09-23.0 (`ob/scripts/overture_fetch.py`), same OSM data in parquet form.
+
+## Source files worth keeping in the project
+`TierraRejada.GKD`, `map (1).osm` (full-course OSM export), `TierraRejada_satellite.jpg`, the CSVs (`tierra_trees`, `fences`, `walls`, `nets`, `cartpaths`), and the `.cs` tools.
