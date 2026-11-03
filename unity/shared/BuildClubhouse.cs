@@ -7,8 +7,9 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 
 // Builds the Tierra Rejada clubhouse from clubhouse/clubhouse_spec.txt (Documents/tierra-rejada): stucco wings with
-// terracotta hip roofs (optionally a flat roof well), French doors / windows, chimney, glass cupola, a timber loggia,
-// a draped paver patio with planter walls, a stone fire pit, patio table sets and light posts. Everything goes under
+// dark brown clay tile hip roofs (optionally a flat roof well), French doors / windows, a white chimney, glass cupola,
+// a timber loggia, a stone-pillared porte-cochere, a draped paver patio with planter walls, a stone fire pit, patio table
+// sets, light posts, navy golf carts and a flagpole. Everything goes under
 // CLUBHOUSE; re-running replaces it. Building meshes get MeshColliders (balls hit the clubhouse); nothing else changes play.
 public static class BuildClubhouse
 {
@@ -86,11 +87,39 @@ public static class BuildClubhouse
             trimB.inside = V((a + b) / 2, hTop + 20f);
             trimB.inside = V((a + b) / 2, h + 20f); trimB.Quad(V(a, h + 0.55f), V(b, h + 0.55f), V(b2 + outN * 0.5f, h + 0.3f), V(a2 + outN * 0.5f, h + 0.3f), true);
         }
+        // chimney: white stucco with a black cap (BoJa's Oct 29 photos)
+        var chimB = new MB(); var capB = new MB();
         foreach (var f in lines.Where(f => f[0] == "chimney"))
         {
             var p = new Vector2(F(f[1]), F(f[2])); var w0 = wings.Values.First();
-            Box(wallsB, p, w0.ax, F(f[3]), F(f[4]), floor, floor + F(f[5]));
-            Box(roofB, p, w0.ax, F(f[3]) + 0.3f, F(f[4]) + 0.3f, floor + F(f[5]), floor + F(f[5]) + 0.25f);
+            Box(chimB, p, w0.ax, F(f[3]), F(f[4]), floor, floor + F(f[5]));
+            Box(capB, p, w0.ax, F(f[3]) + 0.2f, F(f[4]) + 0.2f, floor + F(f[5]), floor + F(f[5]) + 0.2f);
+            Box(capB, p, w0.ax, 0.5f, 0.5f, floor + F(f[5]) + 0.2f, floor + F(f[5]) + 0.6f);
+        }
+        // porte-cochere: gabled tile roof with a dark timber gable end on four stone-veneer pillars (IMG_4613/4615/5049)
+        // porte,cx,cz,length,width,angle,post_h,pitch : length runs along 'angle' (ridge direction)
+        var pillarB = new MB();
+        foreach (var f in lines.Where(f => f[0] == "porte"))
+        {
+            var c = new Vector2(F(f[1]), F(f[2])); float len = F(f[3]), wid = F(f[4]), a = F(f[5]) * Mathf.Deg2Rad, ph = F(f[6]), pitch = F(f[7]);
+            var ax = new Vector2(Mathf.Cos(a), Mathf.Sin(a)); var ay = new Vector2(-ax.y, ax.x);
+            foreach (var s in new[] { new Vector2(-1, -1), new Vector2(1, -1), new Vector2(1, 1), new Vector2(-1, 1) })
+            {
+                var p = c + ax * s.x * (len / 2 - 0.5f) + ay * s.y * (wid / 2 - 0.5f);
+                Box(pillarB, p, ax, 0.8f, 0.8f, Ground(p.x, p.y) - 0.3f, floor + ph);
+            }
+            float eave = floor + ph + 0.4f, hl = len / 2 + 0.4f, hw = wid / 2 + 0.6f, ridge = eave + hw * pitch;
+            foreach (var sy in new[] { -1f, 1f }) Box(trimB, c + ay * sy * (wid / 2 - 0.5f), ax, len, 0.3f, floor + ph, eave);     // side beams
+            foreach (var sx in new[] { -1f, 1f }) Box(trimB, c + ax * sx * (len / 2 - 0.5f), ay, wid, 0.3f, floor + ph, eave);     // end beams
+            roofB.inside = V(c, eave - 3f);
+            foreach (var sy in new[] { -1f, 1f })
+                roofB.Quad(V(c - ax * hl + ay * sy * hw, eave), V(c + ax * hl + ay * sy * hw, eave), V(c + ax * hl, ridge), V(c - ax * hl, ridge), true, 2f);
+            foreach (var sx in new[] { -1f, 1f })
+            {
+                var e = c + ax * sx * (len / 2 + 0.2f); trimB.inside = V(c, eave);
+                trimB.Quad(V(e - ay * (hw - 0.2f), eave), V(e + ay * (hw - 0.2f), eave), V(e, ridge - 0.15f), V(e, ridge - 0.15f), true, 2f);
+            }
+            pillarB.inside = null; flatB.Quad(V(c - ax * (len / 2) - ay * (wid / 2), eave - 0.05f), V(c + ax * (len / 2) - ay * (wid / 2), eave - 0.05f), V(c + ax * (len / 2) + ay * (wid / 2), eave - 0.05f), V(c - ax * (len / 2) + ay * (wid / 2), eave - 0.05f), false);
         }
         foreach (var f in lines.Where(f => f[0] == "cupola"))
         {
@@ -101,6 +130,7 @@ public static class BuildClubhouse
         }
         Part(root, "Walls", wallsB, mats.stucco, true); Part(root, "Roof", roofB, mats.tile, true); Part(root, "Roof_Well", flatB, mats.flat, true);
         Part(root, "Glass", glassB, mats.glass, false); Part(root, "Timber", trimB, mats.wood, true); Part(root, "Frames", frameB, mats.frame, false);
+        Part(root, "Chimney", chimB, mats.linen, true); Part(root, "Chimney_Cap", capB, mats.ash, true); Part(root, "Porte_Cochere_Pillars", pillarB, mats.stone, true);
 
         // patio: a draped paver slab over the polygon, planter walls, fire pit
         var poly = lines.Where(f => f[0] == "patio").SelectMany(f => Enumerable.Range(0, (f.Length - 1) / 2).Select(i => new Vector2(F(f[1 + 2 * i]), F(f[2 + 2 * i])))).ToList();
@@ -130,27 +160,117 @@ public static class BuildClubhouse
             }
         }
         Part(root, "Square_Table_Tops", tTop, mats.linen, true); Part(root, "Square_Tables_Chairs", tDark, mats.dark, true);
-        // golf carts: white body + roof on 4 posts, dark seat, black wheels, bag rack at the back; ~2.4 x 1.2 x 1.8 m
-        var cWhite = new MB(); var cDark = new MB(); var cWheel = new MB();
+        // golf carts: navy Club Car body, black canopy on 4 posts, tan seats, black wheels, bag rack at the back; ~2.4 x 1.2 x 1.8 m
+        var cWhite = new MB(); var cDark = new MB(); var cWheel = new MB(); var cRoof = new MB(); var cSeat = new MB();
         foreach (var f in lines.Where(f => f[0] == "cart"))
         {
             var p = new Vector2(F(f[1]), F(f[2])); float a = F(f[3]) * Mathf.Deg2Rad; var fw = new Vector2(Mathf.Cos(a), Mathf.Sin(a)); var sd = new Vector2(-fw.y, fw.x); float g = Ground(p.x, p.y) + 0.06f;
             Box(cWhite, p, fw, 2.3f, 1.15f, g + 0.25f, g + 0.55f);                                   // chassis / floor
             Box(cWhite, p + fw * 0.85f, fw, 0.6f, 1.15f, g + 0.55f, g + 0.95f);                       // front cowl
-            Box(cDark, p - fw * 0.15f, fw, 0.6f, 1.05f, g + 0.55f, g + 0.85f);                        // seat
-            Box(cDark, p - fw * 0.5f, fw, 0.1f, 1.05f, g + 0.85f, g + 1.25f);                         // seat back
+            Box(cSeat, p - fw * 0.15f, fw, 0.6f, 1.05f, g + 0.55f, g + 0.85f);                        // seat
+            Box(cSeat, p - fw * 0.5f, fw, 0.1f, 1.05f, g + 0.85f, g + 1.25f);                         // seat back
             Box(cDark, p - fw * 0.95f, fw, 0.35f, 0.9f, g + 0.55f, g + 1.35f);                        // bag rack
-            foreach (var s in new[] { -0.5f, 0.5f }) { Box(cWhite, p + fw * 0.55f + sd * s, fw, 0.05f, 0.05f, g + 0.95f, g + 1.8f); Box(cWhite, p - fw * 0.7f + sd * s, fw, 0.05f, 0.05f, g + 0.85f, g + 1.8f); }
-            Box(cWhite, p - fw * 0.05f, fw, 1.6f, 1.2f, g + 1.8f, g + 1.86f);                          // roof
+            foreach (var s in new[] { -0.5f, 0.5f }) { Box(cRoof, p + fw * 0.55f + sd * s, fw, 0.05f, 0.05f, g + 0.95f, g + 1.8f); Box(cRoof, p - fw * 0.7f + sd * s, fw, 0.05f, 0.05f, g + 0.85f, g + 1.8f); }
+            Box(cRoof, p - fw * 0.05f, fw, 1.6f, 1.2f, g + 1.8f, g + 1.86f);                           // roof
             foreach (var s in new[] { -0.55f, 0.55f }) foreach (var q in new[] { -0.75f, 0.75f }) Box(cWheel, p + fw * q + sd * s, fw, 0.45f, 0.18f, g, g + 0.45f);
         }
-        Part(root, "Golf_Carts", cWhite, mats.cartWhite, true); Part(root, "Golf_Carts_Seats", cDark, mats.dark, true); Part(root, "Golf_Carts_Wheels", cWheel, mats.ash, true);
+        Part(root, "Golf_Carts", cWhite, mats.cartNavy, true); Part(root, "Golf_Carts_Racks", cDark, mats.dark, true); Part(root, "Golf_Carts_Seats", cSeat, mats.cartSeat, true);
+        Part(root, "Golf_Carts_Canopy", cRoof, mats.ash, true); Part(root, "Golf_Carts_Wheels", cWheel, mats.ash, true);
+        // flagpole by the cart staging (IMG_4615/5048): white pole, US flag at the top. flagpole,x,z,height
+        foreach (var f in lines.Where(f => f[0] == "flagpole"))
+        {
+            var p = new Vector2(F(f[1]), F(f[2])); float h = F(f[3]), g = Ground(p.x, p.y); var pole = new MB(); var flag = new MB();
+            Box(pole, p, Vector2.right, 0.14f, 0.14f, g - 0.3f, g + h);
+            Box(pole, p, Vector2.right, 0.2f, 0.2f, g + h, g + h + 0.2f);
+            float fl = 2.4f, fh = 1.3f; var d = new Vector2(1f, 0.15f).normalized;
+            foreach (var o in new[] { -0.02f, 0.02f })
+            {
+                var q = p + new Vector2(-d.y, d.x) * o; flag.inside = V(q - new Vector2(-d.y, d.x) * o * 10f, g + h - fh / 2);
+                flag.Quad(V(q + d * 0.08f, g + h - fh), V(q + d * (0.08f + fl), g + h - fh), V(q + d * (0.08f + fl), g + h), V(q + d * 0.08f, g + h), true, fl);
+            }
+            Part(root, "Flagpole", pole, mats.frame, true); Part(root, "Flag", flag, mats.flag, false);
+        }
         foreach (var f in lines.Where(f => f[0] == "firepit"))
         {
             var p = new Vector2(F(f[1]), F(f[2])); float r = F(f[3]), g = Ground(p.x, p.y); var pit = new MB(); var ash = new MB();
             Ring(pit, p, r, r - 0.35f, g - 0.2f, g + 0.45f, 24); Disc(ash, p, r - 0.35f, g + 0.15f, 24);
             Part(root, "FirePit", pit, mats.stone, true); Part(root, "FirePit_Ash", ash, mats.ash, false);
         }
+        // covered patio (IMG_4614): flat light-grey roof on dark posts. cover,cx,cz,length,width,angle,height
+        var coverB = new MB(); var postB = new MB();
+        foreach (var f in lines.Where(f => f[0] == "cover"))
+        {
+            var c = new Vector2(F(f[1]), F(f[2])); float len = F(f[3]), wid = F(f[4]), a = F(f[5]) * Mathf.Deg2Rad, h = F(f[6]); var ax = new Vector2(Mathf.Cos(a), Mathf.Sin(a)); var ay = new Vector2(-ax.y, ax.x);
+            Box(coverB, c, ax, len, wid, floor + h, floor + h + 0.25f);
+            int nx = Mathf.Max(2, Mathf.RoundToInt(len / 3.5f));
+            for (int i = 0; i <= nx; i++) foreach (var sy in new[] { -1f, 1f }) { var p = c + ax * (-len / 2 + 0.2f + (len - 0.4f) * i / nx) + ay * sy * (wid / 2 - 0.2f); Box(postB, p, ax, 0.18f, 0.18f, Ground(p.x, p.y) - 0.2f, floor + h); }
+        }
+        Part(root, "Patio_Cover", coverB, mats.flat, true); Part(root, "Patio_Cover_Posts", postB, mats.wood, true);
+        // string lights (IMG_4614): sagging cord between two points with warm bulbs every 0.8 m. strings,x1,z1,x2,z2,height
+        var cordB = new MB(); var bulbB = new MB();
+        foreach (var f in lines.Where(f => f[0] == "strings"))
+        {
+            var a = new Vector2(F(f[1]), F(f[2])); var b = new Vector2(F(f[3]), F(f[4])); float h = floor + F(f[5]); float L = (b - a).magnitude; int n = Mathf.Max(2, Mathf.RoundToInt(L / 0.8f)); var d = (b - a).normalized;
+            for (int i = 0; i <= n; i++) { float t = (float)i / n; var p = Vector2.Lerp(a, b, t); float y = h - 0.6f * 4f * t * (1 - t); Box(bulbB, p, d, 0.07f, 0.07f, y - 0.12f, y - 0.05f); if (i < n) Box(cordB, Vector2.Lerp(a, b, t + 0.5f / n), d, L / n, 0.015f, y - 0.01f, y + 0.005f); }
+            foreach (var e in new[] { a, b }) Box(cordB, e, d, 0.08f, 0.08f, Ground(e.x, e.y), h + 0.1f);
+        }
+        Part(root, "String_Light_Cords", cordB, mats.ash, false); Part(root, "String_Light_Bulbs", bulbB, mats.bulb, false);
+        // rocking chairs round the fire pit (IMG_4614): rocker,cx,cz,radius,count
+        var rockB = new MB();
+        foreach (var f in lines.Where(f => f[0] == "rocker"))
+        {
+            var c = new Vector2(F(f[1]), F(f[2])); float r = F(f[3]); int n = int.Parse(f[4]);
+            for (int i = 0; i < n; i++)
+            {
+                float an = i * Mathf.PI * 2 / n; var d = new Vector2(Mathf.Cos(an), Mathf.Sin(an)); var p = c + d * r; var side = new Vector2(-d.y, d.x); float g = Ground(p.x, p.y);
+                Box(rockB, p, side, 0.55f, 0.5f, g + 0.42f, g + 0.47f); Box(rockB, p + d * 0.27f, side, 0.55f, 0.06f, g + 0.47f, g + 1.05f);
+                foreach (var s2 in new[] { -0.27f, 0.27f }) Box(rockB, p + side * s2, d, 0.75f, 0.05f, g, g + 0.08f);                       // rockers
+                foreach (var s2 in new[] { -0.27f, 0.27f }) Box(rockB, p + side * s2, d, 0.05f, 0.05f, g + 0.06f, g + 0.42f);
+            }
+        }
+        Part(root, "Rocking_Chairs", rockB, mats.wood, true);
+        // white square planters with a clipped shrub (IMG_4613/4620): planter,x,z
+        var potB = new MB(); var shrubB = new MB();
+        foreach (var f in lines.Where(f => f[0] == "planter"))
+        {
+            var p = new Vector2(F(f[1]), F(f[2])); float g = Ground(p.x, p.y); Box(potB, p, Vector2.right, 0.7f, 0.7f, g, g + 0.7f); Sphere(shrubB, new Vector3(p.x, g + 1.05f, p.y), new Vector3(0.45f, 0.4f, 0.45f));
+        }
+        Part(root, "Planters", potB, mats.linen, true); Part(root, "Planter_Shrubs", shrubB, mats.shrub, false);
+        // pergola bar (IMG_4614): pergola,cx,cz,length,width,angle,height: 4 posts, beams, slats, a stone-fronted bar counter
+        var perB = new MB(); var barB = new MB();
+        foreach (var f in lines.Where(f => f[0] == "pergola"))
+        {
+            var c = new Vector2(F(f[1]), F(f[2])); float len = F(f[3]), wid = F(f[4]), a = F(f[5]) * Mathf.Deg2Rad, h = floor + F(f[6]); var ax = new Vector2(Mathf.Cos(a), Mathf.Sin(a)); var ay = new Vector2(-ax.y, ax.x);
+            foreach (var sx in new[] { -1f, 1f }) foreach (var sy in new[] { -1f, 1f }) { var p = c + ax * sx * (len / 2 - 0.15f) + ay * sy * (wid / 2 - 0.15f); Box(perB, p, ax, 0.2f, 0.2f, Ground(p.x, p.y) - 0.2f, h); }
+            foreach (var sy in new[] { -1f, 1f }) Box(perB, c + ay * sy * (wid / 2 - 0.15f), ax, len + 0.6f, 0.12f, h, h + 0.25f);
+            for (float t = -len / 2; t <= len / 2 + 0.01f; t += 0.45f) Box(perB, c + ax * t, ay, wid + 0.4f, 0.06f, h + 0.25f, h + 0.37f);
+            var bc = c - ay * (wid / 2 - 0.6f); Box(barB, bc, ax, len - 0.6f, 0.6f, Ground(bc.x, bc.y), Ground(bc.x, bc.y) + 1.1f);
+        }
+        Part(root, "Pergola_Wood", perB, mats.wood, true); Part(root, "Pergola_Bar", barB, mats.stone, true);
+        // curbed concrete drive up to the staging (IMG_4613/4615/4620): drive,width,x1,z1,x2,z2,...; rose / shrub beds and low path lights along it
+        var driveB = new MB(); var curbB = new MB(); var roseB = new MB(); var bloomB = new MB(); var plB = new MB(); var plTop = new MB();
+        foreach (var f in lines.Where(f => f[0] == "drive"))
+        {
+            float w = F(f[1]); var pts = new List<Vector2>(); for (int i = 2; i + 1 < f.Length; i += 2) pts.Add(new Vector2(F(f[i]), F(f[i + 1])));
+            var dense = new List<Vector2>(); for (int i = 0; i + 1 < pts.Count; i++) { int n = Mathf.Max(1, Mathf.CeilToInt((pts[i + 1] - pts[i]).magnitude / 2f)); for (int k = 0; k < n; k++) dense.Add(Vector2.Lerp(pts[i], pts[i + 1], (float)k / n)); } dense.Add(pts[pts.Count - 1]);
+            float acc = 0; var rng2 = new System.Random(11);
+            for (int i = 0; i + 1 < dense.Count; i++)
+            {
+                var a = dense[i]; var b = dense[i + 1]; var d = (b - a).normalized; var nrm = new Vector2(-d.y, d.x); float seg = (b - a).magnitude; var m = (a + b) / 2;
+                float ga = Ground(a.x, a.y), gb = Ground(b.x, b.y);
+                driveB.Quad(V(a - nrm * w / 2, ga + 0.05f), V(b - nrm * w / 2, gb + 0.05f), V(b + nrm * w / 2, gb + 0.05f), V(a + nrm * w / 2, ga + 0.05f), false, 3f);
+                foreach (var sd in new[] { -1f, 1f })
+                {
+                    Box(curbB, m + nrm * sd * (w / 2 + 0.08f), d, seg + 0.02f, 0.16f, (ga + gb) / 2 - 0.1f, (ga + gb) / 2 + 0.17f);
+                    var bed = m + nrm * sd * (w / 2 + 1.3f); float gg = Ground(bed.x, bed.y);
+                    if (rng2.NextDouble() < 0.8) { Sphere(roseB, new Vector3(bed.x, gg + 0.35f, bed.y), new Vector3(0.5f, 0.38f, 0.5f)); if (rng2.NextDouble() < 0.6) Sphere(bloomB, new Vector3(bed.x + 0.15f, gg + 0.62f, bed.y), new Vector3(0.16f, 0.12f, 0.16f)); }
+                }
+                acc += seg;
+                if (acc >= 7f) { acc = 0; var lp = m + nrm * (w / 2 + 0.6f); float gl = Ground(lp.x, lp.y); Box(plB, lp, d, 0.1f, 0.1f, gl, gl + 0.6f); Box(plTop, lp, d, 0.18f, 0.18f, gl + 0.6f, gl + 0.72f); }
+            }
+        }
+        Part(root, "Drive", driveB, mats.concrete, false); Part(root, "Drive_Curbs", curbB, mats.concrete, true); Part(root, "Drive_Beds", roseB, mats.shrub, false); Part(root, "Drive_Roses", bloomB, mats.rose, false);
+        Part(root, "Path_Light_Posts", plB, mats.ash, false); Part(root, "Path_Light_Tops", plTop, mats.bulb, false);
         var props = new GameObject("Patio_Props"); props.transform.SetParent(root.transform);
         var table = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Course Furniture/PatioTable_Round/Patio_Table_Umbrella.prefab");
         var lamp = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Course Furniture/Lightpost/Lightpost.prefab");
@@ -205,6 +325,13 @@ public static class BuildClubhouse
         if (cut < run - 0.01f) flat.Quad(V(t[0], topH - 0.4f), V(t[1], topH - 0.4f), V(t[2], topH - 0.4f), V(t[3], topH - 0.4f), false);
     }
 
+    static void Sphere(MB b, Vector3 c, Vector3 r)
+    {
+        int seg = 6; var ring = new List<Vector3[]>();
+        for (int j = 0; j <= seg; j++) { var row = new Vector3[seg * 2 + 1]; for (int i = 0; i <= seg * 2; i++) { float th = Mathf.PI * j / seg, ph = Mathf.PI * i / seg; row[i] = c + Vector3.Scale(new Vector3(Mathf.Sin(th) * Mathf.Cos(ph), Mathf.Cos(th), Mathf.Sin(th) * Mathf.Sin(ph)), r); } ring.Add(row); }
+        b.inside = c;
+        for (int j = 0; j < seg; j++) for (int i = 0; i < seg * 2; i++) b.Quad(ring[j][i], ring[j][i + 1], ring[j + 1][i + 1], ring[j + 1][i], false, 1f);
+    }
     static void Box(MB b, Vector2 c, Vector2 ax, float len, float wid, float y0, float y1)
     {
         b.inside = V(c, (y0 + y1) / 2);
@@ -265,7 +392,12 @@ public static class BuildClubhouse
         AssetDatabase.CreateAsset(mesh, path);
         var g = new GameObject(name); g.transform.SetParent(root.transform);
         g.AddComponent<MeshFilter>().sharedMesh = mesh; g.AddComponent<MeshRenderer>().sharedMaterial = m;
-        if (collider) g.AddComponent<MeshCollider>().sharedMesh = mesh;
+        if (collider)
+        {
+            var mc = g.AddComponent<MeshCollider>(); mc.sharedMesh = mesh;
+            string pm = name.Contains("Timber") || name.Contains("Pergola") || name.Contains("Wood") ? "GSPwood" : name.Contains("Cart") || name.Contains("Table") || name.Contains("Chair") || name.Contains("Flag") || name.Contains("Light") || name.Contains("Bar") ? "GSPconcrete" : "GSPstone";
+            mc.sharedMaterial = Resources.Load<PhysicMaterial>("Physics/" + pm);
+        }
     }
 
     // mesh builder: quads with UVs in metres (u along the bottom edge, v up the face) divided by tile
@@ -303,20 +435,20 @@ public static class BuildClubhouse
     // ------------------------------------------------------------------ materials
     class Mats
     {
-        public Material stucco, tile, flat, glass, wood, pavers, stone, ash, frame, linen, dark, cartWhite, canvas;
+        public Material stucco, tile, flat, glass, wood, pavers, stone, ash, frame, linen, dark, cartWhite, canvas, cartNavy, cartSeat, flag, bulb, shrub, rose, concrete;
         public Mats()
         {
             const string G = "Assets/TierraRejada/generated/hillside_logo/";
             // warm beige stucco (BoJa: walls are cream/tan, not white): renders ~ (0.80, 0.74, 0.62) with the noise texture
-            stucco = Make("CH_Stucco", new Color(0.76f, 0.68f, 0.54f), 0.02f, Noise("CH_Stucco_tex", new Color(0.95f, 0.93f, 0.88f), 0.06f));
-            // dull brown clay tile, colour from the satellite over the real roof, calibrated on the cart path concrete:
-            // albedo (0.373, 0.262, 0.221). A neutral noise texture gives tile variation (the red tile texture can't reach this hue)
-            tile = Make("CH_Tile", new Color(0.315f, 0.221f, 0.186f), 0.05f, Noise("CH_Tile_tex", new Color(0.95f, 0.95f, 0.95f), 0.12f));
+            stucco = Make("CH_Stucco", new Color(0.91f, 0.89f, 0.84f), 0.02f, Noise("CH_Stucco_tex", new Color(0.95f, 0.93f, 0.88f), 0.06f));
+            // dark brown clay S-tile (BoJa's Oct 29 photos read darker and less red than the satellite calibration (0.315, 0.221, 0.186)).
+            // A neutral noise texture gives tile variation (the red tile texture can't reach this hue)
+            tile = Make("CH_Tile", new Color(0.24f, 0.17f, 0.14f), 0.05f, Noise("CH_Tile_tex", new Color(0.95f, 0.95f, 0.95f), 0.12f));
             flat = Make("CH_RoofWell", new Color(0.62f, 0.62f, 0.6f), 0.05f, null);
             // glazing: blue-tinted, glossy, with a faint warm glow so it reads as a lit interior instead of a black hole
             glass = Make("CH_Glass", new Color(0.16f, 0.20f, 0.26f), 0.92f, null);
-            glass.EnableKeyword("_EMISSION"); glass.SetColor("_EmissionColor", new Color(0.22f, 0.15f, 0.08f)); glass.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-            frame = Make("CH_Frame", new Color(0.93f, 0.92f, 0.88f), 0.25f, null);
+            glass.EnableKeyword("_EMISSION"); glass.SetColor("_EmissionColor", new Color(0.42f, 0.29f, 0.14f)); glass.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            frame = Make("CH_Frame", new Color(0.06f, 0.06f, 0.06f), 0.25f, null);   // black window frames
             wood = Make("CH_WoodDark", new Color(0.17f, 0.11f, 0.07f), 0.12f, null);   // dark-stained loggia timber
             pavers = Make("CH_Pavers", new Color(0.72f, 0.64f, 0.54f), 0.05f, Pavers());
             stone = AssetDatabase.LoadAssetAtPath<Material>(G + "cairn_cobbles.mat") ?? Make("CH_Stone", new Color(0.55f, 0.5f, 0.45f), 0.05f, null);
@@ -325,6 +457,20 @@ public static class BuildClubhouse
             dark = Make("CH_DarkFurniture", new Color(0.07f, 0.07f, 0.07f), 0.15f, null);
             cartWhite = Make("CH_CartWhite", new Color(0.88f, 0.88f, 0.86f), 0.35f, null);
             canvas = Make("CH_Canvas", new Color(0.62f, 0.56f, 0.44f), 0.05f, null);
+            cartNavy = Make("CH_CartNavy", new Color(0.07f, 0.10f, 0.22f), 0.55f, null);     // Club Car navy fleet
+            cartSeat = Make("CH_CartSeat", new Color(0.60f, 0.48f, 0.34f), 0.15f, null);     // tan seats
+            flag = Make("CH_Flag", Color.white, 0.05f, Flag());
+            bulb = Make("CH_Bulb", new Color(1f, 0.85f, 0.55f), 0.3f, null); bulb.EnableKeyword("_EMISSION"); bulb.SetColor("_EmissionColor", new Color(1.6f, 1.1f, 0.5f)); bulb.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+            shrub = Make("CH_Shrub", new Color(0.18f, 0.30f, 0.14f), 0.05f, Noise("CH_Shrub_tex", new Color(0.95f, 0.95f, 0.95f), 0.25f));
+            rose = Make("CH_Rose", new Color(0.78f, 0.20f, 0.30f), 0.1f, null);
+            concrete = Make("CH_Concrete", new Color(0.78f, 0.76f, 0.72f), 0.05f, Noise("CH_Concrete_tex", new Color(0.97f, 0.97f, 0.97f), 0.08f));
+            flag.mainTextureScale = new Vector2(1f, 2.4f / 1.3f);
+        }
+        // US flag: 13 stripes, blue canton over the top 7, star dots; v runs 0..1 bottom to top, u 0..1 hoist to fly
+        static Texture2D Flag()
+        {
+            string p = DIR + "/CH_Flag_tex.png"; if (!File.Exists(p)) { var t = new Texture2D(256, 128); for (int y = 0; y < 128; y++) for (int x = 0; x < 256; x++) { int stripe = (127 - y) * 13 / 128; Color c = stripe % 2 == 0 ? new Color(0.70f, 0.13f, 0.20f) : Color.white; if (x < 102 && y >= 128 - 69) c = ((x % 10 == 5) && (y % 8 == 4)) ? Color.white : new Color(0.24f, 0.23f, 0.43f); t.SetPixel(x, y, c); } t.wrapMode = TextureWrapMode.Clamp; File.WriteAllBytes(p, t.EncodeToPNG()); AssetDatabase.ImportAsset(p); }
+            return AssetDatabase.LoadAssetAtPath<Texture2D>(p);
         }
         static Material Make(string n, Color c, float gloss, Texture2D tex)
         {
