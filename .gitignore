@@ -5,3 +5,4 @@ __pycache__/
 *.laz
 *.mp4
 AutomationOutput/
+*.npz

@@ -3,6 +3,7 @@ which green / bunker / tee it covers, and write course_photos/scans/index.csv pl
 
     python tools/scan_index.py [--scans course_photos/scans] [--out course_photos/scans] [--no-sheets]
 
+For green scans MAD/p90 are measured inside the SVG green outline (the surround is reported as mad_whole_scan_m).
 Fit: 0.5 m median grid of the scan, 4-parameter fit (dx, dz, dy, rotation about the vertical) to the course heightmap with a robust
 loss, kept only if it beats the vertical-only fit. Reported per scan: shift, MAD and p90 of the residual after the fit, coverage of the
 nearest green outline (SVG), doubled-ground share (cells whose 0.5 m window spans > 0.15 m with a bimodal height split), and the
@@ -17,7 +18,7 @@ from matplotlib.path import Path as MP
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from course_io import course, rules, Heightmap, GKD, svg_outlines, match_outlines_to_holes
 
-COLS = ["file", "hole", "kind", "points", "shift_x_m", "shift_z_m", "shift_y_m", "rot_deg", "mad_before_m", "mad_after_m", "p90_after_m",
+COLS = ["file", "hole", "kind", "points", "shift_x_m", "shift_z_m", "shift_y_m", "rot_deg", "mad_before_m", "mad_after_m", "p90_after_m", "mad_whole_scan_m",
         "coverage_pct", "doubled_pct", "area_m2", "scan_slope_mean_pct", "model_slope_mean_pct", "verdict", "reason", "extra"]
 
 
@@ -80,13 +81,17 @@ def main():
             O = greens[hn]; inside = MP(O).contains_points(np.c_[XX.ravel(), ZZ.ravel()]).reshape(XX.shape)
             coverage = 100 * (inside & valid).sum() / max(inside.sum(), 1)
             if kind == "other" and coverage > 30: kind = "green"
-        mad = float(np.median(np.abs(r))); p90 = float(np.percentile(np.abs(r), 90))
+        mad = float(np.median(np.abs(r))); p90 = float(np.percentile(np.abs(r), 90)); mad_all = mad
+        if kind == "green" and hn != "":
+            # judge the putting surface: residual inside the green outline (the surround carries bunkers, banks and collar edges)
+            ri = D[inside & valid]
+            if ri.size > 50: mad = float(np.median(np.abs(ri))); p90 = float(np.percentile(np.abs(ri), 90))
         reasons = []
         if mad > R["accept_mad_m"]: reasons.append("MAD %.3f > %.2f" % (mad, R["accept_mad_m"]))
         if kind == "green" and coverage != "" and coverage < R["coverage_min_pct"]: reasons.append("green coverage %.0f%% < %d%%" % (coverage, R["coverage_min_pct"]))
-        if doubled_pct > 2: reasons.append("doubled ground %.1f%%" % doubled_pct)
+        if doubled_pct > R.get("doubled_max_pct", 5): reasons.append("doubled ground %.1f%%" % doubled_pct)
         row = {"file": os.path.basename(f), "hole": hn, "kind": kind, "points": len(x), "shift_x_m": round(dx, 2), "shift_z_m": round(dz, 2), "shift_y_m": round(dy, 2), "rot_deg": round(math.degrees(rot), 2),
-               "mad_before_m": round(float(np.median(np.abs(r0))), 3), "mad_after_m": round(mad, 3), "p90_after_m": round(p90, 3), "coverage_pct": round(coverage, 0) if coverage != "" else "",
+               "mad_before_m": round(float(np.median(np.abs(r0))), 3), "mad_after_m": round(mad, 3), "p90_after_m": round(p90, 3), "mad_whole_scan_m": round(mad_all, 3), "coverage_pct": round(coverage, 0) if coverage != "" else "",
                "doubled_pct": round(doubled_pct, 1), "area_m2": round(valid.sum() * 0.0625), "scan_slope_mean_pct": round(float(np.nanmean(slope)), 2), "model_slope_mean_pct": round(float(np.nanmean(mslope)), 2),
                "verdict": "ACCEPT" if not reasons else "RESCAN", "reason": "; ".join(reasons), "extra": ""}
         if kind == "bunker":
