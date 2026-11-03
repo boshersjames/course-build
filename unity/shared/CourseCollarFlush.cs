@@ -109,6 +109,8 @@ public class CourseCollarFlush : EditorWindow
         return txt;
     }
 
+    static int PinRank(string n) { n = n.ToLower(); if (n.Contains("_green_-_mesh")) return 0; if (n.Contains("green") && n.Contains("blend")) return 1; if (n.Contains("fairway") || n.Contains("_tee_-_mesh") || n.Contains("apron")) return 2; return 3; }
+
     // boundary loops by total length; vertices on loops shorter than minFrac x the longest are not rim (seams, slivers)
     static HashSet<int> MajorLoops(List<int[]> edges, Vector3[] w, float minFrac)
     {
@@ -164,7 +166,8 @@ public class CourseCollarFlush : EditorWindow
             {
                 var q = new Vector2(w[r].x, w[r].z) + nrm * R.rim_probe_m * sgn;
                 RaycastHit own; if (ownCol && ownCol.Raycast(new Ray(new Vector3(q.x, w[r].y + 5, q.y), Vector3.down), out own, 20)) continue;   // this side is still the collar: probe the other way
-                var hits = Physics.RaycastAll(new Vector3(q.x, w[r].y + 5, q.y), Vector3.down, 20).Where(h => h.collider.transform.IsChildOf(opcd) && h.collider != col && !h.collider.GetComponentInParent<LODGroup>() && !h.collider.isTrigger).OrderBy(h => h.distance).ToList();
+                // the designed surface beside the rim, by class, never by height: green mesh, green blend, fairway / tee, then anything else (the rough is what gets sunk, not what we pin to)
+                var hits = Physics.RaycastAll(new Vector3(q.x, w[r].y + 5, q.y), Vector3.down, 20).Where(h => h.collider.transform.IsChildOf(opcd) && h.collider != col && !h.collider.GetComponentInParent<LODGroup>() && !h.collider.isTrigger && !h.collider.name.ToLower().Contains("collar")).OrderBy(h => PinRank(h.collider.name)).ThenBy(h => h.distance).ToList();
                 if (hits.Count == 0) continue; best = hits[0].point.y; break;
             }
             if (float.IsNaN(best)) { unpinned++; continue; } maxPin = Mathf.Max(maxPin, Mathf.Abs(best - w[r].y)); y[r] = best; pinned.Add(r);
@@ -186,7 +189,7 @@ public class CourseCollarFlush : EditorWindow
         var cb = cm.GetComponent<Renderer>().bounds; var o = new List<string>(); var rim = RimPoints(cm, R.rim_loop_min_frac); int nOut = 0;
         foreach (var f in all)
         {
-            if (f == cm) continue; var ln = f.name.ToLower(); if (ln.Contains("_green_-_mesh") || ln.Contains("collar") || ln.Contains("bunker") || ln.Contains("water") || ln.Contains("hazard") || f.name.StartsWith("SKIRT_")) continue;
+            if (f == cm) continue; var ln = f.name.ToLower(); if (ln.Contains("green") || ln.Contains("collar") || ln.Contains("bunker") || ln.Contains("water") || ln.Contains("hazard") || f.name.StartsWith("SKIRT_")) continue;   // green mesh and green blend are the reference surface: never lowered
             var cbx = cb; cbx.Expand(R.sink_rim_band_m * 2); var rr = f.GetComponent<Renderer>(); if (!rr || !rr.bounds.Intersects(cbx)) continue;
             var src = f.sharedMesh; var w = src.vertices.Select(v => f.transform.TransformPoint(v)).ToArray(); int n = 0;
             for (int i = 0; i < w.Length; i++)

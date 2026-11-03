@@ -32,8 +32,14 @@
       "sink_under_rim_m": 0.005,
       "sink_under_in_m": 0.03,
       "sink_rim_band_m": 0.4,
-      "note": "CourseCollarFlush: every collar boundary vertex is pinned to the first other OPCD collider rim_probe_m off the edge (green or blend inside, approach / rough outside), the interior is solved as a membrane (Laplace) between them, so no step at either edge and no lip inside; then every rough/blend/fairway vertex under the collar footprint is sunk sink_under_in_m below it (sink_under_rim_m within sink_rim_band_m of the rim) so nothing pokes through. Collar meshes are the ones whose name contains 'collar' and carry a MeshCollider. Rim = the boundary loops at least rim_loop_min_frac of the longest loop's length (inner and outer ring); shorter loops are seams inside the band and stay free (Tierra 2, 11/3: seam vertices pinned to the proud rough made a 3 cm jump 5 cm inside the rim). The rim probe skips a side where the collar's own collider is still underfoot, and turf in the band outside the rim is capped at rim height minus sink_under_rim_m.",
-      "rim_loop_min_frac": 0.25
+      "note": "CourseCollarFlush: every collar boundary vertex is pinned to the first other OPCD collider rim_probe_m off the edge (green or blend inside, approach / rough outside), the interior is solved as a membrane (Laplace) between them, so no step at either edge and no lip inside; then every rough/blend/fairway vertex under the collar footprint is sunk sink_under_in_m below it (sink_under_rim_m within sink_rim_band_m of the rim) so nothing pokes through. Collar meshes are the ones whose name contains 'collar' and carry a MeshCollider. Rim = the boundary loops at least rim_loop_min_frac of the longest loop's length (inner and outer ring); shorter loops are seams inside the band and stay free (Tierra 2, 11/3: seam vertices pinned to the proud rough made a 3 cm jump 5 cm inside the rim). The rim probe skips a side where the collar's own collider is still underfoot, and turf in the band outside the rim is capped at rim height minus sink_under_rim_m. The rim pins to the designed surface by class (pin_priority), never to the highest collider: on Tierra 2 the proud rough beside the collar was the highest thing 12 cm off the rim, the rim took its height, the sink then lowered the rough and left the collar 3.4 cm proud again. Green mesh and green blend are never lowered by the sink or the band cap.",
+      "rim_loop_min_frac": 0.25,
+      "pin_priority": [
+        "green mesh",
+        "green blend",
+        "fairway / tee / apron",
+        "anything else"
+      ]
     }
   },
   "tiers": {
