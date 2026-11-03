@@ -182,14 +182,14 @@ public class CourseGreenChecks : EditorWindow
             var b = gm.GetComponent<Renderer>().bounds;
 
             // 1. edge survey
-            var c2 = cen[gm]; float acc = 0; var steps = new List<float>(); var lips = new List<float>();
+            var c2 = cen[gm]; float acc = 0; var steps = new List<float>(); var lips = new List<float>(); int gaps = 0, sandSkips = 0;
             foreach (var e in edges)
             {
                 Vector2 a = new Vector2(w[e[0]].x, w[e[0]].z), bb = new Vector2(w[e[1]].x, w[e[1]].z); float L = (bb - a).magnitude; acc += L; if (acc < E.sample_along_m) continue; acc = 0;
                 var m = (a + bb) / 2; var nrm = new Vector2(-(bb - a).y, (bb - a).x).normalized; if (Vector2.Dot(nrm, m - c2) < 0) nrm = -nrm;
                 var ys = new List<float>(); var names = new List<string>(); bool sand = false;
                 for (float d = E.profile_from_m; d <= E.profile_to_m + 1e-4f; d += E.step_m) { var q = m + nrm * d; var t = TopHit(opcd, q.x, q.y); ys.Add(t.ok ? t.y : float.NaN); names.Add(t.ok ? t.name : "-"); if (t.ok && Surface(t.name) == "bunker") sand = true; }
-                if (ys.Any(float.IsNaN) || (sand && E.bunker_rims_exempt)) continue;
+                if (ys.Any(float.IsNaN)) { gaps++; continue; } if (sand && E.bunker_rims_exempt) { sandSkips++; continue; }
                 // step = one 5 cm rise minus the median rise of its neighbours (rules greens.checks.edge_survey.step_definition): plain slope is not a step
                 var dy = new List<float>(); for (int i = 1; i < ys.Count; i++) dy.Add(ys[i] - ys[i - 1]);
                 float st = 0; int si = 0;
@@ -208,6 +208,7 @@ public class CourseGreenChecks : EditorWindow
                 }
                 edgeCsv.Add(gm.name + "," + m.x.ToString("F2", CI) + "," + m.y.ToString("F2", CI) + "," + st.ToString("F3", CI) + "," + lp.ToString("F3", CI) + "," + (E.profile_from_m + si * E.step_m).ToString("F2", CI) + "," + string.Join(">", names.Distinct().Select(s => s.Replace("_-_Mesh", "").Replace("Spline_", "")).ToArray()));
             }
+            if (gaps > 0) row.notes.Add(gaps + " profiles skipped: no collider under a sample (a surround mesh is off or missing)");
             if (steps.Count > 0) { row.maxStep = steps.Max(); row.maxLip = lips.Max(); row.stepPts = steps.Count(x => x > E.max_step_m); row.lipPts = lips.Count(x => x > E.max_lip_m); if (row.maxStep > E.max_step_m) row.notes.Add("worst step " + row.stepAt); }
 
             // 2. collider = render on green, blend, collar meshes near this green
