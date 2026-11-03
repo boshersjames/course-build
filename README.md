@@ -117,3 +117,11 @@ named material copies. Loop: render (batch), measure, apply, re-render. No model
 - Still Tierra-shaped: `tools/tierra_scripts/*` (the originals, kept for reference until each is ported or dropped) and
   `unity/course-templates/*` (the 2,238-line TierraNight1031 and friends: the generic checks are now in CourseGreenChecks.cs; the
   rest are per-hole fixes that stay with Tierra).
+
+## Tests
+
+`python -m pytest tests` runs every tool of the headless loop as a subprocess against the Tierra worktree (and Moorpark for the
+no-signs path), writing only into pytest's tmp folder; `-m "not slow"` skips the LAS / HEIC tests. Thresholds are read from
+`rules/*.json`, course folders are found through `COURSE_BUILD_TEST_COURSE` / `MOORPARK_TEST_COURSE` and the tests skip when a
+folder is absent. `tests/README.md` has the layout, the data each test needs and the rules for adding one; a test that exposes a
+tool bug is marked xfail with the file and line until the tool is fixed.
