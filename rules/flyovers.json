@@ -99,7 +99,7 @@
     "supersample_note": "render target = width*supersample, clamped to SystemInfo.maxTextureSize, bilinear downsample",
     "motion_blur": {
       "shutter_deg": 180,
-      "subframes": 4,
+      "subframes": 8,
       "method": "accumulation across shutter/360 of the frame interval; PPv2 MotionBlur disabled during the pass"
     },
     "quality": {
@@ -115,7 +115,9 @@
     },
     "disk": {
       "png_estimate_mb": 12,
-      "min_free_gb_margin": 10
+      "hole_estimate_gb": 18,
+      "min_free_gb": 25,
+      "on_low_space": "halt the queue with DISK_SPACE_EXCEEDED (not skip)"
     },
     "output": "AutomationOutput/renders_4k/Hole_XX/frame_%05d.png",
     "log": "AutomationOutput/logs/render_queue_<stamp>.json",
