@@ -37,8 +37,8 @@ def main():
     C = course(); P = rules(C)["greens"]["pins"]; G = GKD(C)
     gdir = a.grids or os.path.join(C.path("automation_output"), "checks"); out = a.out or os.path.join(C.dir, "progress", "pin_moves"); os.makedirs(out, exist_ok=True)
     holes = [int(h) for h in a.holes.split(",")] if a.holes else [h.number for h in G.holes if h.pins]
-    lim = P["max_lie_angle_deg"]; edge = P["min_from_edge_m"]; spacing = P["min_area_spacing_m"]
-    md = ["# Pin moves: %s" % C["name"], "", "Rule greens.pins: lie <= %.1f deg (17 points, %.2f m probes), >= %.1f m from the edge, >= %.1f m between pins. Surface = Unity collider grid (%s). Contours untouched." % (lim, P["probe_radius_m"], edge, spacing, gdir), "",
+    lim = P["max_lie_angle_deg"]; edge = P["min_from_edge_m"]; spacing = P["min_area_spacing_m"]; place = lim - P.get("placement_margin_deg", 0.0)   # place under the limit by the margin: the live test reads a little higher than the grid
+    md = ["# Pin moves: %s" % C["name"], "", "Rule greens.pins: lie <= %.1f deg (17 points, %.2f m probes), placed under %.1f deg (placement_margin_deg), >= %.1f m from the edge, >= %.1f m between pins. Surface = Unity collider grid (%s). Contours untouched." % (lim, P["probe_radius_m"], place, edge, spacing, gdir), "",
           "| hole | day | old lie | new lie | moved m | note |", "|---|---|---|---|---|---|"]
     rows = []; edits = []
     for hn in holes:
@@ -51,7 +51,7 @@ def main():
         def sample(x, z): return F(np.column_stack([np.asarray(x, float), np.asarray(z, float)]))
         dist = ndimage.distance_transform_edt(M) * step   # m to the nearest non-green cell
         cand = np.argwhere(dist >= edge); cx = ux[cand[:, 0]]; cz = uz[cand[:, 1]]
-        ang = pin_area_angles(sample, cx, cz, P); ok = np.isfinite(ang) & (ang <= lim)
+        ang = pin_area_angles(sample, cx, cz, P); ok = np.isfinite(ang) & (ang <= place)
         h = G.hole(hn); pins = h.pins; cur = []
         for p in pins:
             x, z = p["Position"]["x"], p["Position"]["z"]; a0 = pin_area_angles(sample, [x], [z], P)[0]; cur.append([p["Day"], x, z, float(a0) if np.isfinite(a0) else 99.0])

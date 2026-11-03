@@ -92,7 +92,9 @@
     "min_area_spacing_m": 3.0,
     "usable_grid_m": 0.75,
     "usable_inset_m": 1.2,
-    "source": "GreenKeeper method; Green Studio review 10/31"
+    "source": "GreenKeeper method; Green Studio review 10/31",
+    "placement_margin_deg": 0.3,
+    "placement_note": "pin_mover.py places pins only on cells under max_lie_angle_deg - placement_margin_deg: the mover reads a 0.5 m collider grid with linear interpolation and the live Unity test raycasts the real colliders, which read 0.1-0.3 deg higher at the same spot (Tierra 11/3: 6 of 50 moved pins landed at 1.8-2.0 deg live after passing at 1.7 on the grid)."
   },
   "internal_slope_pct": {
     "min": 1,
