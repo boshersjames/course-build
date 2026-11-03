@@ -53,3 +53,55 @@ LiDAR review decision points for water: **D11-D12** (water level and extent, cha
 ## Sources
 
 `MORNING_NOTES.md` (Water, Washes) and `tools/water_*.py`, `stream_dig.py` on `claude/moorpark-unity`; `progress/tierra/MORNING_1030.md` (13 creek), `creek13/`, `gate/hole_13/top_items.md` (items 4, 6), `gate/hole_14/top_items.md` (item 1), `gate/hole_18/top_items.md` (item 3), `audit_photo_pairs/AUDIT_FINDINGS_1030.md`.
+
+## Carried over from the skill (2026-11-03)
+
+Lines that were in `course-build-water` but not in this playbook when the skill was cut to one page.
+
+
+### Defaults that worked
+- **Inventory**: OSM water + satellite + drone/photo frames (`water_inventory.py`, `water.json`). Rivers/canals and natural water away from the holes are not hazards.
+- **Lakes/ponds**: dug to the LiDAR bed, flat water plane at the real surface height, OPCD-WaterPlane_AquasLite material + GSPwater physics; hazard outline moves with the water.
+- **Water height, which rule where**: lakes and ponds sit ~5 cm below the shore, with the plane running ~2 m under the banks so no gap shows; stream and creek ribbons sit ≥4 cm above the bed or the course meshes so they aren't buried.
+- **Pond banks**: shelf width = depth ÷ tan(slope), default slope ~11°, eased into the bed.
+- **Shoreline wobble**: inward only, so water never pushes onto turf.
+- **Pond look**: reflective (mirror) water as one shared copy (TR_PondWater_reflect), retinted per hole only where photos differ; no opaque olive/brown water, no beige rim; thin mud ring with grass to the edge.
+- **Streams**: 3 m channel dug 0.35 m with a sloped surface, or water lifted 4 cm above the course meshes so it isn't buried; width to the photo (1.5-2 m by a bridge). Sample the bed every 1 m, never rising downstream; the water surface is monotone too.
+- **Creek edging**: white broken concrete lip or thin grey curb only where photographed; tan sandstone boulders, thinned; no rows of potato boulders or white pebbles.
+- **Waterfalls**: angular tan sandstone tiers on a boulder sill, 2-3 thin uneven falls with foam at each drop, wet faces only behind the falls, base lowered ~1 m into a pool that stays GSPro water; no identical sheets, columnar sprites or dark panels.
+- **Reeds**: band 1-4.5 m from the water (`make_reed_mask.py`), reads as plants not a wall.
+- **Washes**: dry sandy beds, out-of-play floor 0.5-1 m below the fairway edge, grey-brown silt, cobble edge; interior OB with a drop zone on the tee side where a wash crosses play.
+- **Bridges**: railless weathered plank footbridge with sleeper steps; concrete cart crossing with 15 cm curbs; seated on grade.
+- **Drop zones**: every water hazard gets a DZ on dry course ground; `innerOOB=false`.
+
+### Procedure
+1. Inventory and classify: lake/pond (hazard), stream (hazard or feature), wash (interior OB), river (none).
+2. Dig and plane; water heights from the LiDAR surface; GKD hazards from the planes.
+3. Photo pass: position first (Tierra 14 pond was 6-8 m short on the east), then extent, then look. Photos win over LiDAR for extent when BoJa says so.
+4. Creek details from photo GPS (pump station, waterfall, steps).
+5. Joins: each water mesh overlaps ≥0.5 m under the surface it feeds, with monotone heights; probe the join for dry samples.
+6. Creek GKD hazard = union of the water meshes + ~0.6 m, minus the mown meshes, simplified to 0.1 m. Back up the GKD first.
+
+### Checks
+- No tee, pin, aim point or DZ in water; DZs ≥6 m from the edge and on grass.
+- Water sits in a channel, not flat at grade across turf.
+- Grid probe over every water mesh: 0 dry samples.
+- Seams pinned, no flipped faces.
+- No boxed banks or brown slabs; no lily pads hugging the shore; one mid-pond cluster at most.
+- GKD hazard outline moves with any water edit; red/yellow set from the card.
+
+### Pitfalls
+- A stream buried under the course meshes rendered as grass.
+- Coarse stream quads poked through the course meshes; sample the bed every 1 m.
+- Sinking a creek reach opened a 6 m dry gap at the next join (Tierra 13 fill); re-probe joins after any sink.
+- Plank ramps, box bridges with rails and stylised waterfalls were all rejected; build from the photo.
+- A highway beside a hole was cleaned into a sandy wash; never clean real features out of the satellite.
+- Washes picked as sand patches come split with grass gaps; join in Greenkeeper where it matters.
+- Water objects with null materials show magenta.
+- Shoreline Studio (Blender add-on) is GPL-3.0: borrow its ideas and numbers, never paste its code.
+
+### Decision points (ask once, with a default)
+**Needs an in-person look:** wash = OB or penalty area; seasonal fill when photos and LiDAR differ. Water levels (D11) are reliable in LiDAR; QL1 settles channels (D12), on QL2 courses confirm channel vs sheet from photos.
+1. Washes/creeks: interior OB (default for dry washes) vs penalty with DZ (default for water).
+2. Pond extent where LiDAR and photos differ (default: photos).
+3. Seasonal water level.

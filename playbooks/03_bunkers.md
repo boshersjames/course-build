@@ -63,3 +63,61 @@ LiDAR review decision points for bunkers: **D4-D6** (sand edge, depth and face, 
 ## Sources
 
 `progress/tierra/bunkers_fairways_1029/README_bunkers.md`, `hole_11/edits/h11b_notes.md`, `gate/hole_15/edits/h15b_spec.md`, `gate/hole_16/edit_list.md` (edits 15, 18), `gate/hole_18/edit_list.md` (edit 2), `unity_automation/SUMMARY_2026-10-28_playtest.md` (P7/P8); Hansen pass 8 bunkers, Wilson pass 1; checklist "Surfaces and physics", "Hole 11 greenside bunker nose", "15 flyover review".
+
+## Carried over from the skill (2026-11-03)
+
+Lines that were in `course-build-bunkers` but not in this playbook when the skill was cut to one page.
+
+
+### Defaults that worked
+| Depth reference | Depths are measured below a plane fitted to the rim, not from the lowest rim point or the green | Bunker Studio |
+| Greenside depth | 0.8-1.2 m below the green, ~38° face on the green side, flat floor (≤2.9°); Tierra 12/16 rebuilt to 1.3-1.4 m bowls | Hansen plan |
+| Face shape | Steep on the high/green side, gentle walk-in on the low side | Bunker Studio |
+| Lip height | Green-side 0.15 m (0.3 m made a grass wall); mown lips ≤0.3 m; fairway lips 0.12 m, no hedge band | h11b, h16 |
+| Edge wobble | Seeded (repeatable) and zero at the seam | Bunker Studio |
+| Face | Sand flashed up the far face to a thin lip (as photographed), not a tall turf wall; the turf face starts at the raised rim and rises with a smoothstep, no V-trench between turf and sand | BoJa 10/31, h16fw3 |
+| Floor | Follows the LiDAR/scan inside the outline | h11b v2 |
+| Sand colour | Warm tan, not white: (0.70, 0.66, 0.56) / #D8C99B; render sand b/g 5-10% lower than render concrete | playtest, Hansen |
+| Islands | None; a *nose* (raised rounded tongue of rough joined to the back bank, sod-wall face on the sand side) only where BoJa approves per bunker | BoJa 10/31 |
+| Trees over sand | ≥1.3× LiDAR crown radius + 0.5 m from sand (rendered crowns are bigger); nudge or shrink, delete last | Wilson/Harding |
+| Physics | Material name contains "sand"/"Bunk" → GSPro TVGsand | playtest |
+| Rim rings / undersides | None under or around the sand (z-fighting, black skirts); terrain lowered under deepened bunkers by depth + 5 cm | Hansen 1, Tierra 18 |
+
+### Seams
+- The surround's outer edge stays fixed; only its inner row follows the sand.
+- Reject a surround stretched outside 0.75-1.5× its width.
+- Use one shared, averaged normal on both sides of the sand seam, so no lit line shows.
+- Every sand outline vertex has a matching surround vertex (no slit).
+
+### Procedure
+1. Data: `bunkers.csv` from `coursekit.py svg` (type, depth, face, lip); `clear_bunker_crowns.py`; `bunker_plan.py`.
+3. Per photographed bunker: match GPS photos to bunkers in view (within 30° of heading, 6-110 m), render photo | game, compare outline, lip height, face, depth, sand line. A clean scan wins.
+4. Rebuild as a *package* (editor B) on a named save: keep sand-edge vertices, re-mesh the floor to scan/LiDAR, build the lip cut and dirt band, re-mesh the surround rough, lower the terrain, re-run vertex paint, island check, render photo | now | package at the same poses plus a top view and a low view along the lip. Editor A applies on a fresh reload.
+5. Noses/mounds: own mesh in the plain (non-satellite) semi-rough material with white vertex colours, domed ~0.4 m, soil cut along the sand side; edge against the bank is the old sand outline, not triangle teeth. Bury the rim ~2 cm; sinking the outer rings deeper shrinks the visible bulb (Tierra 15 round 4).
+
+### Checks
+- Island check clean (approved noses listed).
+- No black pockets (max channel <28 within 6 px of sand), creases, spikes, facets, kinks; footprint unchanged after a dressing-only edit.
+- No turf squares in sand, no overhanging lips, no saw-tooth edges.
+- No turf flaps over a neighbouring bunker's sand: drop surround triangles within 3 cm of a neighbour's outline.
+- The LiDAR mound between bunker and green survives Lower Terrain Under Meshes.
+- Photos show ~3× more face than the render while the LiDAR supports today's shape → BoJa question (raise the bank), not a silent fix.
+- Mesh vs satellite sand offset (Tierra 18: 1.5-2 m): report; re-seat only what BoJa names.
+- Sand colour measured in a same-light frame.
+
+### Pitfalls
+- Long-grass lip bands and hedge-like rims read as walls from the fairway.
+- Rims as separate rings z-fight and show black skirts; build the rim in the sand/surround meshes.
+- Never move sand on a photo alone; the satellite must confirm.
+- Reopen an approved mesh once, carrying every known defect fix in the same package.
+- Lower a lip by raising the sand margin 0.12-0.18 m feathered into the bunker; don't drop the fairway.
+- Pixel-box specs rot once poses move; measure in world coordinates.
+- Bunker Studio's preset depths (0.28-0.70 m) are too shallow for greensides; use the depths above.
+- Bunker Studio (Blender add-on) is GPL-3.0: borrow its ideas and numbers, never paste its code.
+
+### Ask BoJa once (with a default)
+**In person even with a newer scan:** islands, noses and mounds inside sand (D6). QL1 data settles sand edges (D4) and depth/faces (D5); on QL2 courses (Tierra, Hansen, Moorpark) those come from photos and phone scans.
+1. Course bunker style (deep sod bowls vs shallow flashed sand) from 2-3 reference photos before the plan runs.
+2. Any nose or mound, per bunker, from a photo.
+3. Face height where LiDAR and photos disagree (default keep the scan).
+4. Sand colour once for the course.

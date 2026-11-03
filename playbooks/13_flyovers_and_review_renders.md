@@ -54,3 +54,93 @@ Pose solving follows **D13** (register every photo to the LiDAR by skyline and l
 ## Sources
 
 `progress/tierra/flyovers_1029/NOTES.md`, `hole_signs_1029/README.md`, `holes/hole_10_state.md`, `gate/hole_11/edit_list.md` (Step 0 pose table), `audit_photo_pairs/AUDIT_FINDINGS_1030.md`; `unity_editor/CourseFlyoverPreview.cs`; checklist "Flyover camera path", "Flyover camera speed", "Flyover ending", "2026-10-30 flyover pins".
+
+## Carried over from the skill (2026-11-03)
+
+Lines that were in `course-build-flyovers` but not in this playbook when the skill was cut to one page.
+
+
+### Defaults that worked
+- **Pose render**: camera at the photo's GPS/heading/pitch, same FOV as the phone, refined by content; terrain height at the pose within 2 cm of LiDAR.
+- **Pair layout**: photo | before | after at full size, one row per photo; a top view and one low close view for mesh packages.
+- **Pose confidence**: high/medium only for verdicts; weak poses flagged.
+- **Flyover length**: ~20 s at 25 fps, 1280×720 or better, rendered frame by frame; MP4 on the PC (`Documents\<course>\flyovers`), stills committed.
+- **Opening**: first frame on the hole sign at the tee, heading = line of play, sign readable, tee shot not blocked.
+- **Path**: rise with no yaw, fly forward only (no 180° flips), yaw and pitch ≤5°/s eased, no roll; the render fails automatically above the limit.
+- **Ending**: fly to the front edge of the green (~12 m short of the pin), drop to ~8 m, end looking down at the pin with the whole green in frame, hold 2.5 s.
+- **Flags/pins**: none in standard flyovers (pins change); a per-pin flyover is a parked idea.
+- **First frame clear**: never behind a tree or canopy: move the camera 2-5 m forward/sideways (logged), never the tree.
+- **Where**: render-only editor (B/C) on a sync of A's save; never exported or copied back.
+
+### Procedure
+1. Pose solve: GPS + EXIF heading, fixed by landmarks (sign post, path crest, tee markers, skyline); log per photo (`refined_poses.json`).
+4. Flyover render with the speed guard; review first frame, sign, and the end on the green; then send.
+5. Showcase flyovers: fix the known gaps in frame first, then render.
+
+### Checks
+- Yaw max and pitch max reported per flyover.
+- Left/right sweep from every flyover start for empty ground.
+
+### Pitfalls
+- The GKD has no camera fields; flyover settings are GSPro player settings, so the custom flyover tool is ours and sign placement is the only in-game lever.
+- A camera stopping 30 m short of the pin and only tilting down came straight back.
+- A camera key at 5 m passed through a tree after the sign; raise it to 10 m.
+- GPS put a tee burst 80 m away; content beats GPS.
+- Renders at the wrong look can't be compared to earlier gates.
+- Real-size signs are unreadable from 20-25 m; the camera starts close to the sign.
+
+### Decision points (ask once, with a default)
+2. Showcase holes for outreach.
+
+## Carried over from the skill (2026-11-03)
+
+Lines that were in `course-premiere-flyovers` but not in this playbook when the skill was cut to one page. (premiere flyovers: kept here as the nearest playbook.)
+
+
+### Premiere flyovers (DRAFT, to finalise after the Nov 3 renders are reviewed)
+A premiere flyover is a sales video, not a review render. The viewer should want to play the hole: the challenge (carry, drop, dogleg,
+water), the unique feature (cliff, creek, plaque, hillside) and the scenery. It is also not the GSPro flyover, which is a player setting
+the course cannot change. Use `course-build-flyovers` for review renders and gate sheets; this card is only for the videos that go out.
+
+### Defaults that worked (Tierra, Nov 2-3)
+- **Pick holes by cleanliness first, drama second.** A hole with open build notes in frame (bare paint, unbuilt pond bank, fence
+  through a tee) is out, however good the tee shot. 3-4 holes per send, the data-complete nine first.
+- **Path**: `scripts/tierra_flyover_gate.py` (forward-only v4 path with the gate checks). Open on the hole sign, rise with no yaw, fly
+  the hole line, end with the whole green in frame. Yaw and pitch under 5 deg/s (BoJa, Oct 30: "not to rotate the camera so quickly").
+- **Ending**: per hole `--end-fit`, which lands 18-35 m short of the pin at 11-16 m up, looking down 25-31 deg. The review-render ending
+  (12 m short, 8 m up) cuts the sides off every green.
+- **Speed**: 26 m/s for par 4/5, 14-20 m/s on par 3s and short holes so the video runs 17-26 s. Under 15 s feels rushed.
+- **Trees by the sign**: never move the tree. Move the opening camera up to ~9 m (`--max-move`), or lengthen the rise (`--rise-dist 40`)
+  so the climb stays under the canopy until it is past the trunk. Both logged in the gate JSON.
+- **Format**: 1920x1080, 25 fps, frame-by-frame from CourseAutomation shots; ffmpeg libx264 crf 17, yuv420p, faststart. MP4s on the
+  PC, poster frames (first / rise / mid / approach / end) committed as JPG.
+- **Where**: render editor C on a sync of A's save; dressing fixes stay in C and are logged.
+
+### Procedure
+1. Candidate list from the person sending; cut by the open-notes check per hole; 3-4 picks with the hook written down per hole.
+2. Gate pass on the data (`tierra_flyover_gate.py --end-fit --width 1920 --height 1080`): every pick must pass before an editor is used.
+3. Dress what is in frame: thin far trees, pale paint cells, water that renders black offline, haze; tint and LOD only, no reshaping.
+4. Render, review the stills (frame 0 sign readable and tee shot clear; top of rise; approach; end frame whole green and pin), sweep
+   left/right from the opening spot for empty ground.
+5. Encode, then the send-out check against the hook list: is the feature in frame? If not, a camera knob and a rerun, not a rebuild.
+
+### Checks
+- Gate JSON per hole: yaw/pitch per 1 s, crown clearance on the rise and flight, green cut-off 0, pin in frame and unhidden.
+- Render log says which save (time, commit) the frames came from.
+- Nothing in frame violates the build rules (plants on turf, defects on in-play turf, invented ground).
+
+### Pitfalls
+- The review-render ending looked right in the gate table but cannot show the whole green; check the end frame on every hole.
+- A rise key 12 m past the sign climbs through any 10 m+ crown within 12 m of the sign (Tierra 12's eucalyptus).
+- A par 3 at 26 m/s is over in 12 s.
+- LFS: PNGs in this repo go through Git LFS, which cloud sessions cannot push; commit poster frames from the PC.
+
+### Decision points (ask once, with a default)
+1. Which holes, if the candidate list is longer than four. Default: the cleanest four.
+2. Length and format. Default: 17-26 s, 1080p, no text overlay.
+3. A feature beat (a pass along a creek or the cliff edge) off the hole line. Default: none; the forward-only rule stays.
+
+### To fill in after the review
+- What James changed after seeing the MP4s (speed, end spot, rise) per hole, and whether any hole was swapped.
+- Whether a feature beat is wanted, and the waypoint rule if so.
+- Encode settings and whether 1080p render time was acceptable.
