@@ -82,6 +82,7 @@ public class CoursePhysicsAudit : EditorWindow
             {
                 if (c.GetComponentInParent<LODGroup>()) continue;   // trees: their tools own GSPtimber / GSPleaves
                 var p = c.bounds.center; string cur = c.sharedMaterial ? c.sharedMaterial.name : "";
+                if (cur == "GSPleaves" || cur == "GSPtimber") { ok++; audit.Add(string.Join(",", new[] { root.name, c.name.Replace(',', ';'), cur, "plant", cur, "ok", p.x.ToString("F1", CI), p.z.ToString("F1", CI) })); continue; }   // shrubs / props on plant physics: the tree tools own these
                 string cls = ClassOf(c.name, R.name_rules) ?? ClassOf(c.transform.parent ? c.transform.parent.name : "", R.name_rules);
                 string exp = cls != null ? MatName(cls) : null; string action;
                 if (cls == null) { action = "unsure"; uns++; unsure.Add(string.Join(",", new[] { root.name, c.name, cur, p.x.ToString("F1", CI), p.z.ToString("F1", CI), "no name rule matched" })); }

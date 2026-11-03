@@ -118,14 +118,28 @@ class GKD:
         open(path or self.path, "wb").write((b"\xef\xbb\xbf" if self.bom else b"") + new_text.encode("utf-8"))
 
 
-def _parse_path_d(d):
-    pts = []
+def _parse_subpaths(d):
+    """List of sub-paths (each Nx2) from an M/L/Z path; coursekit writes absolute coordinates only."""
+    subs = []; cur = []
     for cmd, body in re.findall(r"([MLZmlz])([^MLZmlz]*)", d):
-        if cmd.upper() == "Z":
-            continue
-        nums = re.findall(r"-?\d+(?:\.\d+)?", body)
-        pts += [(float(nums[i]), float(nums[i + 1])) for i in range(0, len(nums) - 1, 2)]
-    return np.array(pts)
+        nums = re.findall(r"-?\d+(?:\.\d+)?", body); pts = [(float(nums[i]), float(nums[i + 1])) for i in range(0, len(nums) - 1, 2)]
+        if cmd.upper() == "M":
+            if len(cur) >= 3: subs.append(np.array(cur))
+            cur = list(pts)
+        elif cmd.upper() == "L":
+            cur += pts
+        else:
+            if len(cur) >= 3: subs.append(np.array(cur))
+            cur = []
+    if len(cur) >= 3: subs.append(np.array(cur))
+    return subs
+
+
+def _parse_path_d(d):
+    """Outer ring only (the largest sub-path by bounding box): for centroids and matching."""
+    subs = _parse_subpaths(d)
+    if not subs: return np.zeros((0, 2))
+    return max(subs, key=lambda a: (a[:, 0].max() - a[:, 0].min()) * (a[:, 1].max() - a[:, 1].min()))
 
 
 def svg_outlines(C, kind="green", path=None, flip_y=None):
@@ -155,6 +169,27 @@ def svg_outlines(C, kind="green", path=None, flip_y=None):
             pass
     if flip_y:
         out = {k: np.c_[v[:, 0], sq - v[:, 1]] for k, v in out.items()}
+    return out
+
+
+def svg_paths(C, kind="green", path=None, flip_y=None):
+    """{id: matplotlib Path with every sub-path} in Unity x,z, so contains_points honours holes (even-odd). Same flip rule as svg_outlines."""
+    from matplotlib.path import Path as MP
+    p = path or C.path("course_svg"); s = open(p, encoding="utf-8").read(); sq = C["frame"]["square_m"]
+    if flip_y is None:
+        flip_y = True
+        try:
+            svg_outlines(C, "green", path, None)  # autodetect runs there; coursekit SVGs are y-down, so True
+        except Exception: pass
+    out = {}
+    for m in re.finditer(r'<path[^>]*\bid="(%s_\d+)[^"]*"[^>]*\bd="([^"]+)"' % kind, s):
+        subs = _parse_subpaths(m.group(2))
+        if not subs: continue
+        verts = []; codes = []
+        for a in subs:
+            a = np.c_[a[:, 0], sq - a[:, 1]] if flip_y else a
+            verts += list(a) + [a[0]]; codes += [MP.MOVETO] + [MP.LINETO] * (len(a) - 1) + [MP.CLOSEPOLY]
+        out[m.group(1)] = MP(np.array(verts), codes)
     return out
 
 

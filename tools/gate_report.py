@@ -93,7 +93,11 @@ def main():
             if r["areas"] < GR["pins"]["min_valid_areas"]: r["fails"].append("areas")
             if HM and AO:
                 fd = fall_direction(os.path.join(AO, "checks", "grid_heights_h%02d.csv" % hn), HM, FR)
-                if fd: r["fall"] = fd; r["fall"]["pass"] or r["fails"].append("fall-direction")
+                if fd:
+                    r["fall"] = fd
+                    if not fd["pass"]:
+                        if hn in C.get("greens_from_scan", []): r.setdefault("warn", []).append("fall-direction(scan-built green, LiDAR differs by design)")
+                        else: r["fails"].append("fall-direction")
         l = Lr.get(hn)
         if l and not u:
             r["source"].append("lidar-proxy"); r["pins_fail"] = int(l["pins_failing"] or 0); r["areas"] = int(l["valid_areas"] or 0); r["usable"] = float(l["usable_pct"] or 0); r["slope_mean"] = float(l["slope_mean_pct"] or 0)

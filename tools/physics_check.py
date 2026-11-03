@@ -13,7 +13,7 @@ import argparse, csv, os, sys
 import numpy as np
 from matplotlib.path import Path as MP
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from course_io import course, rules, svg_outlines
+from course_io import course, rules, svg_outlines, svg_paths
 
 
 def main():
@@ -27,7 +27,7 @@ def main():
     polys = []
     for kind, c in cls.items():
         try:
-            for k, poly in svg_outlines(C, kind).items(): polys.append((kind, c, k, MP(poly), poly))
+            for k, path in svg_paths(C, kind).items(): polys.append((kind, c, k, path, None))
         except Exception: pass
     # precedence: smaller features win (green > tee > bunker > water > fairway > rough > deep)
     order = {"green": 0, "tee": 1, "bunker": 2, "water": 3, "fairway": 4, "rough": 5, "deep": 6}
@@ -38,6 +38,9 @@ def main():
         if kind in ("green", "tee"):
             # 4 m ring outside the edge: collar / first cut may legitimately carry another material
             ring = path.contains_points(P, radius=4.0) & ~path.contains_points(P); edge |= ring
+        if kind in ("fairway", "bunker"):
+            # 2 m ring: the OPCD blend strips sit on the edge and carry the neighbour's material by rule
+            ring = path.contains_points(P, radius=2.0) & ~path.contains_points(P); edge |= ring
     rows = []; summ = {}
     for j, r in enumerate(pts):
         if assigned[j] < 0: continue

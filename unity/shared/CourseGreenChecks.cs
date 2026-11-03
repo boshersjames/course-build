@@ -161,7 +161,7 @@ public class CourseGreenChecks : EditorWindow
         string outDir = ProjectDir() + "/AutomationOutput/checks"; Directory.CreateDirectory(outDir);
 
         // green meshes and their centroids
-        var greens = opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh && Regex.IsMatch(f.name, @"_Green_-_Mesh$")).ToList();
+        var greens = opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh && f.name.Contains("_Green_-_Mesh") && !f.name.StartsWith("SKIRT_") && f.GetComponent<MeshCollider>()).ToList();   // render-only SKIRT_ copies have no collider and are not greens
         var world = greens.ToDictionary(f => f, f => f.sharedMesh.vertices.Select(v => f.transform.TransformPoint(v)).ToArray());
         var cen = greens.ToDictionary(f => f, f => new Vector2(world[f].Average(v => v.x), world[f].Average(v => v.z)));
 
@@ -196,7 +196,7 @@ public class CourseGreenChecks : EditorWindow
 
             // 2. collider = render on green, blend, collar meshes near this green
             float worstDy = 0; int dup = 0;
-            foreach (var f in opcd.GetComponentsInChildren<MeshFilter>(false).Where(mf => mf.sharedMesh && mf.GetComponent<Renderer>() && mf.GetComponent<Renderer>().bounds.Intersects(b) && (Surface(mf.name) == "green" || Surface(mf.name) == "collar")))   // desk-check: lambda param renamed
+            foreach (var f in opcd.GetComponentsInChildren<MeshFilter>(false).Where(mf => mf.sharedMesh && !mf.name.StartsWith("SKIRT_") && mf.GetComponent<Renderer>() && mf.GetComponent<Renderer>().bounds.Intersects(b) && (Surface(mf.name) == "green" || Surface(mf.name) == "collar")))   // desk-check: lambda param renamed
             {
                 var mc = f.GetComponent<MeshCollider>(); if (!mc || !mc.sharedMesh) { row.notes.Add(f.name + " has no mesh collider"); continue; }
                 var ra = f.sharedMesh.vertices; var ca = mc.sharedMesh.vertices;
