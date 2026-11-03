@@ -52,3 +52,6 @@ Generalised from TierraNight1031.CollarLaplace / SinkUnder / CollarRevert, which
 
 ## CourseRimReset.cs (2026-11-03, cloud)
 New. Reads checks/steps.csv (edge_profiles.py --steps-out), moves collar major-loop rim vertices by the survey residual. Reuses CourseCollarFlush.RimIndices / PinRank / SaveMesh / Swap / EnsureFolders / Revert (made public; the revert filter now also accepts "rimreset" log entries). Nested JsonUtility classes GreensRules > Collar > ResetRule + FlushRule. Not yet compiled on the PC.
+
+## CourseRimReset.cs v2 (2026-11-03, cloud)
+Rewritten: direction from the vertex-to-neighbour residual (probe_m outside the rim, own-collider test picks the side), no pair sign; directional gate (share down >= min_share_down and net < 0) refuses Apply unless force + only. ResetRule lost `pairs`. Reuses CourseCollarFlush.MajorLoops / PinRank / SaveMesh / Swap / EnsureFolders / Revert. Not yet compiled on the PC.
