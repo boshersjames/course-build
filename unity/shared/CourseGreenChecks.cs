@@ -168,7 +168,7 @@ public class CourseGreenChecks : EditorWindow
         var world = greens.ToDictionary(f => f, f => f.sharedMesh.vertices.Select(v => f.transform.TransformPoint(v)).ToArray());
         var cen = greens.ToDictionary(f => f, f => new Vector2(world[f].Average(v => v.x), world[f].Average(v => v.z)));
 
-        var rows = new List<Row>(); var edgeCsv = new List<string> { "green,x,z,step,lip,stepAt,surfaces" }; var pinCsv = new List<string> { "hole,day,x,z,green,worst_deg,edge_m,flags" };
+        var rows = new List<Row>(); var edgeCsv = new List<string> { "green,x,z,step,lip,stepAt,surfaces" }; var allProf = new List<string> { "hole,edge_x,edge_z,d_m,y,surface" }; var pinCsv = new List<string> { "hole,day,x,z,green,worst_deg,edge_m,flags" };
         foreach (var h in g.Holes.OrderBy(ho => ho.HoleNumber))   // desk-check: lambda param renamed, loop var and lambda param shared a name (CS0136 before C# 8)
         {
             if (only.Count > 0 && !only.Contains(h.HoleNumber)) continue;
@@ -193,6 +193,7 @@ public class CourseGreenChecks : EditorWindow
                 float st = 0; int si = 0; for (int i = 1; i < ys.Count; i++) { float s = Mathf.Abs(ys[i] - ys[i - 1]); if (s > st) { st = s; si = i; } }
                 float lp = 0; for (int i = 0; i < ys.Count; i++) { float chord = Mathf.Lerp(ys[0], ys[ys.Count - 1], i / (float)(ys.Count - 1)); lp = Mathf.Max(lp, ys[i] - chord); }
                 steps.Add(st); lips.Add(lp);
+                for (int i = 0; i < ys.Count; i++) allProf.Add(string.Join(",", new[] { row.hole.ToString(), m.x.ToString("F2", CI), m.y.ToString("F2", CI), (E.profile_from_m + i * E.step_m).ToString("F2", CI), ys[i].ToString("F4", CI), names[i].Replace(',', ';') }));   // every sample of every profile, for offline analysis
                 if (st >= steps.Max())
                 {
                     row.stepAt = (names[Mathf.Max(si - 1, 0)] + ">" + names[si]).Replace("_-_Mesh", "").Replace("Spline_", "");   // the two colliders the worst step crosses
@@ -266,7 +267,7 @@ public class CourseGreenChecks : EditorWindow
         }
 
         File.WriteAllLines(outDir + "/edge_survey.csv", edgeCsv.ToArray()); File.WriteAllLines(outDir + "/pin_area.csv", pinCsv.ToArray());
-        var wprofRows = new List<string> { "hole,edge_x,edge_z,d_m,y,surface" }; foreach (var rowP in rows) wprofRows.AddRange(rowP.worstProfile); File.WriteAllLines(outDir + "/worst_profiles.csv", wprofRows.ToArray());   // the full height profile of each green's worst step: read it before touching a collar
+        var wprofRows = new List<string> { "hole,edge_x,edge_z,d_m,y,surface" }; foreach (var rowP in rows) wprofRows.AddRange(rowP.worstProfile); File.WriteAllLines(outDir + "/worst_profiles.csv", wprofRows.ToArray()); File.WriteAllLines(outDir + "/profiles.csv", allProf.ToArray());   // the full height profile of each green's worst step: read it before touching a collar
         var csv = new List<string> { "hole,green,max_step_cm,max_lip_cm,step_pts_over,lip_pts_over,collider_dy_cm,tiers_ok,tiers_note,crown_overhang_m,pins,pins_failing,usable_pct,valid_areas,pass,notes" };
         var md = new List<string> { "# Green checks: all " + rows.Count + " holes (" + C.name + ", " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + ")", "",
             "Rules: step <= " + (E.max_step_m * 100).ToString(CI) + " cm, lip <= " + (E.max_lip_m * 100).ToString(CI) + " cm, collider dy <= " + (R.checks.collider_vs_render_max_dy_m * 100).ToString(CI) + " cm, crown < " + CR.block_at_m.ToString(CI) + " m over green/collar, pins <= " + P.max_lie_angle_deg.ToString(CI) + " deg and >= " + P.min_from_edge_m.ToString(CI) + " m from the edge, >= " + P.min_valid_areas + " areas.", "",
