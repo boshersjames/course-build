@@ -3,6 +3,17 @@ name: "course-build-unity-tools"
 description: "Use before writing any Unity editor script for a GSPro course: the menus, batch jobs and course builders that already exist, their inputs, and the new-course setup order."
 ---
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `..\course-build\automation\Run-CourseAutomation.ps1 -SyncTools [-CourseJson <path>] [-Steps "a,b"] [-NoShots]`: reads `course.json` (project path, config), copies `unity/shared/*.cs`, the course's own `unity_editor/*.cs`, `course.json` and `rules/*.json` into the project, runs the batch; output under `AutomationOutput/<stamp>/summary.md`.
+- `..\course-build\automation\Send-UnityCommand.ps1 ping|run|shots|invoke|describe|menu|save|refresh [-Tool <class>] [-Method <method>] [-Steps ...] [-Path <menu path>]`: the live bridge; `describe -Tool X` lists a tool's menu items, fields and methods before you call it.
+- Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`, `RunAll` for the bridge): the all-18 green table; written in the cloud, compile it once on the PC.
+- Unity `Course Look > Apply Tint JSON` (`ApplyTintJson.cs`): tint multipliers from `colour_match.py --json`; written in the cloud, compile it once on the PC.
+- Unity `Course Tools > Flyover Preview` (`CourseFlyoverPreview.cs`), `Course Tools > Automation > Run pipeline / Screenshots only / Inspect scene / Open config` (`CourseAutomation.cs`).
+- (no tool yet: a diff of the PC's live `Assets\Editor` against `unity/shared` as a command; today it is a manual `Copy-Item` + compare, see `docs/BRANCHES.md`)
+
 # Unity tool inventory
 
 Reuse before writing. Tools live in `unity_editor/` on `claude/moorpark-unity` (shared set), in each course's thread branch, and in `tierra-rejada-lidar/unity_automation/` (batch runner). Unity 2018.2.8f1. Full guide: `course-build/playbooks/19_unity_tool_inventory.md` in the moorpark repo.

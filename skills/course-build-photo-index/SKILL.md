@@ -3,6 +3,17 @@ name: "course-build-photo-index"
 description: "Use when a photo or scan dump lands for a course, or when auditing a hole against photos: folder layout, index.csv, pose solving and the verdict-per-photo audit."
 ---
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/photo_index.py [--dump course_photos/unsorted/<date>] [--sheets] [--shots] [--date <label>]`: HEIC/JPG EXIF to the course frame, hole by distance to the hole line (`photos.hole_assignment.corridor_m`), GPS confidence from paired shots (`photos.gps_confidence`), FOV from the focal length, a draft pose at `photos.pose.eye_height_m` on the LiDAR, solved poses from `progress/**/refined_poses.json` carried in; writes `course_photos/index.csv`, `sheets/hole_NN.jpg`, `display/`, `shots_photo_poses.json`.
+- `tools/pose_solve.py` (in progress): skyline fit of draft poses against the LiDAR horizon, grid search `photos.pose_solve.grid_search_m` / `heading_search_deg`; promotes `pose_conf` draft -> high/medium.
+- `python ../course-build/tools/scan_index.py [--only <stem>]`: one row per LAS in `course_photos/scans/index.csv` with the green it covers and its fit verdict.
+- PC: render `shots_photo_poses.json` in one batch, then `python ../course-build/tools/audit_pairs.py --renders latest [--before <run>/shots] [--holes 10,11] [--include-draft]`: photo | before | after per photo with measured turf colour, `colour_ok`, and the verdict column for match / mismatch / fixed / n-a; rules `photos.audit`.
+- `python ../course-build/tools/drone_frames.py fetch|segments|cut [--video <mp4>] [--segments <csv>] [--index]`: online flyover frames per hole into the same index at low confidence; rules `photos.drone`, `photos.sources.drone_online`.
+- (no tool yet: moving files from `unsorted/` into the hole/spot folders with the standard name; the index keeps the original path today; candidate for `photo_index.py --sort`)
+
 # Photo index and audit
 
 Use with `course-build-gates` and `course-build-flyovers`. Full guide: `course-build/playbooks/17_photo_index_and_audit.md` in the moorpark repo. Registration rule: `playbook/LIDAR_DETAIL_REVIEW.md` D13.

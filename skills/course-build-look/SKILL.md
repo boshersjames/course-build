@@ -5,6 +5,16 @@ description: "Use when tinting turf, grading the satellite, setting sand or conc
 
 Rules file: `rules/look.json` (every number below is defined there; read it with `tools/rules.py look`). Course overrides: `course.json` → `rule_overrides.look`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h [--box ...] [--target green|sand|scrub|cliff|pepper|eucalyptus|pine] [--json tint.json]`: median RGB, r/g, b/g of photo and render in the same boxes, the gap after the render warm offset (`look.measure.render_warm_offset`), PASS/FAIL against the rule band, and the OverallColor multiplier that closes it. `--render-only` judges a render against the rule target alone.
+- Unity `Course Look > Apply Tint JSON` (`unity/shared/ApplyTintJson.cs`): applies `tint.json` multipliers (and desaturate) to the named material copies, refuses shared materials, writes a done marker so a rerun cannot compound; rules `look.tint_mul`, `rough.tint_mul.done_marker`.
+- `python ../course-build/tools/audit_pairs.py --renders latest [--before <run>/shots]`: turf colour measured in the same region of every photo and its render, `colour_ok` per photo; rules `photos.audit.colour_gap_max`.
+- Unity `Course Look > Cart Paths and Turf` (`CourseLook.cs`): graded satellite and shared concrete; `TierraLookProbe.cs` (`unity/course-templates/`) lists the post-processing, fog and volumetric settings that make the scene camera differ from the render camera.
+- (no tool yet: lighting defaults `look.lighting_batch` and the post profile `greens.post_profile` applied by command; candidate for `unity/shared/`)
+
 # Materials, colour and look
 
 Use with `course-build-gates` (hole-10 control rule). Full guide: `course-build/playbooks/12_materials_colour_and_look.md` in the moorpark repo.

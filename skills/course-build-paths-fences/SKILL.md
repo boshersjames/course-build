@@ -5,6 +5,15 @@ description: "Use when building cart paths, curbs, dirt paths, public roads, ent
 
 Rules file: `rules/paths_fences.json` (every number below is defined there; read it with `tools/rules.py paths_fences`). Course overrides: `course.json` → `rule_overrides.paths_fences`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h`: concrete tone against the photo in the same light (sand is judged relative to it: `bunkers.sand.bg_ratio_vs_concrete_pct`).
+- Unity `Course Look > Cart Paths and Turf` (`CourseLook.cs`): shared concrete look and graded satellite on every layer; check the found count.
+- `BuildCartPaths.cs` / `BuildFences.cs` / `BuildBridges.cs` (`unity/shared/`): paths from `cartpaths.csv`, fences from `fences.csv`, bridges; run through `Send-UnityCommand.ps1 invoke -Tool <name> -Method <method>` (`describe -Tool <name>` lists the methods).
+- (no tool yet: roundabout solid-disc check, turf-over-path raycast grid at `paths_fences.checks.overlap_grid_m`, edge line-up at `edge_sample_m` / `edge_gap_max_m` / `edge_step_max_m`, rough poke-through %, fence continuity; candidate for a `CoursePathChecks.cs`)
+
 # Cart paths, roads and fences
 
 Use with `course-build-gates`. Full guide: `course-build/playbooks/09_cart_paths_roads_and_fences.md` in the moorpark repo.

@@ -5,6 +5,15 @@ description: "Use when mapping, grading, rebuilding or checking any bunker in a 
 
 Rules file: `rules/bunkers.json` (every number below is defined there; read it with `tools/rules.py bunkers`). Course overrides: `course.json` → `rule_overrides.bunkers`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/scan_index.py`: a bunker scan gives rim-to-floor depth per sand blob against the LiDAR (`extra` column); rules `bunkers.greenside.depth_m`, `bunkers.fairway.depth_m` are the targets to compare against.
+- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h --target sand`: sand colour in a same-light frame, PASS/FAIL against `bunkers.sand`, suggested multiplier; render sand b/g must sit `bunkers.sand.bg_ratio_vs_concrete_pct` below render concrete.
+- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate`: crown clearance along the flight shows trees over sand near the line (rules `bunkers.tree_clearance` is checked in Unity, not here).
+- (no tool yet: island check, black-pocket check, lip height and face angle from the mesh, outline vs satellite offset; Tierra versions in `unity/course-templates/TierraBunkerIslands.cs`, `BunkerDepth.cs` in `unity/shared/`; candidate for a `CourseBunkerChecks.cs`)
+
 # Course build: bunkers
 
 Follow the standing rules in `course-build-gates` (no islands, never invent ground, shared sand stays shared, photo pairs for every edit). LiDAR review decision points for bunkers are D4-D6 in `playbook/LIDAR_DETAIL_REVIEW.md` (moorpark repo). Full guide: `course-build/playbooks/03_bunkers.md`.

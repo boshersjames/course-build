@@ -3,6 +3,14 @@ name: "course-build-speedtree"
 description: "Use when a GSPro hole needs a hero tree, a SpeedTree asset goes into a course, a new species model is requested, or SpeedTree licensing comes up."
 ---
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/colour_match.py photo.jpg model_render.png --box x,y,w,h --target pepper|eucalyptus|pine`: the model sheet's measured colour against the named photo; rules `trees.color_targets`.
+- `python ../course-build/tools/flyover_gate.py`: crown radius from `trees_csv` is what the gate uses; a new model's scale note (`trees.model_scale`) must keep the planted crown within the LiDAR crown.
+- (no tool yet: LOD / billboard silhouette check at 10-30 m, double-sided leaf check, Arboreum import settings applied by command; candidate for `unity/shared/`)
+
 # SpeedTree and tree models
 
 Use with `course-build-trees` (planting, species rules, corridors, colliders). This is the model side. Full guide: `course-build/playbooks/15_speedtree_and_tree_models.md` in the moorpark repo.

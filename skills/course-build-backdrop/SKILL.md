@@ -5,6 +5,14 @@ description: "Use when building what a GSPro course sees past its square: far te
 
 Rules file: `rules/backdrop.json` (every number below is defined there; read it with `tools/rules.py backdrop`). Course overrides: `course.json` → `rule_overrides.backdrop`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate [--end-fit]`: every flight path and poster frame, so what the backdrop must cover is known before anything is built; rules `flyovers.render`, `backdrop.far_backdrop_km`.
+- `offsite_trees.py` and `backdrop.py` (per course, from `pipeline.fixes`): LiDAR trees to `backdrop.offsite_trees_m` and the outer DEM; `buildings.py`, `building_heights.py` (`tools/moorpark_tools/`): OSM footprints with LiDAR roof heights.
+- (no tool yet: skyline fit RMS against the photo from the highest tee at `backdrop.skyline_fit_rms_px_max`; `tools/pose_solve.py` (in progress) computes the LiDAR skyline that this needs; candidate for `tools/`)
+
 # Backdrop and surroundings
 
 Use with `course-build-gates`, `course-build-paths-fences` and `course-build-pipeline`. Full guide: `course-build/playbooks/18_backdrop_and_surroundings.md` in the moorpark repo. LiDAR decision point D15.

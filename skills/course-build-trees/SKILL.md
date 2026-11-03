@@ -5,6 +5,16 @@ description: "Use when extracting, planting, swapping species, fitting colliders
 
 Rules file: `rules/trees.json` (every number below is defined there; read it with `tools/rules.py trees`). Course overrides: `course.json` → `rule_overrides.trees`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h --target pepper|eucalyptus|pine`: canopy colour r/g and b/g against `trees.color_targets`, same-light frames only.
+- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate`: minimum crown clearance along every flight and the opening frame's crown test from `trees_csv`; rules `flyovers.path.min_clear_m`.
+- Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`): crowns over greens and collars, 16 directions, 4 radii; rules `greens.checks.crown_overhang`, `trees.clearances.green_collar_crown_m`.
+- `python ../course-build/tools/coursekit.py trees [--min-height 3] [--buffer 150]`: the LiDAR tree list (`trees.csv`); rules `trees.source`, `trees.shrub_misread_threshold_m`.
+- (no tool yet: shot sweep from every tee, corridor pass, bunker crown clearance, floating-tree and magenta checks as headless reports; `PlantLidarTrees.cs` plants, nothing audits; candidate for `unity/shared/`)
+
 # Course build: trees
 
 Follow the standing rules in `course-build-gates`. LiDAR review decision point D18 (tree, shrub, hedge or building) in `playbook/LIDAR_DETAIL_REVIEW.md` (moorpark repo).

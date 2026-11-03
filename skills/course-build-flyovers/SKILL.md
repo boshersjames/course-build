@@ -5,6 +5,17 @@ description: "Use when rendering photo-pose pairs, gate sheets or hole flyovers 
 
 Rules file: `rules/flyovers.json` (every number below is defined there; read it with `tools/rules.py flyovers`). Course overrides: `course.json` → `rule_overrides.flyovers`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate [--holes 1,9] [--end-fit] [--pin 0] [--no-plots]`: the forward-only path per hole and the pre-render gate: yaw/pitch per 1 s window (`flyovers.path.max_yaw_deg_s`), opening camera clear of crowns with the sign in frame (`flyovers.first_frame`), terrain and crown clearance (`flyovers.path.min_clear_m`), end frame with the whole green and the pin (`flyovers.end`); writes `flyover_gate.md/.json` and `flyover_shots.json` for the PC render.
+- Unity `Course Tools > Flyover Preview` (`unity/shared/CourseFlyoverPreview.cs`): the render with the speed guard, from the GKD, first frame on the sign, end on the green.
+- `python ../course-build/tools/photo_index.py --shots` then a shots-only `Run-CourseAutomation.ps1 -Steps none` (or `Send-UnityCommand.ps1 shots`): renders every photo's view in one batch for the pairs.
+- `python ../course-build/tools/audit_pairs.py --renders latest [--before <previous run>/shots]`: photo | before | after at the same pose with measured turf colour and a verdict row per photo.
+- `flyover_review.py` (`automation/`): frame sheets from a rendered flyover.
+- (no tool yet: MP4 assembly from the frame-by-frame render with poster frames pulled automatically; candidate for `tools/`)
+
 # Flyovers and review renders
 
 Use with `course-build-gates` and `course-build-look` (say which look each sheet used). Full guide: `course-build/playbooks/13_flyovers_and_review_renders.md` in the moorpark repo. LiDAR decision point: `playbook/LIDAR_DETAIL_REVIEW.md` D13 (register photos by skyline and landmarks, never EXIF heading alone).

@@ -5,6 +5,15 @@ description: "Use when building lakes, ponds, streams, waterfalls, dry washes, r
 
 Rules file: `rules/water.json` (every number below is defined there; read it with `tools/rules.py water`). Course overrides: `course.json` → `rule_overrides.water`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/gkd_tools.py check`: every water hazard's DZ flags (`innerOOB=false`); rules `ob.drop_zone`.
+- `python ../course-build/tools/scan_index.py`: a pond-bank or creek scan registered to the LiDAR for channel width and bank heights; rules `water.stream`, `water.pond`.
+- `water_inventory.py` (`tools/moorpark_tools/`): OSM water + satellite + drone frames into `water.json`.
+- (no tool yet: dry-sample grid probe over every water mesh, join overlap `water.join_overlap_m`, monotone bed sampling at `water.stream.bed_sample_m`, hazard outline follows the water edit; candidate for `unity/shared/`)
+
 # Water, creeks and ponds
 
 Use with `course-build-gates` and `course-build-ob` (drop zones). Full guide: `course-build/playbooks/08_water_creeks_and_ponds.md` in the moorpark repo. LiDAR decision points: `playbook/LIDAR_DETAIL_REVIEW.md` D11-D12.

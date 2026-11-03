@@ -3,6 +3,16 @@ name: course-premiere-flyovers
 description: Use when making showcase or premiere flyover videos of a GSPro course to sell the course and get golfers excited about a hole: picking holes, designing the camera path, dressing the frame, rendering, encoding and the send-out check. Separate from the in-game GSPro flyover and from the review renders in course-build-flyovers.
 ---
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate --holes <showcase holes> [--end-fit] [--speed 20] [--rise-dist 12] [--no-plots]`: the path and the gate for the showcase holes; `--speed` lower than the default slows the flight; writes `flyover_shots.json` for the PC.
+- Unity `Course Tools > Flyover Preview` (`CourseFlyoverPreview.cs`): frame-by-frame render with the speed guard.
+- `python ../course-build/tools/audit_pairs.py --renders latest --holes <showcase holes>`: the known photo gaps in frame, measured, before the showcase render.
+- `flyover_review.py` (`automation/`): frame sheets from the rendered flyover for the review.
+- (no tool yet: MP4 assembly with poster frames and a title card; candidate for `tools/`)
+
 # Premiere flyovers (DRAFT, to finalise after the Nov 3 renders are reviewed)
 
 A premiere flyover is a sales video, not a review render. The viewer should want to play the hole: the challenge (carry, drop, dogleg,

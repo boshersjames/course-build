@@ -5,6 +5,16 @@ description: "Use before the first gate on any GSPro course: run the 18 LiDAR de
 
 Rules file: `rules/lidar_review.json` (every number below is defined there; read it with `tools/rules.py lidar_review`). Course overrides: `course.json` → `rule_overrides.lidar_review`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/doctor.py`: survey line (`course.json lidar.survey`), heightmap, GKD and SVG registered before the review starts (D13).
+- `python ../course-build/tools/green_report.py --smooth 0.6 --sheets`: per-green slope, relief, p90, pins over `greens.pins.max_lie_angle_deg`: the D7 data-side answer and the `outline_over_8pct`-style flag (`flag_slope`).
+- `python ../course-build/tools/scan_index.py`: when a phone LAS exists, its fit against the LiDAR (MAD, coverage, doubled) decides whether the scan replaces the LiDAR (D7); rules `photos.scan`, `lidar_review.d7_scan_fit`.
+- `python ../course-build/tools/flyover_gate.py --no-plots`: terrain and crown clearance along every hole from the LiDAR trees: a quick check that `trees_csv` and the heightmap agree (D18 tree vs shrub misreads show as crowns in odd places).
+- (no tool yet: `decisions.csv` writer with the 18 points pre-filled from the data (D1-D18 defaults from `rules/lidar_review.json`); candidate for `tools/`)
+
 # LiDAR detail review (D1-D18) as a pre-build pass
 
 Run against the course's LiDAR, satellite and OSM before anything is built; record answers per hole in `course_photos/decisions.csv` (point, hole, answer, source, photo, decided_by, date); write the in-person list for `course-build-site-visit`. Full review with the Tierra cases and pass rules: `playbook/LIDAR_DETAIL_REVIEW.md`; summary: `course-build/playbooks/20_lidar_detail_review.md` (moorpark repo).

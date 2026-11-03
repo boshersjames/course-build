@@ -5,6 +5,17 @@ description: "Use when building or checking green surfaces, the green-to-collar 
 
 Rules file: `rules/greens.json` (every number below is defined there; read it with `tools/rules.py greens`). Course overrides: `course.json` → `rule_overrides.greens`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/green_report.py [--holes 7,9] [--smooth 0.6] [--sheets]`: LiDAR slope mean/p90, relief, GreenKeeper pin-area test on every GKD pin, usable %, valid areas; rules `greens.pins.*`, `greens.internal_slope_pct`, `greens.checks.noise_lowpass` (the only smoothing allowed, via `--smooth`).
+- `python ../course-build/tools/gkd_tools.py pins`: each pin's lie angle and height offset against the LiDAR; rules `greens.pins.max_lie_angle_deg`, `terrain.checks.pin_height_tol_m`.
+- `python ../course-build/tools/scan_index.py`: phone LAS scans registered to the LiDAR, MAD inside the green outline, coverage, doubled ground, ACCEPT / RESCAN; rules `photos.scan.*` (5 cm MAD, 80% coverage).
+- Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`): the mandatory all-18 table before every install: edge step/lip, collider dy, three tiers, crown overhang, pins, areas; writes `AutomationOutput/checks/greens_all18.csv` and the 0.5 m height grids; rules `greens.checks.edge_survey`, `collider_vs_render_max_dy_m`, `crown_overhang`, `tiers`.
+- `python ../course-build/tools/gate_report.py`: merges the above into one table and adds fall direction vs LiDAR from the height grids; rules `greens.checks.fall_direction`.
+- (no tool yet: SinkUnder / CollarLaplace / RegionLaplace as course-agnostic editor commands; they are in `unity/course-templates/TierraNight1031.cs`; candidate for `unity/shared/`)
+
 # Course build: greens and collars
 
 Follow the standing rules in `course-build-gates`. Green surfaces and contours never change without a scan. LiDAR review decision points for greens are D7-D10 in `playbook/LIDAR_DETAIL_REVIEW.md` (moorpark repo). Full guide: `course-build/playbooks/02_greens_and_collars.md`.

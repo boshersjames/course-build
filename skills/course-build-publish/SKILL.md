@@ -5,6 +5,16 @@ description: "Use when pushing a course into GSPro: local install, Greenkeeper s
 
 Rules file: `rules/publish.json` (every number below is defined there; read it with `tools/rules.py publish`). Course overrides: `course.json` → `rule_overrides.publish`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/doctor.py` then `python ../course-build/tools/gkd_tools.py check`: GKD limits (`ob.limits`), stimp (`greens.gkd`), firmness, designer, DZ flags; nothing goes to Greenkeeper with a FAIL.
+- `python ../course-build/tools/gate_report.py --out progress/gate_report`: the all-18 table (Unity checks + flyover gate + GKD); exit 1 blocks the install.
+- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate`: flyover first frames clear on all 18.
+- `..\course-build\automation\Install-PlaytestBuild.ps1 [-Go] [-SkipSync] [-InstallGkd <gkd>]`: dry run by default; backup, sync A -> C, build staged, size gate (`publish.gspcrse_max_bytes`), placement gate, install, verify. Tierra-shaped today (paths inside); generalise before a second course publishes.
+- (no tool yet: Greenkeeper pre-beta checklist as a headless report (OOB never crosses a hazard, water wholly inside its hazard, Collider Inspector colours); candidate for `gkd_tools.py`)
+
 # Publish to GSPro
 
 Use with `course-build-gates` and `course-build-ob`. Full guide: `course-build/playbooks/21_publish_to_gspro.md` in the moorpark repo. Nothing goes into `C:\GSProV1\Core\GSP\Courses\` without BoJa's go.

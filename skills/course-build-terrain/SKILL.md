@@ -5,6 +5,17 @@ description: "Use when building a GSPro course heightmap from LiDAR, judging wha
 
 Rules file: `rules/terrain.json` (every number below is defined there; read it with `tools/rules.py terrain`). Course overrides: `course.json` → `rule_overrides.terrain`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/doctor.py [--fix-lfs]`: heightmap present, not an LFS pointer, 2049^2 samples; GKD green centres on the LiDAR.
+- `python ../course-build/tools/green_report.py --smooth 0.6`: green surfaces from the LiDAR before any scan; rules `terrain.relief`, `greens.checks.noise_lowpass`.
+- `python ../course-build/tools/scan_index.py`: phone scans registered to the LiDAR with shift, MAD, coverage, doubled ground; writes the aligned 0.25 m grid for the apply step; rules `photos.scan.*`, `terrain.scan`.
+- `python ../course-build/tools/fairway_vs_lidar.py`: fairway undulation kept vs the LiDAR (needs the Unity export).
+- `python ../course-build/tools/coursekit.py lidar --ept <survey>` / `heightmap`: fetch and build `heightmap_2049.raw`; rules `terrain.frame`, `terrain.heightmap`.
+- (no tool yet: terrain height at each photo pose within `terrain.checks.pose_height_tol_m`, outer-terrain seam check; candidate for `tools/`)
+
 # Terrain, LiDAR and scans
 
 Use with `course-build-pipeline`, `course-build-lidar-review` (D13-D16 belong here) and `course-build-backdrop`. Full guide: `course-build/playbooks/01_terrain_lidar_and_scans.md` in the moorpark repo.

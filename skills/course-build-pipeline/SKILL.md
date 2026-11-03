@@ -5,6 +5,17 @@ description: "Use when standing up a new GSPro course's data before Unity: frame
 
 Rules file: `rules/pipeline.json` (every number below is defined there; read it with `tools/rules.py pipeline`). Course overrides: `course.json` → `rule_overrides.pipeline`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/new_course.py <Name> --square 2000 --unity "C:/GSP/<Name>_Project" [--holes 18]`: the course folder, `course.json` (toolkit keys), `CLAUDE.md`, automation config, editor set copied into the Unity project.
+- `python ../course-build/tools/doctor.py [--fix-lfs]`: the folder is complete before anything is fetched or built.
+- `python coursekit.py new|lidar|satellite|heightmap|osm|holes|trees|brush|vegetation|svg|card` (from the course folder; copy in `tools/coursekit.py`): the data pipeline; flags per step in `pipeline.svg_flags`, `pipeline.card_flags`. `course.json` must carry both coursekit's keys (`size`, `sw_e`, `sw_n`, `y_offset`, `epsg`, `loops`) and the toolkit's (`frame`, `paths`).
+- `python ../course-build/tools/gkd_tools.py check`: the drafted GKD against the limits before it reaches the PC.
+- `python ../course-build/tools/green_report.py --smooth 0.6` and `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate --end-fit`: the first headless pass on the data alone.
+- (no tool yet: `svg_check.py`, `apply_checklist.py`, `surrounds.py` and the tee fixers are still per-course copies with constants; `pipeline.grep_before_run` lists what to grep for; candidates for `tools/`)
+
 # Data pipeline (coursekit) before Unity
 
 Use with `course-build-lidar-review` (run it right after the fetch) and `course-build-ob`. Full guide: `course-build/playbooks/14_data_pipeline_coursekit.md` in the moorpark repo; tool: `coursekit.py` and the per-course `scripts/`.

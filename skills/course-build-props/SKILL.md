@@ -5,6 +5,15 @@ description: "Use when placing hole signs, bins, markers, clubhouses, restrooms,
 
 Rules file: `rules/props.json` (every number below is defined there; read it with `tools/rules.py props`). Course overrides: `course.json` → `rule_overrides.props`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate`: the hole sign in the first frame, readable and not blocking; rules `flyovers.first_frame`, `props.sign`. Without a `paths.signs` file it places provisional sign spots from the back tee (`props.sign.fallback_forward_m` / `fallback_side_m`) and says so.
+- `python ../course-build/tools/photo_index.py --sheets`: the per-hole contact sheet is the prop inventory's source: every geotagged photo with its heading on the satellite.
+- `BuildClubhouse.cs`, `BuildTeeMarkers.cs`, `TRPropsImport.cs` (`unity/shared/`): spec-file builders run through `Send-UnityCommand.ps1 invoke`.
+- (no tool yet: prop placement check (nothing on paths, sand, tees, greens, water, hitting lines), floating-prop and shadow audit, physics material on every building collider; candidate for `unity/shared/`)
+
 # Props, signs and buildings
 
 Use with `course-build-gates` and `course-build-flyovers` (the sign is the flyover's first frame). Full guide: `course-build/playbooks/11_props_signs_and_buildings.md` in the moorpark repo. LiDAR decision point: `playbook/LIDAR_DETAIL_REVIEW.md` D14.

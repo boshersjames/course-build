@@ -5,6 +5,17 @@ description: "Use when starting a hole or course build for GSPro, or before show
 
 Rules file: `rules/gates.json` (every number below is defined there; read it with `tools/rules.py gates`). Course overrides: `course.json` → `rule_overrides.gates`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/doctor.py`: is this course folder ready (course.json, heightmap not an LFS pointer, GKD, SVG match, deps)? Run first, every session.
+- `python ../course-build/tools/gkd_tools.py check`: GKD limits, stimp, firmness, designer, DZ flags, pins per hole; rules `ob.limits`, `greens.gkd`, `rough.gkd`.
+- Unity `Course Checks > Greens: all-18 report` (`unity/shared/CourseGreenChecks.cs`, bridge: `Send-UnityCommand.ps1 invoke -Tool CourseGreenChecks -Method RunAll`): edge survey, collider vs render, tiers, crowns over, pin area on every green; rules `greens.checks.*`, `greens.pins`.
+- `python ../course-build/tools/gate_report.py --out progress/gate_report`: the per-hole pass/fail table from the Unity checks, LiDAR proxy, flyover gate and GKD checks; exit 1 on any FAIL.
+- `..\course-build\automation\Run-CourseAutomation.ps1 -SyncTools [-Steps "a,b"]` (Unity closed) / `Send-UnityCommand.ps1 <ping|run|shots|invoke|describe|menu|save|refresh>` (Unity open): the batch and bridge that replace clicking in Unity.
+- (no tool yet: bunker islands, plants-on-turf, floating objects, fence gaps, vertex paint, null materials, z-fighting, control-hole diff as one headless gate set; the Tierra versions are in `unity/course-templates/TierraGate10.cs`; candidate for `unity/shared/`)
+
 # Course build: process and gates
 
 The order of work and the checks that stop a hole going back for a second or third round. Learned on Tierra Rejada (Oct 2026) and reused on Penmar, Harding, Wilson, Hansen Dam, Angeles National and Moorpark. The full set of element guides is in the moorpark repo under `course-build/playbooks/` (one per element: terrain, greens, bunkers, rough, tees, trees, brush, water, paths, OB, props, look, flyovers, data pipeline); read the matching one before building that element.

@@ -5,6 +5,15 @@ description: "Use when drafting or fixing the GKD boundary, interior OB, penalty
 
 Rules file: `rules/ob.json` (every number below is defined there; read it with `tools/rules.py ob`). Course overrides: `course.json` → `rule_overrides.ob`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/gkd_tools.py check`: hazard count and pOOB points against `ob.limits`, every DZ hazard with `innerOOB` ticked flagged (re-hit only), Designer field; exit 1 on a failure.
+- `python ../course-build/tools/coursekit.py card --ob [--loops ...] [--habitat-penalty --drop-holes]`: drafts pOOB and interior OB from brush, roads, homes; rules `ob.perimeter`, `ob.interior`, `ob.clean`.
+- `python ob_preview.py` (per course, copy in `tools/ob_preview.py`): red boundary and filled areas on the satellite for the hole list.
+- (no tool yet: every tee/pin/aim/DZ in bounds and on grass by raycast, OB within `ob.clean.min_from_play_m` of play, DZ `ob.drop_zone.min_from_water_m`; the Tierra `gkd_apply_dz_bands.py` splice stays per course; candidates for `gkd_tools.py`)
+
 # OB, hazards and drop zones (GKD)
 
 Use with `course-build-gates`, `course-build-water` and `course-build-tees`. Full guide: `course-build/playbooks/10_ob_hazards_and_drop_zones.md` in the moorpark repo.

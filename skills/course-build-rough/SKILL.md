@@ -5,6 +5,16 @@ description: "Use when tracing fairways, laying first cut and deep rough, settin
 
 Rules file: `rules/rough.json` (every number below is defined there; read it with `tools/rules.py rough`). Course overrides: `course.json` → `rule_overrides.rough`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h`: rough / fairway tone against the photo, suggested OverallColor multiplier; apply with Unity `Course Look > Apply Tint JSON` (`ApplyTintJson.cs`, honours the `tone_done` marker so a rerun cannot compound); rules `rough.tint_mul`, `look.tint_mul`.
+- `python ../course-build/tools/fairway_vs_lidar.py [before|after]`: fairway mesh vs LiDAR per hole and landing zone (RMS, median, undulation kept); needs the Unity `fairway_samples.bin` export in AutomationOutput; rules `terrain.relief.keep_pct`.
+- `python ../course-build/tools/coursekit.py svg --smooth 7 --min-green 0.36 --fw-corridor 45`: the photo-traced fairway outlines; rules `rough.fairway_trace`.
+- `python ../course-build/tools/gkd_tools.py check`: FairwayFirmnessDefault against `rough.gkd`.
+- (no tool yet: patch edge saw-tooth check, deep rough inside the 6 m green margin, first-cut width; candidate for `unity/shared/`)
+
 # Course build: fairways, rough and first cut
 
 Follow the standing rules in `course-build-gates` (no defects on in-play turf, no plants on mown turf, shared materials stay shared). LiDAR review decision points D1-D3 (ground cover) in `playbook/LIDAR_DETAIL_REVIEW.md` (moorpark repo).

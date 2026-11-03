@@ -5,6 +5,16 @@ description: "Use when placing tees, tee pads, tee colours and slots, yardages, 
 
 Rules file: `rules/tees.json` (every number below is defined there; read it with `tools/rules.py tees`). Course overrides: `course.json` → `rule_overrides.tees`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/gkd_tools.py check`: every enabled tee has a position, unused slots disabled, pins per hole; rules `tees.gkd`.
+- `python ../course-build/tools/gkd_tools.py distances [--tol 2] [--write]`: tee Distance recomputed tee -> aims -> green; rewrites only those off by more than `--tol` m, backup first.
+- `python ../course-build/tools/gkd_tools.py totals [--write]`: TeeTypeTotalDistance per colour.
+- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate [--end-fit]`: first frame from every tee clear of crowns, sign in frame; rules `flyovers.first_frame`, `flyovers.path`.
+- (no tool yet: shared Black/Grey box check against `course.json shared_tee_box_exceptions`, card yardage vs GKD table, tee on a Tee mesh in Unity; `fix_tees.py` / `fix_box_tees.py` / `teepads.py` live per course; candidates for `tools/`)
+
 # Course build: tees
 
 Follow the standing rules in `course-build-gates`. LiDAR review decision point D17 (which flat is the tee, how many decks) in `playbook/LIDAR_DETAIL_REVIEW.md` (moorpark repo). Full guide: `course-build/playbooks/05_tees.md`.

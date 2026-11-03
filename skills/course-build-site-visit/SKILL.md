@@ -3,6 +3,15 @@ name: "course-build-site-visit"
 description: "Use before walking a golf course for a GSPro build: what to photograph, scan and rangefind per hole so one visit closes every in-person item."
 ---
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- Before: `python ../course-build/tools/green_report.py --sheets` and `python ../course-build/tools/flyover_gate.py --no-plots` give the per-hole data-side picture the visit list is written from; `python ../course-build/tools/photo_index.py --sheets` on any earlier dump shows which spots already have a photo.
+- After: `python ../course-build/tools/photo_index.py --dump course_photos/unsorted/<date> --sheets --shots`: the dump indexed, holes assigned, GPS confidence graded (two shots 10 s apart at a spot read `high`, the first shot after a cart ride reads `low`).
+- After: `python ../course-build/tools/scan_index.py`: each green scan ACCEPT at MAD <= 5 cm, >= 80% coverage, no doubled ground, else RESCAN with the reason; the rescan list for the next visit falls out of `scans/index.csv`.
+- (no tool yet: the per-hole visit sheet (satellite crop with numbered standing spots) and `rangefinder.csv` / `decisions.csv` templates; candidate for `tools/`)
+
 # Site visit capture
 
 A course starts from LiDAR, the satellite, the scorecard and online photos; those settle heights and layout, never colour, species, collars, bunker lips, props or which tee deck is which. One visit to this list answers every "needs an in-person look" item. Output goes into the `course_photos/` layout in `course-build-photo-index`. Full guide: `course-build/playbooks/16_site_visit_capture.md` in the moorpark repo.

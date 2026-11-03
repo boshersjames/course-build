@@ -5,6 +5,16 @@ description: "Use when building or fixing native hillsides, scrub, sage, shrubs,
 
 Rules file: `rules/brush.json` (every number below is defined there; read it with `tools/rules.py brush`). Course overrides: `course.json` → `rule_overrides.brush`.
 
+## Tools
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h --target scrub|cliff`: hillside colour b/g against `brush.color.scrub_bg` / `brush.color.cliff_bg` in a same-light frame; suggested multiplier for the hole-only copy.
+- `python ../course-build/tools/coursekit.py vegetation [--buffer 200] [--yard 14]`: the four `terrain_masks/*.mask` layers and `shrubs_clean.csv` / `shrubs_removed.csv`; rules `brush.exclusion`, `brush.density`.
+- Unity `Tierra > Plant Shrubs` / `Tierra > Paint Grass and Brush` (`TierraPlantShrubs.cs`, `TierraPaintGrass.cs` in `unity/shared/`, names kept): instanced shrubs and detail layers from the masks.
+- `python ../course-build/tools/flyover_gate.py`: the left/right sweep from every flyover start shows empty hillside ground.
+- (no tool yet: hill mean colour inside the target band per hillside, plants-on-turf count, mask row-orientation check; candidate for `tools/`)
+
 # Brush, hillsides and scrub
 
 Use with `course-build-gates` (process, editors, photo pairs, hole-10 control). Full guide: `course-build/playbooks/07_brush_hillsides_and_scrub.md` in the moorpark repo. LiDAR decision points: `playbook/LIDAR_DETAIL_REVIEW.md` D1-D3, D18.
