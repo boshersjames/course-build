@@ -93,7 +93,10 @@ public class CourseGreenChecks : EditorWindow
         var t = new Top { y = float.MinValue, name = "", phys = "" };
         foreach (var h in Physics.RaycastAll(new Vector3(x, 600, z), Vector3.down, 1200))
         {
-            if (!h.collider.transform.IsChildOf(opcd)) continue;
+            if (!h.collider.transform.IsChildOf(opcd) || h.collider.isTrigger) continue;
+            if (h.collider.GetComponentInParent<LODGroup>()) continue;   // trees and shrub chunks are not ground: the ball rolls under them
+            var pmn = h.collider.sharedMaterial ? h.collider.sharedMaterial.name : "";
+            if (pmn == "GSPleaves" || pmn == "GSPtimber") continue;      // plant physics on a prop or shrub collider: not the ground either
             if (h.point.y > t.y) { t.y = h.point.y; t.name = h.collider.name; t.phys = h.collider.sharedMaterial ? h.collider.sharedMaterial.name : ""; t.ok = true; }
         }
         return t;
@@ -146,7 +149,7 @@ public class CourseGreenChecks : EditorWindow
         return w;
     }
 
-    class Row { public int hole; public string green = ""; public float maxStep, maxLip, colDy, crown; public int stepPts, lipPts; public bool tiersOk = true; public string tiersNote = ""; public int pins, pinsFail, areas; public float usable; public List<string> notes = new List<string>(); public bool pass; }
+    class Row { public int hole; public string green = ""; public float maxStep, maxLip, colDy, crown; public int stepPts, lipPts; public string stepAt = ""; public bool tiersOk = true; public string tiersNote = ""; public int pins, pinsFail, areas; public float usable; public List<string> notes = new List<string>(); public bool pass; }
 
     public static string Run(string holesFilter, bool writeGrids)
     {
@@ -190,9 +193,10 @@ public class CourseGreenChecks : EditorWindow
                 float st = 0; int si = 0; for (int i = 1; i < ys.Count; i++) { float s = Mathf.Abs(ys[i] - ys[i - 1]); if (s > st) { st = s; si = i; } }
                 float lp = 0; for (int i = 0; i < ys.Count; i++) { float chord = Mathf.Lerp(ys[0], ys[ys.Count - 1], i / (float)(ys.Count - 1)); lp = Mathf.Max(lp, ys[i] - chord); }
                 steps.Add(st); lips.Add(lp);
+                if (st >= steps.Max()) row.stepAt = (names[Mathf.Max(si - 1, 0)] + ">" + names[si]).Replace("_-_Mesh", "").Replace("Spline_", "");   // the two colliders the worst step crosses
                 edgeCsv.Add(gm.name + "," + m.x.ToString("F2", CI) + "," + m.y.ToString("F2", CI) + "," + st.ToString("F3", CI) + "," + lp.ToString("F3", CI) + "," + (E.profile_from_m + si * E.step_m).ToString("F2", CI) + "," + string.Join(">", names.Distinct().Select(s => s.Replace("_-_Mesh", "").Replace("Spline_", "")).ToArray()));
             }
-            if (steps.Count > 0) { row.maxStep = steps.Max(); row.maxLip = lips.Max(); row.stepPts = steps.Count(x => x > E.max_step_m); row.lipPts = lips.Count(x => x > E.max_lip_m); }
+            if (steps.Count > 0) { row.maxStep = steps.Max(); row.maxLip = lips.Max(); row.stepPts = steps.Count(x => x > E.max_step_m); row.lipPts = lips.Count(x => x > E.max_lip_m); if (row.maxStep > E.max_step_m) row.notes.Add("worst step " + row.stepAt); }
 
             // 2. collider = render on green, blend, collar meshes near this green
             float worstDy = 0; int dup = 0;

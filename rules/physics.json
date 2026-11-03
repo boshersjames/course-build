@@ -53,6 +53,14 @@
       "class": "deep_rough"
     },
     {
+      "match": "b_rough_fairway",
+      "class": "fairway"
+    },
+    {
+      "match": "b_fairway",
+      "class": "fairway"
+    },
+    {
       "match": "blend",
       "class": "rough"
     },
@@ -121,7 +129,23 @@
       "class": "timber"
     },
     {
-      "match": "net",
+      "match": "netpanel",
+      "class": "timber"
+    },
+    {
+      "match": "netting",
+      "class": "timber"
+    },
+    {
+      "match": "netpost",
+      "class": "timber"
+    },
+    {
+      "match": "net_post",
+      "class": "timber"
+    },
+    {
+      "match": "netpole",
       "class": "timber"
     },
     {
@@ -133,7 +157,7 @@
       "class": "leaves"
     }
   ],
-  "name_rules_note": "first match wins on the lower-cased collider (or parent) name; order matters: rough_outer and deep before rough, blend before fairway, rock/wall before water, fence/post/net = GSPtimber as BuildFences/BuildNets set them (2026-11-03 audit: 2,694 fence posts, 76 outer rough, 8 waterfall rocks, 5 blends would have been flipped by the first table)",
+  "name_rules_note": "first match wins on the lower-cased collider (or parent) name; order matters: rough_outer and deep before rough, b_rough_fairway / b_fairway before blend (a blend strip is B_<outer>_<inner>_-_Blend: green, tee and fairway blends play as their inner surface as the scene already has them, bunker and water blends play as the outer surface, rough), rock/wall before water, fence/post = GSPtimber as BuildFences sets them; nets by part name only (netpanel, netting, netpost, netpole), never the bare token 'net' (2026-11-03 audit: 2,694 fence posts, 76 outer rough, 8 waterfall rocks and 49 deep-rough ground pieces under the NETS group would have been flipped by earlier tables)",
   "svg_classes": {
     "green": "green",
     "fairway": "fairway",
@@ -147,7 +171,31 @@
     "grid_m": 2.0,
     "scope": "every SVG polygon class plus a 10 m margin",
     "mismatch_tolerance_pct": 1.0,
-    "note": "top collider at each grid point vs the SVG class; collar and first-cut rings may differ legitimately within 4 m of a green or tee"
+    "note": "top collider at each grid point vs the SVG class; collar and first-cut rings may differ legitimately within 4 m of a green or tee",
+    "overlays": {
+      "rough": [
+        "deep_rough",
+        "concrete",
+        "leaves",
+        "stone",
+        "timber",
+        "wood"
+      ],
+      "deep_rough": [
+        "rough",
+        "concrete",
+        "leaves",
+        "stone",
+        "timber",
+        "wood"
+      ]
+    },
+    "overlays_note": "the SVG rough/deep classes are the fallback ground; cart paths, shrub chunks, rocks, fences and the outer deep rough are not SVG classes and legitimately sit on them, so these materials count as 'overlay', not mismatch",
+    "edge_name_tokens": [
+      "blend",
+      "collar"
+    ],
+    "edge_name_tokens_note": "a blend strip straddles the outline by design and a collar patch (GSPfairway by greens.tiers) has no SVG class; their points are 'edge', not failed, whatever side of the line they fall"
   },
   "auto_fix": {
     "allowed_when": "name rule matched and no conflicting SVG class under the mesh centroid",
@@ -163,6 +211,26 @@
     "fix(missing)": "no material at all, rule matched",
     "missing-asset": "rule matched but the physic material asset is not in the project",
     "unmatched": "no rule for the name but it carries a material: glance, usually fine",
-    "unsure": "no rule and NO material: hand-label in the Inspector"
+    "unsure": "no rule and NO material: hand-label in the Inspector",
+    "review": "name rule says a structure (timber/stone/leaves/wood/concrete/water) but the collider carries a ground material: a ground piece under a structure's parent, decide by hand"
+  },
+  "audit": {
+    "review_when": "the collider carries a ground material and its name rule says a structure class: report 'review', never auto-fix (a ground piece grouped under a structure's parent)",
+    "ground_materials": [
+      "GSPgreen",
+      "GSPfairway",
+      "GSPtee",
+      "GSPrough",
+      "GSPdeeprough",
+      "GSPsand"
+    ],
+    "structure_classes": [
+      "timber",
+      "stone",
+      "leaves",
+      "wood",
+      "concrete",
+      "water"
+    ]
   }
 }

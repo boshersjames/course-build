@@ -21,7 +21,8 @@ public class CoursePhysicsAudit : EditorWindow
 {
     [Serializable] public class NameRule { public string match; public string @class; }
     [Serializable] public class Census { public float grid_m = 2f; }
-    [Serializable] public class Rules { public NameRule[] name_rules = new NameRule[0]; public Census census = new Census(); }
+    [Serializable] public class AuditRule { public string[] ground_materials = new string[0]; public string[] structure_classes = new string[0]; }
+    [Serializable] public class Rules { public NameRule[] name_rules = new NameRule[0]; public Census census = new Census(); public AuditRule audit = new AuditRule(); }
     const string CB = "Assets/CourseBuild";
     static readonly CultureInfo CI = CultureInfo.InvariantCulture;
     // class -> physic material name (mirrors rules/physics.json "materials"; JsonUtility cannot read a dictionary, so keep this list in step)
@@ -76,7 +77,8 @@ public class CoursePhysicsAudit : EditorWindow
         var opcd = GameObject.Find("OPCD Meshes"); var cache = new Dictionary<string, PhysicMaterial>();
         var roots = UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().Where(g => g.activeInHierarchy && (includeOverlays || g == opcd)).ToList();
         var audit = new List<string> { "root,collider,current,expected_class,expected,action,x,z" }; var unsure = new List<string> { "root,collider,current,x,z,reason" };
-        int ok = 0, fixes = 0, missing = 0, uns = 0, applied = 0;
+        int ok = 0, fixes = 0, missing = 0, uns = 0, applied = 0, review = 0;
+        var groundMats = new HashSet<string>(R.audit.ground_materials ?? new string[0]); var structCls = new HashSet<string>(R.audit.structure_classes ?? new string[0]);
         foreach (var root in roots)
             foreach (var c in root.GetComponentsInChildren<Collider>(false))
             {
@@ -89,6 +91,7 @@ public class CoursePhysicsAudit : EditorWindow
                 else if (cls == null) { action = "unsure"; uns++; unsure.Add(string.Join(",", new[] { root.name, c.name, cur, p.x.ToString("F1", CI), p.z.ToString("F1", CI), "no name rule and no material" })); }
                 else if (exp == null) { action = "unsure"; uns++; unsure.Add(string.Join(",", new[] { root.name, c.name, cur, p.x.ToString("F1", CI), p.z.ToString("F1", CI), "class " + cls + " has no material in this tool's table" })); }
                 else if (cur == exp) { action = "ok"; ok++; }
+                else if (groundMats.Contains(cur) && structCls.Contains(cls)) { action = "review"; review++; unsure.Add(string.Join(",", new[] { root.name, c.name, cur, p.x.ToString("F1", CI), p.z.ToString("F1", CI), "ground material under a " + cls + " name: a ground piece grouped under a structure? decide by hand" })); }   // rules physics.audit.review_when: never auto-fixed
                 else
                 {
                     var pm = FindMat(exp, cache);
@@ -123,7 +126,7 @@ public class CoursePhysicsAudit : EditorWindow
                 }
             File.WriteAllLines(outDir + "/physics_census.csv", rows.ToArray()); cen = "; census " + n + " points at " + g + " m -> physics_census.csv (run tools/physics_check.py against the SVG)";
         }
-        var head = "physics audit: " + ok + " ok, " + fixes + " to fix" + (apply ? " (" + applied + " applied)" : " (dry run)") + ", " + missing + " missing material asset, " + uns + " unsure -> " + outDir + "/physics_audit.csv, physics_unsure.csv" + cen;
+        var head = "physics audit: " + ok + " ok, " + fixes + " to fix" + (apply ? " (" + applied + " applied)" : " (dry run)") + ", " + missing + " missing material asset, " + review + " review, " + uns + " unsure -> " + outDir + "/physics_audit.csv, physics_unsure.csv" + cen;
         Debug.Log(head); return head;
     }
 }

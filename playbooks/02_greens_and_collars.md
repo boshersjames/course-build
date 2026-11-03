@@ -144,6 +144,7 @@ Report table (all 18 rows, every install): hole, max step (cm), max lip (cm), co
 - Green Studio (Blender add-on) is GPL-3.0: borrow its ideas and numbers, never paste its code.
 - The OPCD template post profile `v4_Sunny_Pop` (+2.3 EV, ACES) washes greens near-white so contours and putt lines can't be read; ship a course copy with lower exposure (Tierra `TR_Sunny_C`: Neutral, +1.2 EV, contrast 22, saturation +8, bloom 0.6) and check a white line still stands out on the green.
 - Re-grading a collar flush makes overlapping rough show through unless it's sunk under the collar (see "Collar on top").
+- The Unity edge survey raycasts every collider, so a shrub chunk or a tree collider beside the green read as a 20 cm lip on the first all-18 run while the mesh-based survey two days earlier had every green under 1 cm. The profile now ignores LODGroup children and plant-physics colliders and names the collider pair at the worst step; `tools/edge_survey_summary.py` groups those pairs across greens so a convention (blend ring height) is fixed once rather than per hole.
 - Measured checks passed while the greens still looked wrong in the flyover (pale shards, seams, creases): the edge survey measures height, not appearance. Always look at an oblique render of every green before calling it done.
 - A revised skill only helps once it is saved: the flush-collar rules sat in a draft file for a day while sessions loaded the old skill (1.5 cm proud collars).
 
