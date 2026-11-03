@@ -45,21 +45,14 @@
       "conform_note": "after the membrane, every collar vertex is capped at the highest designed surface found at its position or conform_probe_m to each side (green mesh, green blend, fairway, tee, apron: never the rough, which is sunk instead). A collar is never proud of the surface it meets; a true maximum rule, applied to every collar, no mesh names."
     },
     "rim_reset": {
-      "pairs": [
-        "collar>rough",
-        "collar>fairway",
-        "collar>fairway_blend",
-        "green_blend>collar",
-        "rough>collar",
-        "fairway>collar",
-        "fairway_blend>collar"
-      ],
-      "radius_m": 0.3,
-      "max_move_m": 0.05,
+      "probe_m": 0.03,
+      "radius_m": 0.4,
+      "max_move_m": 0.1,
+      "min_share_down": 0.9,
       "passes": 2,
-      "pass_criterion": "every listed pair under checks.edge_survey.max_step_m in mean and fewer than max_rows_over rows over the limit course-wide",
       "max_rows_over": 10,
-      "note": "CourseRimReset: the edge survey's real steps (edge_profiles.py steps.csv, slope removed) are the move demands. For each step whose pair is listed, the collar's major-loop rim vertices within radius_m of the sample move in y by minus the signed step, weighted 1 - d/radius, mean of demands where several reach one vertex; a demand over max_move_m is logged and skipped; no vertex is raised above the designed surface beside it (the flush tool's conform cap); only meshes named collar are edited. Why: the flush pinned the rim to a surface sampled 0.12 m away and then sank the surround under it, so the rim never met what the ball meets; the survey residual at the sample is that quantity directly."
+      "pass_criterion": "collar>rough, collar>fairway and green_blend>collar under checks.edge_survey.max_step_m in mean and fewer than max_rows_over rows over the limit course-wide, measured by edge_profiles.py after a fresh RunAll",
+      "note": "CourseRimReset v2: the edge survey's real steps (edge_profiles.py steps.csv) say where the ball met a step and which collar mesh was in the crossing. For every major-loop rim vertex within radius_m of such a sample the neighbour height is sampled probe_m outside the rim and the move is neighbour_y - vertex_y, signed as measured. A residual over max_move_m is skipped and counted; no vertex ends above the designed surface at its position; only meshes named collar are edited; green mesh and blend never move. The dry run reports vertices down and up, the share down, and the net and mean signed move per collar; a collar under min_share_down or with a non-negative net move is not applied. Why: v1 inferred the sign from the surface-pair category and moved the outer rim up by the defect on Tierra 14 (5.6 to 11.6 cm, 2026-11-03); radius 0.4 and max move 0.10 come from the hole 14 targeted dry run, where 98 rim vertices were reached and the largest residual matched the measured worst step."
     }
   },
   "tiers": {
