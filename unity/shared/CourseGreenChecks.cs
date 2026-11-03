@@ -149,7 +149,7 @@ public class CourseGreenChecks : EditorWindow
         return w;
     }
 
-    class Row { public int hole; public string green = ""; public float maxStep, maxLip, colDy, crown; public int stepPts, lipPts; public string stepAt = ""; public bool tiersOk = true; public string tiersNote = ""; public int pins, pinsFail, areas; public float usable; public List<string> notes = new List<string>(); public bool pass; }
+    class Row { public int hole; public string green = ""; public float maxStep, maxLip, colDy, crown; public int stepPts, lipPts; public string stepAt = ""; public List<string> worstProfile = new List<string>(); public bool tiersOk = true; public string tiersNote = ""; public int pins, pinsFail, areas; public float usable; public List<string> notes = new List<string>(); public bool pass; }
 
     public static string Run(string holesFilter, bool writeGrids)
     {
@@ -193,7 +193,11 @@ public class CourseGreenChecks : EditorWindow
                 float st = 0; int si = 0; for (int i = 1; i < ys.Count; i++) { float s = Mathf.Abs(ys[i] - ys[i - 1]); if (s > st) { st = s; si = i; } }
                 float lp = 0; for (int i = 0; i < ys.Count; i++) { float chord = Mathf.Lerp(ys[0], ys[ys.Count - 1], i / (float)(ys.Count - 1)); lp = Mathf.Max(lp, ys[i] - chord); }
                 steps.Add(st); lips.Add(lp);
-                if (st >= steps.Max()) row.stepAt = (names[Mathf.Max(si - 1, 0)] + ">" + names[si]).Replace("_-_Mesh", "").Replace("Spline_", "");   // the two colliders the worst step crosses
+                if (st >= steps.Max())
+                {
+                    row.stepAt = (names[Mathf.Max(si - 1, 0)] + ">" + names[si]).Replace("_-_Mesh", "").Replace("Spline_", "");   // the two colliders the worst step crosses
+                    row.worstProfile.Clear(); for (int i = 0; i < ys.Count; i++) row.worstProfile.Add(string.Join(",", new[] { row.hole.ToString(), m.x.ToString("F2", CI), m.y.ToString("F2", CI), (E.profile_from_m + i * E.step_m).ToString("F2", CI), ys[i].ToString("F4", CI), names[i].Replace(',', ';') }));
+                }
                 edgeCsv.Add(gm.name + "," + m.x.ToString("F2", CI) + "," + m.y.ToString("F2", CI) + "," + st.ToString("F3", CI) + "," + lp.ToString("F3", CI) + "," + (E.profile_from_m + si * E.step_m).ToString("F2", CI) + "," + string.Join(">", names.Distinct().Select(s => s.Replace("_-_Mesh", "").Replace("Spline_", "")).ToArray()));
             }
             if (steps.Count > 0) { row.maxStep = steps.Max(); row.maxLip = lips.Max(); row.stepPts = steps.Count(x => x > E.max_step_m); row.lipPts = lips.Count(x => x > E.max_lip_m); if (row.maxStep > E.max_step_m) row.notes.Add("worst step " + row.stepAt); }
@@ -262,6 +266,7 @@ public class CourseGreenChecks : EditorWindow
         }
 
         File.WriteAllLines(outDir + "/edge_survey.csv", edgeCsv.ToArray()); File.WriteAllLines(outDir + "/pin_area.csv", pinCsv.ToArray());
+        var wp = new List<string> { "hole,edge_x,edge_z,d_m,y,surface" }; foreach (var r in rows) wp.AddRange(r.worstProfile); File.WriteAllLines(outDir + "/worst_profiles.csv", wp.ToArray());   // the full height profile of each green's worst step: read it before touching a collar
         var csv = new List<string> { "hole,green,max_step_cm,max_lip_cm,step_pts_over,lip_pts_over,collider_dy_cm,tiers_ok,tiers_note,crown_overhang_m,pins,pins_failing,usable_pct,valid_areas,pass,notes" };
         var md = new List<string> { "# Green checks: all " + rows.Count + " holes (" + C.name + ", " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + ")", "",
             "Rules: step <= " + (E.max_step_m * 100).ToString(CI) + " cm, lip <= " + (E.max_lip_m * 100).ToString(CI) + " cm, collider dy <= " + (R.checks.collider_vs_render_max_dy_m * 100).ToString(CI) + " cm, crown < " + CR.block_at_m.ToString(CI) + " m over green/collar, pins <= " + P.max_lie_angle_deg.ToString(CI) + " deg and >= " + P.min_from_edge_m.ToString(CI) + " m from the edge, >= " + P.min_valid_areas + " areas.", "",
