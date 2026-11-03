@@ -45,7 +45,7 @@
     "photos_root": "course_photos",
     "signs": "progress/hole_signs.json",
     "trees_csv": "trees/trees.csv",
-    "photo_store": "r2://course-photos/NewCourse"
+    "photo_store": "r2://<course-name>"
   },
   "gkd": {
     "city": "",
