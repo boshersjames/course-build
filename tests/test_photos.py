@@ -127,8 +127,6 @@ def test_photo_sync_check_without_credentials(tierra, tmp_path):
     assert "bucket check failed" in r.stdout + r.stderr
 
 
-@pytest.mark.xfail(strict=True, reason="tools/photo_index.py:79 operator precedence: 'a.out or C.path(...) if photos_root in paths else ...' "
-                   "drops --out when course.json has no paths.photos_root; the index lands in <course>/course_photos instead")
 def test_photo_index_out_honoured_without_photos_root(tierra, tmp_path):
     src, files = tierra_originals(tierra)
     cj = shadow_course(tierra, str(tmp_path / "course"))
