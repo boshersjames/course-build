@@ -8,9 +8,12 @@ Git keeps the index and small derived files; the bucket keeps the originals; thi
     python tools/photo_sync.py ls [--what ...]                                        # what the bucket holds for this course
     python tools/photo_sync.py check                                                  # credentials, endpoint, bucket reachable, counts
 
-Bucket location: course.json paths.photo_store = "r2://<bucket>/<prefix>" (or "s3://..."). Credentials come from the environment,
-never from a file in the repo: R2_ACCOUNT_ID + R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY for Cloudflare R2 (endpoint
-https://<account>.r2.cloudflarestorage.com), or AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY (+ S3_ENDPOINT_URL for B2 or others).
+Bucket location: course.json paths.photo_store = "r2://<bucket>/<prefix>" (or "s3://..."); the R2 account id in
+paths.photo_store_account or R2_ACCOUNT_ID. Credentials never live in the repo. Two ways they reach the tool:
+  PC:    R2_ACCESS_KEY_ID + R2_SECRET_ACCESS_KEY in the environment (setx); boto3 signs.
+  cloud: no keys in the session; an "AWS SigV4" network secret on the Claude environment (host <account>.r2.cloudflarestorage.com,
+         region auto, service s3) signs every request on the proxy, and this tool sends unsigned. The key never enters the session.
+Other S3 stores: AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY (+ S3_ENDPOINT_URL for B2 or others).
 Layout in the bucket mirrors the course folder: <prefix>/course_photos/unsorted/<date>/IMG.HEIC, .../scans/x.las, .../drone/x.mp4.
 Only originals go up (HEIC/JPG/LAS/LAZ/MP4/MOV); display JPEGs, sheets and index.csv stay in git. Skips files whose size matches.
 """
@@ -28,9 +31,16 @@ def client_and_bucket(C):
     if not store or "://" not in store: sys.exit("course.json paths.photo_store must be r2://<bucket>/<prefix> or s3://<bucket>/<prefix>")
     scheme, rest = store.split("://", 1); bucket, _, prefix = rest.partition("/")
     if scheme == "r2":
-        acct = os.environ.get("R2_ACCOUNT_ID"); key = os.environ.get("R2_ACCESS_KEY_ID"); sec = os.environ.get("R2_SECRET_ACCESS_KEY")
-        if not (acct and key and sec): sys.exit("set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY in the environment (never in the repo)")
-        s3 = boto3.client("s3", endpoint_url="https://%s.r2.cloudflarestorage.com" % acct, aws_access_key_id=key, aws_secret_access_key=sec, region_name="auto")
+        acct = os.environ.get("R2_ACCOUNT_ID") or C.get("paths", {}).get("photo_store_account"); key = os.environ.get("R2_ACCESS_KEY_ID"); sec = os.environ.get("R2_SECRET_ACCESS_KEY")
+        if not acct: sys.exit("R2 account id: set R2_ACCOUNT_ID or course.json paths.photo_store_account")
+        endpoint = "https://%s.r2.cloudflarestorage.com" % acct
+        if key and sec:   # PC: keys in the environment, boto3 signs
+            s3 = boto3.client("s3", endpoint_url=endpoint, aws_access_key_id=key, aws_secret_access_key=sec, region_name="auto")
+        else:             # cloud: an AWS SigV4 network secret on the proxy signs every request to this host; send unsigned
+            from botocore import UNSIGNED
+            from botocore.config import Config
+            s3 = boto3.client("s3", endpoint_url=endpoint, region_name="auto", config=Config(signature_version=UNSIGNED))
+            print("(no R2 keys in the environment: sending unsigned, the proxy's SigV4 secret must cover %s)" % endpoint)
     else:
         kw = {}
         if os.environ.get("S3_ENDPOINT_URL"): kw["endpoint_url"] = os.environ["S3_ENDPOINT_URL"]
