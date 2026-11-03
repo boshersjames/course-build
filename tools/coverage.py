@@ -57,13 +57,21 @@ def main():
         it += ["trees_near_play", "props"]
         items[h.number] = it; feats[h.number] = f
 
-    def auto_spot(hn, x, z, hd):
-        q = np.array([x, z]); best = None
+    MANUAL = ("trees_near_play", "props")   # only a hand tag in index.csv covers these; reported separately
+    fov = CV.get("aim_half_angle_deg", 30); reach = CV.get("aim_reach_m", 60)
+
+    def spots_for(hn, x, z, hd):
+        """Spots a photo covers: the feature it stands on (within spot_radius_m) plus every feature it is aimed at
+        (within aim_reach_m and aim_half_angle_deg of the compass heading)."""
+        q = np.array([x, z]); out = set(); best = None
         for name, p in feats.get(hn, []):
             d = float(np.hypot(*(p - q)))
             if d <= rad and (best is None or d < best[1]): best = (name, d)
-        if best: return best[0]
-        return "fairway"
+            if hd not in ("", None) and 0 < d <= reach:
+                bearing = math.degrees(math.atan2(p[0] - q[0], p[1] - q[1])) % 360; da = abs((bearing - float(hd) + 180) % 360 - 180)
+                if da <= fov: out.add(name)
+        out.add(best[0] if best else "landing_zone")
+        return out
 
     cover = {hn: {} for hn in items}
     for r in rows:
@@ -74,15 +82,16 @@ def main():
         ok = (src.startswith("drone")) or conf in R["pose"]["verdict_confidence"] or (conf == "draft" and (r.get("gps_confidence") in ("high", "medium")))
         if not ok: continue
         spot = (r.get("spot") or "").strip().lower()
-        if not spot and r.get("x") not in ("", None):
-            spot = auto_spot(hn, float(r["x"]), float(r["z"]), r.get("heading"))
-        if spot in ("fairway", "mid"): spot = "landing_zone"
-        if spot == "tee": spot = "tee_surrounds"
-        if spot.startswith("green") and spot != "green_surrounds": spot = "green"
-        cover[hn].setdefault(spot, []).append(r["img"])
-        # a photo at a tee also covers the tee surrounds; a photo at the green covers the collar question too
-        if spot.startswith("tee_"): cover[hn].setdefault("tee_surrounds", []).append(r["img"])
-        if spot == "green": cover[hn].setdefault("collar", []).append(r["img"]); cover[hn].setdefault("green_surrounds", []).append(r["img"])
+        spots = {spot} if spot else (spots_for(hn, float(r["x"]), float(r["z"]), r.get("heading")) if r.get("x") not in ("", None) else set())
+        norm = set()
+        for sp in spots:
+            if sp in ("fairway", "mid"): sp = "landing_zone"
+            if sp == "tee": sp = "tee_surrounds"
+            if sp.startswith("green") and sp != "green_surrounds": sp = "green"
+            norm.add(sp)
+            if sp.startswith("tee_"): norm.add("tee_surrounds")
+            if sp == "green": norm.update(("collar", "green_surrounds"))
+        for sp in norm: cover[hn].setdefault(sp, []).append(r["img"])
     for s in scans:
         try: hn = int(s.get("hole") or 0)
         except ValueError: continue
@@ -95,14 +104,15 @@ def main():
 
     res = []
     for hn, it in sorted(items.items()):
-        got = [i for i in it if cover[hn].get(i)]; miss = [i for i in it if not cover[hn].get(i)]
-        res.append({"hole": hn, "items": len(it), "covered": len(got), "coverage_pct": round(100.0 * len(got) / len(it), 0), "missing": " ".join(miss), "captures": sum(len(v) for v in cover[hn].values())})
+        auto = [i for i in it if i not in MANUAL]; got = [i for i in auto if cover[hn].get(i)]; miss = [i for i in auto if not cover[hn].get(i)]
+        man_miss = [i for i in it if i in MANUAL and not cover[hn].get(i)]
+        res.append({"hole": hn, "items": len(auto), "covered": len(got), "coverage_pct": round(100.0 * len(got) / max(len(auto), 1), 0), "missing": " ".join(miss), "manual_untagged": " ".join(man_miss), "captures": len({im for v in cover[hn].values() for im in v})})
     with open(os.path.join(out, "coverage.csv"), "w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=["hole", "items", "covered", "coverage_pct", "captures", "missing"]); w.writeheader(); [w.writerow(r) for r in res]
+        w = csv.DictWriter(fh, fieldnames=["hole", "items", "covered", "coverage_pct", "captures", "missing", "manual_untagged"]); w.writeheader(); [w.writerow(r) for r in res]
     low = [r for r in res if r["coverage_pct"] < minpct]
-    md = ["# Coverage per hole (%s)" % C["name"], "", "Item covered = an indexed photo (pose high/medium, or draft with good GPS), an ACCEPTed scan, or a drone frame at that spot. Line: %.0f%%." % minpct, "",
-          "| hole | items | covered | % | captures | missing |", "|---|---|---|---|---|---|"]
-    md += ["| %d | %d | %d | %.0f | %d | %s |" % (r["hole"], r["items"], r["covered"], r["coverage_pct"], r["captures"], r["missing"]) for r in res]
+    md = ["# Coverage per hole (%s)" % C["name"], "", "Item covered = an indexed photo (pose high/medium, or draft with good GPS) standing on or aimed at the spot, an ACCEPTed scan, or a drone frame. Line: %.0f%%. trees_near_play and props need a hand tag in index.csv (column spot) and are listed, not scored." % minpct, "",
+          "| hole | items | covered | % | photos | missing | untagged (manual) |", "|---|---|---|---|---|---|---|"]
+    md += ["| %d | %d | %d | %.0f | %d | %s | %s |" % (r["hole"], r["items"], r["covered"], r["coverage_pct"], r["captures"], r["missing"], r["manual_untagged"]) for r in res]
     md += ["", "Next visit list (under %.0f%%): %s" % (minpct, ", ".join(str(r["hole"]) for r in low) or "none"), ""]
     open(os.path.join(out, "coverage.md"), "w").write("\n".join(md)); print("\n".join(md)); print("wrote", out)
 
