@@ -23,7 +23,7 @@ using Object = UnityEngine.Object;
 
 public class CourseCollarFlush : EditorWindow
 {
-    [Serializable] public class FlushRule { public float rim_probe_m = 0.12f; public float weld_mm = 5f; public int laplace_iterations = 400; public float sink_under_rim_m = 0.005f, sink_under_in_m = 0.03f, sink_rim_band_m = 0.4f; }
+    [Serializable] public class FlushRule { public float rim_probe_m = 0.12f; public float weld_mm = 5f; public int laplace_iterations = 400; public float sink_under_rim_m = 0.005f, sink_under_in_m = 0.03f, sink_rim_band_m = 0.4f; public float rim_loop_min_frac = 0.25f; }
     [Serializable] class Collar { public FlushRule flush_tool = new FlushRule(); }
     [Serializable] class GreensRules { public Collar collar = new Collar(); }
     const string CB = "Assets/CourseBuild"; const string GEN = CB + "/generated/collarflush"; const string LOG = "COURSEBUILD_LOG";
@@ -109,6 +109,34 @@ public class CourseCollarFlush : EditorWindow
         return txt;
     }
 
+    // boundary loops by total length; vertices on loops shorter than minFrac x the longest are not rim (seams, slivers)
+    static HashSet<int> MajorLoops(List<int[]> edges, Vector3[] w, float minFrac)
+    {
+        var adj = new Dictionary<int, List<int>>(); foreach (var e in edges) { List<int> l; if (!adj.TryGetValue(e[0], out l)) adj[e[0]] = l = new List<int>(); l.Add(e[1]); if (!adj.TryGetValue(e[1], out l)) adj[e[1]] = l = new List<int>(); l.Add(e[0]); }
+        var seen = new HashSet<int>(); var loops = new List<KeyValuePair<float, List<int>>>();
+        foreach (var start in adj.Keys)
+        {
+            if (seen.Contains(start)) continue; var comp = new List<int>(); var st = new Stack<int>(); st.Push(start); seen.Add(start);
+            while (st.Count > 0) { var v = st.Pop(); comp.Add(v); foreach (var u in adj[v]) if (!seen.Contains(u)) { seen.Add(u); st.Push(u); } }
+            float len = 0; foreach (var e in edges) if (comp.Contains(e[0]) && comp.Contains(e[1])) len += Vector3.Distance(w[e[0]], w[e[1]]);
+            loops.Add(new KeyValuePair<float, List<int>>(len, comp));
+        }
+        if (loops.Count == 0) return new HashSet<int>(); float longest = loops.Max(l => l.Key); var keep = new HashSet<int>();
+        foreach (var l in loops) if (l.Key >= longest * minFrac) foreach (var v in l.Value) keep.Add(v);
+        return keep;
+    }
+
+    // world positions of a mesh's major rim vertices (welded), for the outside-band cap in SinkUnder
+    static List<Vector3> RimPoints(MeshFilter mf, float minFrac)
+    {
+        var src = mf.sharedMesh; var w = src.vertices.Select(v => mf.transform.TransformPoint(v)).ToArray(); var t = src.triangles; int N = w.Length;
+        var wk = new Dictionary<Vector2Int, int>(); var weld = new int[N]; for (int i = 0; i < N; i++) { var k = new Vector2Int(Mathf.RoundToInt(w[i].x * 200), Mathf.RoundToInt(w[i].z * 200)); int j; if (!wk.TryGetValue(k, out j)) { j = i; wk[k] = i; } weld[i] = j; }
+        var cnt = new Dictionary<long, int>(); Func<int, int, long> K = (a, b) => a < b ? ((long)a << 32) | (uint)b : ((long)b << 32) | (uint)a;
+        for (int i = 0; i < t.Length; i += 3) for (int e = 0; e < 3; e++) { int a = weld[t[i + e]], b = weld[t[i + (e + 1) % 3]]; if (a == b) continue; var k = K(a, b); int c; cnt[k] = cnt.TryGetValue(k, out c) ? c + 1 : 1; }
+        var bEdges = cnt.Where(kv => kv.Value == 1).Select(kv => new[] { (int)(kv.Key >> 32), (int)(kv.Key & 0xffffffff) }).ToList();
+        return MajorLoops(bEdges, w, minFrac).Select(i => w[i]).ToList();
+    }
+
     // boundary vertices pinned to the neighbouring surface, interior = membrane between them
     static string Laplace(Transform opcd, MeshFilter mf, FlushRule R, bool apply)
     {
@@ -122,17 +150,22 @@ public class CourseCollarFlush : EditorWindow
             int a = weld[t[i + e]], b = weld[t[i + (e + 1) % 3]]; if (a == b) continue; var k = K(a, b); int c; cnt[k] = cnt.TryGetValue(k, out c) ? c + 1 : 1;
             HashSet<int> s; if (!nb.TryGetValue(a, out s)) nb[a] = s = new HashSet<int>(); s.Add(b); if (!nb.TryGetValue(b, out s)) nb[b] = s = new HashSet<int>(); s.Add(a);
         }
-        var bnd = new HashSet<int>(); foreach (var kv in cnt) if (kv.Value == 1) { bnd.Add((int)(kv.Key >> 32)); bnd.Add((int)(kv.Key & 0xffffffff)); }
+        // rim = the long boundary loops only (inner and outer ring); short loops are seams or slivers inside the band and stay free
+        var bEdges = cnt.Where(kv => kv.Value == 1).Select(kv => new[] { (int)(kv.Key >> 32), (int)(kv.Key & 0xffffffff) }).ToList();
+        var bnd = MajorLoops(bEdges, w, R.rim_loop_min_frac); int seamVerts = bEdges.SelectMany(e => e).Distinct().Count() - bnd.Count;
         var reps = wk.Values.ToList(); var y = reps.ToDictionary(r => r, r => w[r].y); var pinned = new HashSet<int>(); int unpinned = 0; float maxPin = 0;
+        var bAdj = new Dictionary<int, List<int>>(); foreach (var e in bEdges) { if (!bnd.Contains(e[0]) || !bnd.Contains(e[1])) continue; List<int> l; if (!bAdj.TryGetValue(e[0], out l)) bAdj[e[0]] = l = new List<int>(); l.Add(e[1]); if (!bAdj.TryGetValue(e[1], out l)) bAdj[e[1]] = l = new List<int>(); l.Add(e[0]); }
+        var ownCol = col as MeshCollider;
         foreach (var r in bnd)
         {
-            var bn = nb[r].Where(q => bnd.Contains(q) && cnt.ContainsKey(K(r, q)) && cnt[K(r, q)] == 1).ToList(); if (bn.Count < 2) { unpinned++; continue; }
+            List<int> bn; if (!bAdj.TryGetValue(r, out bn) || bn.Count < 2) { unpinned++; continue; }
             var tan = new Vector2(w[bn[1]].x - w[bn[0]].x, w[bn[1]].z - w[bn[0]].z).normalized; var nrm = new Vector2(-tan.y, tan.x); float best = float.NaN;
             foreach (var sgn in new[] { 1f, -1f })
             {
                 var q = new Vector2(w[r].x, w[r].z) + nrm * R.rim_probe_m * sgn;
-                var hits = Physics.RaycastAll(new Vector3(q.x, w[r].y + 5, q.y), Vector3.down, 20).Where(h => h.collider.transform.IsChildOf(opcd) && !h.collider.GetComponentInParent<LODGroup>()).OrderBy(h => h.distance).ToList();
-                if (hits.Count == 0 || hits[0].collider == col) continue; best = hits[0].point.y; break;
+                RaycastHit own; if (ownCol && ownCol.Raycast(new Ray(new Vector3(q.x, w[r].y + 5, q.y), Vector3.down), out own, 20)) continue;   // this side is still the collar: probe the other way
+                var hits = Physics.RaycastAll(new Vector3(q.x, w[r].y + 5, q.y), Vector3.down, 20).Where(h => h.collider.transform.IsChildOf(opcd) && h.collider != col && !h.collider.GetComponentInParent<LODGroup>() && !h.collider.isTrigger).OrderBy(h => h.distance).ToList();
+                if (hits.Count == 0) continue; best = hits[0].point.y; break;
             }
             if (float.IsNaN(best)) { unpinned++; continue; } maxPin = Mathf.Max(maxPin, Mathf.Abs(best - w[r].y)); y[r] = best; pinned.Add(r);
         }
@@ -140,7 +173,7 @@ public class CourseCollarFlush : EditorWindow
         float resid = 0;
         for (int it = 0; it < R.laplace_iterations; it++) { resid = 0; foreach (var r in free) { HashSet<int> s; if (!nb.TryGetValue(r, out s) || s.Count == 0) continue; float ny = s.Average(q => y[weld[q]]); resid = Mathf.Max(resid, Mathf.Abs(ny - y[r])); y[r] = ny; } }
         float mx = 0, up = 0, inMean = 0; foreach (var r in reps) { float d = y[r] - w[r].y; mx = Mathf.Max(mx, Mathf.Abs(d)); up = Mathf.Max(up, d); } foreach (var r in free) inMean += Mathf.Abs(y[r] - w[r].y); inMean = free.Count > 0 ? inMean / free.Count : 0;
-        string res = mf.name + ": " + reps.Count + " welded vertices (" + N + " raw), " + bnd.Count + " rim, " + pinned.Count + " pinned (largest rim move " + (maxPin * 100).ToString("F1", CI) + " cm), " + unpinned + " rim left as is; " + free.Count + " interior, mean move " + (inMean * 100).ToString("F1", CI) + " cm, last-pass residual " + (resid * 1000).ToString("F2", CI) + " mm; overall up to " + (mx * 100).ToString("F1", CI) + " cm (max rise " + (up * 100).ToString("F1", CI) + " cm)";
+        string res = mf.name + ": " + reps.Count + " welded vertices (" + N + " raw), " + bnd.Count + " rim (" + seamVerts + " seam vertices left free), " + pinned.Count + " pinned (largest rim move " + (maxPin * 100).ToString("F1", CI) + " cm), " + unpinned + " rim left as is; " + free.Count + " interior, mean move " + (inMean * 100).ToString("F1", CI) + " cm, last-pass residual " + (resid * 1000).ToString("F2", CI) + " mm; overall up to " + (mx * 100).ToString("F1", CI) + " cm (max rise " + (up * 100).ToString("F1", CI) + " cm)";
         if (!apply) return res;
         var nv = new Vector3[N]; for (int i = 0; i < N; i++) { var p = w[i]; p.y = y[weld[i]]; nv[i] = mf.transform.InverseTransformPoint(p); }
         var nm = SaveMesh(src, nv, mf.name + "_flush", "_cf"); Swap(mf, nm, "collarflush"); return res;
@@ -150,16 +183,23 @@ public class CourseCollarFlush : EditorWindow
     static string SinkUnder(Transform opcd, MeshFilter cm, FlushRule R)
     {
         var all = opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh).ToList(); var cc = cm.GetComponent<MeshCollider>(); if (!cc) return cm.name + ": no MeshCollider, nothing sunk";
-        var cb = cm.GetComponent<Renderer>().bounds; var o = new List<string>();
+        var cb = cm.GetComponent<Renderer>().bounds; var o = new List<string>(); var rim = RimPoints(cm, R.rim_loop_min_frac); int nOut = 0;
         foreach (var f in all)
         {
             if (f == cm) continue; var ln = f.name.ToLower(); if (ln.Contains("_green_-_mesh") || ln.Contains("collar") || ln.Contains("bunker") || ln.Contains("water") || ln.Contains("hazard") || f.name.StartsWith("SKIRT_")) continue;
-            var rr = f.GetComponent<Renderer>(); if (!rr || !rr.bounds.Intersects(cb)) continue;
+            var cbx = cb; cbx.Expand(R.sink_rim_band_m * 2); var rr = f.GetComponent<Renderer>(); if (!rr || !rr.bounds.Intersects(cbx)) continue;
             var src = f.sharedMesh; var w = src.vertices.Select(v => f.transform.TransformPoint(v)).ToArray(); int n = 0;
             for (int i = 0; i < w.Length; i++)
             {
-                if (w[i].x < cb.min.x || w[i].x > cb.max.x || w[i].z < cb.min.z || w[i].z > cb.max.z) continue;
-                RaycastHit h; if (!cc.Raycast(new Ray(new Vector3(w[i].x, cb.max.y + 5, w[i].z), Vector3.down), out h, cb.size.y + 20)) continue;
+                if (w[i].x < cb.min.x - R.sink_rim_band_m || w[i].x > cb.max.x + R.sink_rim_band_m || w[i].z < cb.min.z - R.sink_rim_band_m || w[i].z > cb.max.z + R.sink_rim_band_m) continue;
+                RaycastHit h;
+                if (!cc.Raycast(new Ray(new Vector3(w[i].x, cb.max.y + 5, w[i].z), Vector3.down), out h, cb.size.y + 20))
+                {
+                    // outside the collar but within the rim band: never above the nearest rim vertex (the proud rough edge the ball saw at the rim)
+                    float bd = float.MaxValue, ry = 0; foreach (var rp in rim) { float d = (new Vector2(rp.x, rp.z) - new Vector2(w[i].x, w[i].z)).sqrMagnitude; if (d < bd) { bd = d; ry = rp.y; } }
+                    if (bd <= R.sink_rim_band_m * R.sink_rim_band_m && w[i].y > ry - R.sink_under_rim_m) { w[i].y = ry - R.sink_under_rim_m; n++; nOut++; }
+                    continue;
+                }
                 bool nearRim = false; for (int k = 0; k < 8 && !nearRim; k++) { RaycastHit h2; var q = new Vector3(w[i].x + Mathf.Cos(k * Mathf.PI / 4) * R.sink_rim_band_m, cb.max.y + 5, w[i].z + Mathf.Sin(k * Mathf.PI / 4) * R.sink_rim_band_m); if (!cc.Raycast(new Ray(q, Vector3.down), out h2, cb.size.y + 20)) nearRim = true; }
                 float tg = h.point.y - (nearRim ? R.sink_under_rim_m : R.sink_under_in_m);
                 bool move = nearRim ? (Mathf.Abs(w[i].y - tg) > 0.002f && w[i].y > h.point.y - 2 * R.sink_under_in_m) : (w[i].y > h.point.y - 0.02f);
@@ -168,7 +208,7 @@ public class CourseCollarFlush : EditorWindow
             if (n == 0) continue;
             var nm = SaveMesh(src, w.Select(v => f.transform.InverseTransformPoint(v)).ToArray(), f.name + "_under_" + cm.name.Replace("SPatch_", "").Replace("_-_Mesh", ""), "_su"); Swap(f, nm, "sinkunder"); o.Add(f.name + " " + n);
         }
-        return cm.name + ": sunk " + (o.Count == 0 ? "nothing" : string.Join(", ", o.ToArray()));
+        return cm.name + ": sunk " + (o.Count == 0 ? "nothing" : string.Join(", ", o.ToArray())) + " (" + nOut + " of those capped in the band outside the rim)";
     }
 
     // every collarflush / sinkunder swap in COURSEBUILD_LOG goes back, newest first (or only those of one collar when `only` is set)
