@@ -1,39 +1,168 @@
 {
-  "element": "physics", "skill": "course-build-unity-tools", "playbook": "playbooks/19_unity_tool_inventory.md",
+  "element": "physics",
+  "skill": "course-build-unity-tools",
+  "playbook": "playbooks/19_unity_tool_inventory.md",
   "materials": {
-    "green": "GSPgreen", "collar": "GSPfairway", "fairway": "GSPfairway", "tee": "GSPtee", "rough": "GSPrough", "deep_rough": "GSPdeeprough",
-    "sand": "TVGsand", "concrete": "GSPconcrete", "water": "GSPwater", "timber": "GSPtimber", "leaves": "GSPleaves", "stone": "GSPstone", "wood": "GSPwood"
+    "green": "GSPgreen",
+    "collar": "GSPfairway",
+    "fairway": "GSPfairway",
+    "tee": "GSPtee",
+    "rough": "GSPrough",
+    "deep_rough": "GSPdeeprough",
+    "sand": "GSPsand",
+    "concrete": "GSPconcrete",
+    "water": "GSPwater",
+    "timber": "GSPtimber",
+    "leaves": "GSPleaves",
+    "stone": "GSPstone",
+    "wood": "GSPwood",
+    "sand_note": "the OPCD base project ships GSPsand (no TVGsand asset); GSPro maps it to its sand physics",
+    "fence": "GSPtimber"
   },
   "name_rules": [
-    {"match": "_green_-_mesh", "class": "green"},
-    {"match": "green_-_blend", "class": "green"},
-    {"match": "collar", "class": "collar"},
-    {"match": "apron", "class": "collar"},
-    {"match": "_tee_-_mesh", "class": "tee"},
-    {"match": "tee_-_blend", "class": "tee"},
-    {"match": "fairway", "class": "fairway"},
-    {"match": "deep", "class": "deep_rough"},
-    {"match": "rough", "class": "rough"},
-    {"match": "blend", "class": "rough"},
-    {"match": "bunker", "class": "sand"},
-    {"match": "sand", "class": "sand"},
-    {"match": "cart", "class": "concrete"},
-    {"match": "path", "class": "concrete"},
-    {"match": "road", "class": "concrete"},
-    {"match": "water", "class": "water"},
-    {"match": "pond", "class": "water"},
-    {"match": "creek", "class": "water"},
-    {"match": "trunk", "class": "timber"},
-    {"match": "canopy", "class": "leaves"},
-    {"match": "leaf", "class": "leaves"},
-    {"match": "wall", "class": "stone"},
-    {"match": "rock", "class": "stone"},
-    {"match": "fence", "class": "wood"}
+    {
+      "match": "_green_-_mesh",
+      "class": "green"
+    },
+    {
+      "match": "green_-_blend",
+      "class": "green"
+    },
+    {
+      "match": "collar",
+      "class": "collar"
+    },
+    {
+      "match": "apron",
+      "class": "collar"
+    },
+    {
+      "match": "_tee_-_mesh",
+      "class": "tee"
+    },
+    {
+      "match": "tee_-_blend",
+      "class": "tee"
+    },
+    {
+      "match": "rough_outer",
+      "class": "deep_rough"
+    },
+    {
+      "match": "deep",
+      "class": "deep_rough"
+    },
+    {
+      "match": "blend",
+      "class": "rough"
+    },
+    {
+      "match": "fairway",
+      "class": "fairway"
+    },
+    {
+      "match": "rough",
+      "class": "rough"
+    },
+    {
+      "match": "bunker",
+      "class": "sand"
+    },
+    {
+      "match": "sand",
+      "class": "sand"
+    },
+    {
+      "match": "rock",
+      "class": "stone"
+    },
+    {
+      "match": "boulder",
+      "class": "stone"
+    },
+    {
+      "match": "wall",
+      "class": "stone"
+    },
+    {
+      "match": "cart",
+      "class": "concrete"
+    },
+    {
+      "match": "path",
+      "class": "concrete"
+    },
+    {
+      "match": "road",
+      "class": "concrete"
+    },
+    {
+      "match": "water",
+      "class": "water"
+    },
+    {
+      "match": "pond",
+      "class": "water"
+    },
+    {
+      "match": "creek",
+      "class": "water"
+    },
+    {
+      "match": "trunk",
+      "class": "timber"
+    },
+    {
+      "match": "fence",
+      "class": "timber"
+    },
+    {
+      "match": "post",
+      "class": "timber"
+    },
+    {
+      "match": "net",
+      "class": "timber"
+    },
+    {
+      "match": "canopy",
+      "class": "leaves"
+    },
+    {
+      "match": "leaf",
+      "class": "leaves"
+    }
   ],
-  "name_rules_note": "first match wins, matched against the lower-cased collider (or mesh) name; 'deep' before 'rough' so deep rough wins; unmatched names go to the unsure list",
-  "svg_classes": {"green": "green", "fairway": "fairway", "tee": "tee", "bunker": "sand", "water": "water", "rough": "rough", "deep": "deep_rough"},
-  "census": {"grid_m": 2.0, "scope": "every SVG polygon class plus a 10 m margin", "mismatch_tolerance_pct": 1.0,
-             "note": "top collider at each grid point vs the SVG class; collar and first-cut rings may differ legitimately within 4 m of a green or tee"},
-  "auto_fix": {"allowed_when": "name rule matched and no conflicting SVG class under the mesh centroid", "never": ["colliders under LODGroup (trees: canopy/trunk set by the tree tools)", "any collider whose name matches no rule"]},
-  "report": "AutomationOutput/checks/physics_audit.csv (collider, current, expected, action, x, z), physics_census.csv, physics_unsure.csv"
+  "name_rules_note": "first match wins on the lower-cased collider (or parent) name; order matters: rough_outer and deep before rough, blend before fairway, rock/wall before water, fence/post/net = GSPtimber as BuildFences/BuildNets set them (2026-11-03 audit: 2,694 fence posts, 76 outer rough, 8 waterfall rocks, 5 blends would have been flipped by the first table)",
+  "svg_classes": {
+    "green": "green",
+    "fairway": "fairway",
+    "tee": "tee",
+    "bunker": "sand",
+    "water": "water",
+    "rough": "rough",
+    "deep": "deep_rough"
+  },
+  "census": {
+    "grid_m": 2.0,
+    "scope": "every SVG polygon class plus a 10 m margin",
+    "mismatch_tolerance_pct": 1.0,
+    "note": "top collider at each grid point vs the SVG class; collar and first-cut rings may differ legitimately within 4 m of a green or tee"
+  },
+  "auto_fix": {
+    "allowed_when": "name rule matched and no conflicting SVG class under the mesh centroid",
+    "never": [
+      "colliders under LODGroup (trees: canopy/trunk set by the tree tools)",
+      "any collider whose name matches no rule"
+    ]
+  },
+  "report": "AutomationOutput/checks/physics_audit.csv (collider, current, expected, action, x, z), physics_census.csv, physics_unsure.csv",
+  "actions": {
+    "ok": "material matches the name rule",
+    "fix": "name rule matched, material differs, asset exists",
+    "fix(missing)": "no material at all, rule matched",
+    "missing-asset": "rule matched but the physic material asset is not in the project",
+    "unmatched": "no rule for the name but it carries a material: glance, usually fine",
+    "unsure": "no rule and NO material: hand-label in the Inspector"
+  }
 }

@@ -26,7 +26,7 @@ public class CoursePhysicsAudit : EditorWindow
     static readonly CultureInfo CI = CultureInfo.InvariantCulture;
     // class -> physic material name (mirrors rules/physics.json "materials"; JsonUtility cannot read a dictionary, so keep this list in step)
     static readonly string[,] MAT = { { "green", "GSPgreen" }, { "collar", "GSPfairway" }, { "fairway", "GSPfairway" }, { "tee", "GSPtee" }, { "rough", "GSPrough" }, { "deep_rough", "GSPdeeprough" },
-                                      { "sand", "TVGsand" }, { "concrete", "GSPconcrete" }, { "water", "GSPwater" }, { "timber", "GSPtimber" }, { "leaves", "GSPleaves" }, { "stone", "GSPstone" }, { "wood", "GSPwood" } };
+                                      { "sand", "GSPsand" }, { "concrete", "GSPconcrete" }, { "water", "GSPwater" }, { "timber", "GSPtimber" }, { "leaves", "GSPleaves" }, { "stone", "GSPstone" }, { "wood", "GSPwood" } };
     public bool apply = false, census = true, includeOverlays = true;
     string last = ""; Vector2 scroll;
 
@@ -85,7 +85,8 @@ public class CoursePhysicsAudit : EditorWindow
                 if (cur == "GSPleaves" || cur == "GSPtimber") { ok++; audit.Add(string.Join(",", new[] { root.name, c.name.Replace(',', ';'), cur, "plant", cur, "ok", p.x.ToString("F1", CI), p.z.ToString("F1", CI) })); continue; }   // shrubs / props on plant physics: the tree tools own these
                 string cls = ClassOf(c.name, R.name_rules) ?? ClassOf(c.transform.parent ? c.transform.parent.name : "", R.name_rules);
                 string exp = cls != null ? MatName(cls) : null; string action;
-                if (cls == null) { action = "unsure"; uns++; unsure.Add(string.Join(",", new[] { root.name, c.name, cur, p.x.ToString("F1", CI), p.z.ToString("F1", CI), "no name rule matched" })); }
+                if (cls == null && !string.IsNullOrEmpty(cur)) { action = "unmatched"; ok++; }   // no rule for the name, but it carries a material: glance, usually fine
+                else if (cls == null) { action = "unsure"; uns++; unsure.Add(string.Join(",", new[] { root.name, c.name, cur, p.x.ToString("F1", CI), p.z.ToString("F1", CI), "no name rule and no material" })); }
                 else if (exp == null) { action = "unsure"; uns++; unsure.Add(string.Join(",", new[] { root.name, c.name, cur, p.x.ToString("F1", CI), p.z.ToString("F1", CI), "class " + cls + " has no material in this tool's table" })); }
                 else if (cur == exp) { action = "ok"; ok++; }
                 else
