@@ -104,3 +104,8 @@ Lines that were in `course-build-unity-tools` but not in this playbook when the 
 ### Decision points (ask once, with a default)
 1. Merge course-specific builders into the shared set now or after the next course (default: after Wilson proves the set).
 2. Two editors or one that day (under ~4 GB free RAM means one).
+
+
+## Physics labelling is audited, not assumed (2026-11-03)
+
+GSPro's ball physics come from the physic material on each collider. The names of the OPCD meshes say what each piece is meant to be and the course SVG says what the ground is at every point, so both are ground truth for an audit. `CoursePhysicsAudit.cs` compares every collider's material with the class its name implies (`rules/physics.json` name_rules, first match wins, 'deep' before 'rough'), applies the unambiguous fixes on request, and writes an unsure list with positions for a human to label; its 2 m census is compared with the SVG by `tools/physics_check.py`, which reports the mismatch share per class against `physics.census.mismatch_tolerance_pct` and names the offending meshes. Trees are left to the tree tools (trunk GSPtimber, canopy GSPleaves). Run the audit before every install; the publish skill lists it.

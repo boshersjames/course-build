@@ -6,6 +6,7 @@ description: "Use when pushing a course into GSPro: local install, Greenkeeper s
 Rules file: `rules/publish.json` (every number below is defined there; read it with `tools/rules.py publish`). Course overrides: `course.json` → `rule_overrides.publish`.
 
 ## Tools
+- Before the Greenkeeper save: `Course Checks > Physics` audit must show 0 fix / 0 missing-asset, and `tools/physics_check.py` PASS on every class (the Collider Inspector red = no physic material is the same check by eye).
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
 

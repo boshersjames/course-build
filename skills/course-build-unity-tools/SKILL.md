@@ -4,6 +4,7 @@ description: "Use before writing any Unity editor script for a GSPro course: the
 ---
 
 ## Tools
+- Unity `Course Checks > Physics: audit / apply` (`CoursePhysicsAudit.cs`, bridge `invoke -Tool CoursePhysicsAudit -Method Audit` then `-Method ApplyFixes`): physic material on every collider vs its mesh name per `rules/physics.json`; fixes the name-matched ones, lists the unsure ones with x,z for hand labelling; then `tools/physics_check.py` compares its census to the SVG.
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
 

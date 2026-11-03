@@ -1,0 +1,39 @@
+{
+  "element": "physics", "skill": "course-build-unity-tools", "playbook": "playbooks/19_unity_tool_inventory.md",
+  "materials": {
+    "green": "GSPgreen", "collar": "GSPfairway", "fairway": "GSPfairway", "tee": "GSPtee", "rough": "GSPrough", "deep_rough": "GSPdeeprough",
+    "sand": "TVGsand", "concrete": "GSPconcrete", "water": "GSPwater", "timber": "GSPtimber", "leaves": "GSPleaves", "stone": "GSPstone", "wood": "GSPwood"
+  },
+  "name_rules": [
+    {"match": "_green_-_mesh", "class": "green"},
+    {"match": "green_-_blend", "class": "green"},
+    {"match": "collar", "class": "collar"},
+    {"match": "apron", "class": "collar"},
+    {"match": "_tee_-_mesh", "class": "tee"},
+    {"match": "tee_-_blend", "class": "tee"},
+    {"match": "fairway", "class": "fairway"},
+    {"match": "deep", "class": "deep_rough"},
+    {"match": "rough", "class": "rough"},
+    {"match": "blend", "class": "rough"},
+    {"match": "bunker", "class": "sand"},
+    {"match": "sand", "class": "sand"},
+    {"match": "cart", "class": "concrete"},
+    {"match": "path", "class": "concrete"},
+    {"match": "road", "class": "concrete"},
+    {"match": "water", "class": "water"},
+    {"match": "pond", "class": "water"},
+    {"match": "creek", "class": "water"},
+    {"match": "trunk", "class": "timber"},
+    {"match": "canopy", "class": "leaves"},
+    {"match": "leaf", "class": "leaves"},
+    {"match": "wall", "class": "stone"},
+    {"match": "rock", "class": "stone"},
+    {"match": "fence", "class": "wood"}
+  ],
+  "name_rules_note": "first match wins, matched against the lower-cased collider (or mesh) name; 'deep' before 'rough' so deep rough wins; unmatched names go to the unsure list",
+  "svg_classes": {"green": "green", "fairway": "fairway", "tee": "tee", "bunker": "sand", "water": "water", "rough": "rough", "deep": "deep_rough"},
+  "census": {"grid_m": 2.0, "scope": "every SVG polygon class plus a 10 m margin", "mismatch_tolerance_pct": 1.0,
+             "note": "top collider at each grid point vs the SVG class; collar and first-cut rings may differ legitimately within 4 m of a green or tee"},
+  "auto_fix": {"allowed_when": "name rule matched and no conflicting SVG class under the mesh centroid", "never": ["colliders under LODGroup (trees: canopy/trunk set by the tree tools)", "any collider whose name matches no rule"]},
+  "report": "AutomationOutput/checks/physics_audit.csv (collider, current, expected, action, x, z), physics_census.csv, physics_unsure.csv"
+}

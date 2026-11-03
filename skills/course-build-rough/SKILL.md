@@ -6,6 +6,7 @@ description: "Use when tracing fairways, laying first cut and deep rough, settin
 Rules file: `rules/rough.json` (every number below is defined there; read it with `tools/rules.py rough`). Course overrides: `course.json` → `rule_overrides.rough`.
 
 ## Tools
+- Physics labelling: `Course Checks > Physics` in Unity (audit, apply name-matched fixes, unsure list) and `tools/physics_check.py` (census vs SVG). Rule keys: `physics.materials`, `physics.name_rules`, `physics.census.mismatch_tolerance_pct`.
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
 

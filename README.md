@@ -70,6 +70,8 @@ When BoJa changes a rule, change the JSON and the matching line in the skill; th
 | `tools/photo_sync.py push / pull / ls / check` | Originals (HEIC, LAS, MP4) between course_photos and an S3-compatible bucket (Cloudflare R2); git keeps only the index and small derived files | R2 credentials in the environment |
 | `tools/coverage.py` | Share of the site-visit capture checklist each hole has behind it (photos, accepted scans, drone frames); the next-visit list | index.csv, scans/index.csv |
 | `tools/drone_frames.py fetch / segments / cut` | Online flyover to per-hole frames with drafted poses, merged into the photo index at low confidence | yt-dlp, ffmpeg |
+| Unity `Course Checks > Physics: audit / apply` (`CoursePhysicsAudit.cs`) | Every collider's physic material vs its name (rules/physics.json): ok / fix / unsure list with positions; applies the name-matched fixes; writes a 2 m census of what the ball sees | Unity, synced rules |
+| `tools/physics_check.py` | The Unity census against the SVG ground truth: per-class mismatch %, the mismatched meshes with positions | physics_census.csv |
 | Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`) | Edge survey, collider vs render, tiers, crowns over, pin area on every green; writes AutomationOutput/checks | Unity, synced course.json + rules |
 | Unity `Course Look > Apply Tint JSON` (`ApplyTintJson.cs`) | Applies colour_match multipliers to material copies, refuses shared materials | Unity |
 
