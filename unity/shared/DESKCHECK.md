@@ -55,3 +55,6 @@ New. Reads checks/steps.csv (edge_profiles.py --steps-out), moves collar major-l
 
 ## CourseRimReset.cs v2 (2026-11-03, cloud)
 Rewritten: direction from the vertex-to-neighbour residual (probe_m outside the rim, own-collider test picks the side), no pair sign; directional gate (share down >= min_share_down and net < 0) refuses Apply unless force + only. ResetRule lost `pairs`. Reuses CourseCollarFlush.MajorLoops / PinRank / SaveMesh / Swap / EnsureFolders / Revert. Not yet compiled on the PC.
+
+## CourseSceneOps.cs (2026-11-03, cloud)
+New: Find / SetOff / SetOn / RebakeCollider / UndoActive through the bridge; active changes logged in COURSEBUILD_LOG. `name` is a static string field (bridge -Set). Not yet compiled on the PC.
