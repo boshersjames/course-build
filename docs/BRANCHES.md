@@ -54,17 +54,20 @@ anyone starts from. The toolkit holds everything shared. Thread branches get del
    shows nothing newer.
 3. **Split the other courses out** (see below), then delete f78r3v, 47fcq5, j2x22i, a6haj8, flaaah, 2j1jyq.
 
-### New course repos (create empty on GitHub, then push)
+### New course repos (DONE 2026-11-03: created, split out, pushed to `main`)
 | Repo | Source | Notes |
 |---|---|---|
-| hansen-dam | moorpark f78r3v `courses/hansen_dam` | newest Hansen line; 47fcq5 has an older copy |
-| penmar | moorpark j2x22i `courses/penmar` | |
-| angeles-national | moorpark 47fcq5 `courses/angeles_national` | QL1 LiDAR course |
-| harding | moorpark a6haj8 `griffith-park/harding` + the shared fix scripts beside it | |
-| wilson | moorpark flaaah `griffith-park/wilson` | |
+| github.com/boshersjames/hansen-dam | moorpark f78r3v `courses/hansen_dam` | newest Hansen line; 47fcq5 had an older copy. `surfaces/surface_05m.npz` (27 MB) left out |
+| github.com/boshersjames/penmar | moorpark j2x22i `courses/penmar` | heightmap rebuilt from USGS EPT in the cloud (points.npz not in git); GKD is a repeat nine (18 enabled, 9 physical) |
+| github.com/boshersjames/angeles-national | moorpark 47fcq5 `courses/angeles_national` | QL1 LiDAR course |
+| github.com/boshersjames/harding | moorpark a6haj8 `griffith-park/harding` + shared fix scripts in `scripts/` | own pad-levelled heightmap kept; satellite copied from griffith-park/ |
+| github.com/boshersjames/wilson | moorpark flaaah `griffith-park/wilson` | trees.csv covers both Griffith Park courses |
 
-Each gets the toolkit `course.json` keys added beside coursekit's, a `CLAUDE.md` from `templates/CLAUDE.course.md`, and
-`tools/doctor.py` run once. Hansen Dam and Penmar are prepared first (next courses).
+Each has the toolkit `course.json` keys beside coursekit's, a `CLAUDE.md`, and `progress/toolkit_first_run.md` with the first
+doctor / gkd check / green report / flyover gate / gate report output. These five repos are plain Git (no LFS): every file is
+under 30 MB, and the cloud proxy refuses the LFS verify call, so LFS would have blocked every push. tierra-rejada and moorpark keep
+LFS for their large photo, scan and model files. The moorpark thread branches f78r3v, 47fcq5, j2x22i, a6haj8, flaaah can be
+deleted once someone has eyeballed one of the new repos.
 
 ## Rules going forward
 - One branch per course that sessions start from: `main`. Work branches merge the same day they pass the gate.
