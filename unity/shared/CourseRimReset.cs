@@ -10,7 +10,7 @@
 // CourseCollarFlush.Revert (or this tool's Revert) puts the previous mesh back. Dry run unless Apply.
 //
 // Bridge: invoke -Tool CourseRimReset -Method DryRun | Apply | Revert  [-Set @{ hole = "14" }] [-Set @{ only = "<collar mesh>" }]
-//         [-Set @{ stepsPath = "<path>" }]
+//         [-Set @{ stepsPath = "<path>"; radius = "0.4"; maxMove = "0.1" }]  (radius / maxMove override the rule for that call; 0 = rule)
 // Loop: CourseGreenChecks.RunAll -> edge_profiles.py --steps-out -> Apply -> RunAll -> edge_profiles.py; pass = the pair table under
 // collar.rim_reset.pass_criterion.
 using System;
@@ -29,6 +29,7 @@ public class CourseRimReset : EditorWindow
     const string CB = "Assets/CourseBuild";
     static readonly CultureInfo CI = CultureInfo.InvariantCulture;
     public static string only = "", hole = "", stepsPath = "";
+    public static float radius = 0f, maxMove = 0f;   // -Set overrides for one call; 0 = the rule value (greens.collar.rim_reset.radius_m / max_move_m)
 
     public static string DryRun() { return Run(false); }
     public static string Apply() { return Run(true); }
@@ -45,6 +46,7 @@ public class CourseRimReset : EditorWindow
         var rp = CB + "/rules/greens.json"; var G = File.Exists(rp) ? JsonUtility.FromJson<GreensRules>(File.ReadAllText(rp).TrimStart('﻿')) : new GreensRules();
         var R = G.collar.rim_reset; float minFrac = G.collar.flush_tool != null ? G.collar.flush_tool.rim_loop_min_frac : 0.25f;
         if (R.pairs.Length == 0) return "no collar.rim_reset.pairs in " + rp + " (sync rules)";
+        if (radius > 0) R.radius_m = radius; if (maxMove > 0) R.max_move_m = maxMove;
         string projDir = Path.GetDirectoryName(Application.dataPath).Replace('\\', '/'); var sp = string.IsNullOrEmpty(stepsPath) ? projDir + "/AutomationOutput/checks/steps.csv" : stepsPath;
         if (!File.Exists(sp)) return "no steps file: " + sp + " (run CourseGreenChecks.RunAll, then tools/edge_profiles.py --steps-out " + projDir + "/AutomationOutput/checks/steps.csv)";
         var opcdGo = GameObject.Find("OPCD Meshes"); if (!opcdGo) return "no 'OPCD Meshes' root"; var opcd = opcdGo.transform;
@@ -74,7 +76,7 @@ public class CourseRimReset : EditorWindow
             }
             if (hit == 0) noRim++; else used++;
         }
-        var o = new List<string> { (apply ? "APPLY" : "DRY RUN") + ": " + rows + " step rows, " + used + " used, " + skippedPair + " pairs not listed, " + skippedBig + " over max_move " + (R.max_move_m * 100).ToString("F0", CI) + " cm (skipped), " + skippedHole + " outside the hole/only filter, " + noMesh + " collar mesh not in scene, " + noRim + " with no rim vertex within " + R.radius_m.ToString(CI) + " m" };
+        var o = new List<string> { (apply ? "APPLY" : "DRY RUN") + " (radius " + R.radius_m.ToString(CI) + " m, max move " + (R.max_move_m * 100).ToString("F0", CI) + " cm" + (string.IsNullOrEmpty(hole) ? "" : ", hole " + hole) + (string.IsNullOrEmpty(only) ? "" : ", only " + only) + "): " + rows + " step rows, " + used + " used, " + skippedPair + " pairs not listed, " + skippedBig + " over max_move " + (R.max_move_m * 100).ToString("F0", CI) + " cm (skipped), " + skippedHole + " outside the hole/only filter, " + noMesh + " collar mesh not in scene, " + noRim + " with no rim vertex within " + R.radius_m.ToString(CI) + " m" };
         if (apply) CourseCollarFlush.EnsureFolders();
         foreach (var kv in demands)
         {
