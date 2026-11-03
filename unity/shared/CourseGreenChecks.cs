@@ -22,7 +22,8 @@ using UnityEngine;
 //                                     in paths.course_repo_abs, else next to the project).  Run-CourseAutomation.ps1 -SyncTools copies it.
 //   Assets/CourseBuild/rules/greens.json   the toolkit rule file; every threshold below comes from it (JsonUtility reads the subset).
 // Nothing here is course specific: green meshes are found by the OPCD name pattern and matched to GKD holes by green centre.
-// NOT YET COMPILED ON THE PC (written in the cloud 2026-11-03): first run, fix any compile message, then commit the fix to course-build.
+// NOT YET COMPILED ON THE PC (written in the cloud 2026-11-03, desk-checked against the live Assets/Editor scripts, see DESKCHECK.md):
+// first run, fix any compile message, then commit the fix to course-build.
 public class CourseGreenChecks : EditorWindow
 {
     // ---------- rule subset (mirrors rules/greens.json; unknown keys are ignored by JsonUtility) ----------
@@ -165,7 +166,7 @@ public class CourseGreenChecks : EditorWindow
         var cen = greens.ToDictionary(f => f, f => new Vector2(world[f].Average(v => v.x), world[f].Average(v => v.z)));
 
         var rows = new List<Row>(); var edgeCsv = new List<string> { "green,x,z,step,lip,stepAt,surfaces" }; var pinCsv = new List<string> { "hole,day,x,z,green,worst_deg,edge_m,flags" };
-        foreach (var h in g.Holes.OrderBy(h => h.HoleNumber))
+        foreach (var h in g.Holes.OrderBy(ho => ho.HoleNumber))   // desk-check: lambda param renamed, loop var and lambda param shared a name (CS0136 before C# 8)
         {
             if (only.Count > 0 && !only.Contains(h.HoleNumber)) continue;
             var gc = h.Tees == null ? null : h.Tees.FirstOrDefault(t => t.TeeType == "GreenCenterPoint" && t.Position != null);
@@ -195,7 +196,7 @@ public class CourseGreenChecks : EditorWindow
 
             // 2. collider = render on green, blend, collar meshes near this green
             float worstDy = 0; int dup = 0;
-            foreach (var f in opcd.GetComponentsInChildren<MeshFilter>(false).Where(f => f.sharedMesh && f.GetComponent<Renderer>() && f.GetComponent<Renderer>().bounds.Intersects(b) && (Surface(f.name) == "green" || Surface(f.name) == "collar")))
+            foreach (var f in opcd.GetComponentsInChildren<MeshFilter>(false).Where(mf => mf.sharedMesh && mf.GetComponent<Renderer>() && mf.GetComponent<Renderer>().bounds.Intersects(b) && (Surface(mf.name) == "green" || Surface(mf.name) == "collar")))   // desk-check: lambda param renamed
             {
                 var mc = f.GetComponent<MeshCollider>(); if (!mc || !mc.sharedMesh) { row.notes.Add(f.name + " has no mesh collider"); continue; }
                 var ra = f.sharedMesh.vertices; var ca = mc.sharedMesh.vertices;
@@ -217,7 +218,7 @@ public class CourseGreenChecks : EditorWindow
 
             // 4. crowns over the green or collar (renderer bounds radius, 16 directions, 4 radii)
             float worstOver = 0; float x0 = b.min.x - 20, x1 = b.max.x + 20, z0 = b.min.z - 20, z1 = b.max.z + 20;
-            foreach (var root in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().Where(r => r.activeInHierarchy && r != opcdGo))
+            foreach (var root in UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().Where(rg => rg.activeInHierarchy && rg != opcdGo))   // desk-check: lambda param renamed (inner foreach declares r)
                 foreach (var lg in root.GetComponentsInChildren<LODGroup>())
                 {
                     var p = lg.transform.position; if (p.x < x0 || p.x > x1 || p.z < z0 || p.z > z1) continue; var rs = lg.GetComponentsInChildren<Renderer>(); if (rs.Length == 0) continue; var bb = rs[0].bounds; foreach (var r in rs) bb.Encapsulate(r.bounds);
@@ -261,7 +262,7 @@ public class CourseGreenChecks : EditorWindow
         var md = new List<string> { "# Green checks: all " + rows.Count + " holes (" + C.name + ", " + DateTime.Now.ToString("yyyy-MM-dd HH:mm") + ")", "",
             "Rules: step <= " + (E.max_step_m * 100).ToString(CI) + " cm, lip <= " + (E.max_lip_m * 100).ToString(CI) + " cm, collider dy <= " + (R.checks.collider_vs_render_max_dy_m * 100).ToString(CI) + " cm, crown < " + CR.block_at_m.ToString(CI) + " m over green/collar, pins <= " + P.max_lie_angle_deg.ToString(CI) + " deg and >= " + P.min_from_edge_m.ToString(CI) + " m from the edge, >= " + P.min_valid_areas + " areas.", "",
             "| hole | green | step cm | lip cm | col dy cm | tiers | crown m | pins fail | usable % | areas | pass | notes |", "|---|---|---|---|---|---|---|---|---|---|---|---|" };
-        foreach (var r in rows.OrderBy(r => r.pass).ThenBy(r => r.hole))
+        foreach (var r in rows.OrderBy(q => q.pass).ThenBy(q => q.hole))   // desk-check: lambda param renamed
         {
             csv.Add(string.Join(",", new[] { r.hole.ToString(), r.green, (r.maxStep * 100).ToString("F1", CI), (r.maxLip * 100).ToString("F1", CI), r.stepPts.ToString(), r.lipPts.ToString(), (r.colDy * 100).ToString("F1", CI), r.tiersOk ? "1" : "0", r.tiersNote.Trim().Replace(',', ';'), r.crown.ToString("F2", CI), r.pins.ToString(), r.pinsFail.ToString(), r.usable.ToString("F0", CI), r.areas.ToString(), r.pass ? "PASS" : "FAIL", string.Join("; ", r.notes.ToArray()).Replace(',', ';') }));
             md.Add("| " + r.hole + " | " + r.green.Replace("_Green_-_Mesh", "") + " | " + (r.maxStep * 100).ToString("F1", CI) + " | " + (r.maxLip * 100).ToString("F1", CI) + " | " + (r.colDy * 100).ToString("F1", CI) + " | " + (r.tiersOk ? "ok" : r.tiersNote.Trim()) + " | " + r.crown.ToString("F2", CI) + " | " + r.pinsFail + "/" + r.pins + " | " + r.usable.ToString("F0", CI) + " | " + r.areas + " | " + (r.pass ? "PASS" : "**FAIL**") + " | " + string.Join("; ", r.notes.ToArray()) + " |");
