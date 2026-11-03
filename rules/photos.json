@@ -63,5 +63,10 @@
       "position_conf": "low",
       "note": "frames from online flyovers: hole by content, pose from the hole line, never used for colour"
     }
+  },
+  "audit": {
+    "colour_gap_max": 0.05,
+    "turf_mask": "green-dominant pixels below the skyline, top quarter excluded",
+    "note": "gap = render ratio (minus the look.measure.render_warm_offset on r/g) minus photo ratio"
   }
 }
