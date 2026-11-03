@@ -57,7 +57,11 @@
         "_rough_-_mesh",
         "_fairway_-_mesh",
         "_green_-_mesh"
-      ]
+      ],
+      "targets": {
+        "collar": "name contains collar, minus collar_name_excludes (default)",
+        "blend": "name contains green and blend: the inner rim seats to the green mesh, the outer rim to the collar, same residual and gate"
+      }
     }
   },
   "tiers": {

@@ -12,8 +12,10 @@
 // New meshes under Assets/CourseBuild/generated/collarflush, MeshCollider follows, COURSEBUILD_LOG keeps the swap for Revert.
 //
 // Bridge: invoke -Tool CourseRimReset -Method DryRun | Apply | Revert
-//         -Set @{ hole = "14" } | @{ only = "<collar mesh>" } | @{ radius = "0.4"; maxMove = "0.1" } (0 = rule) | @{ force = "1" } | @{ stepsPath = "<path>" }
-// Static fields persist between calls until a recompile: clear them explicitly (hole = ""; only = ""; force = "0") for a course-wide call.
+//         -Set @{ target = "collar" | "blend" } | @{ hole = "14" } | @{ only = "<mesh>" } | @{ radius = "0.4"; maxMove = "0.1" } (0 = rule) | @{ force = "1" } | @{ stepsPath = "<path>" }
+// target = "blend" edits the green blends instead: inner rim seats to the green, outer rim to the collar, same residual, same gate (the
+// green-edge class: Tierra 16, a 5 cm drop from the green onto its own blend). Static fields persist between calls until a recompile:
+// clear them explicitly (hole = ""; only = ""; force = "0"; target = "collar") for a course-wide collar call.
 // Loop: RunAll -> edge_profiles.py -> DryRun (read the gate) -> Apply -> RunAll -> edge_profiles.py; never Apply twice on one steps file.
 using System;
 using System.Collections.Generic;
@@ -34,6 +36,8 @@ public class CourseRimReset : EditorWindow
     public static float radius = 0f, maxMove = 0f;   // -Set overrides for one call; 0 = the rule value (greens.collar.rim_reset.radius_m / max_move_m)
 
     public static bool IsCollar(string n, ResetRule R) { var l = n.ToLower(); if (!l.Contains("collar")) return false; foreach (var x in R.collar_name_excludes ?? new string[0]) if (!string.IsNullOrEmpty(x) && l.Contains(x.ToLower())) return false; return true; }
+    public static bool IsBlend(string n) { var l = n.ToLower(); return l.Contains("green") && l.Contains("blend"); }
+    static bool IsTarget(string n, ResetRule R) { return target == "blend" ? IsBlend(n) : IsCollar(n, R); }
     public static string DryRun() { return Run(false); }
     public static string Apply() { return Run(true); }
     public static string Revert() { return CourseCollarFlush.Revert(); }
@@ -41,7 +45,8 @@ public class CourseRimReset : EditorWindow
     [MenuItem("Course Tools/Greens/Rim reset (dry run)")] static void MenuDry() { Debug.Log(DryRun()); }
     [MenuItem("Course Tools/Greens/Rim reset (apply)")] static void MenuApply() { Debug.Log(Apply()); }
 
-    public static float force = 0f;   // -Set force = "1": apply even on a collar the directional gate flagged (one collar via `only`)
+    public static float force = 0f;
+    public static string target = "collar";   // -Set target = "collar" (default) | "blend": which mesh class is edited; its own class is never the neighbour   // -Set force = "1": apply even on a collar the directional gate flagged (one collar via `only`)
 
 
     public static string Run(bool apply)
@@ -63,12 +68,12 @@ public class CourseRimReset : EditorWindow
         {
             var a = ln.Split(','); if (a.Length <= Math.Max(iSz, iTo)) continue; rows++;
             if (!string.IsNullOrEmpty(hole) && a[iH] != hole) { skippedHole++; continue; }
-            string cname = IsCollar(a[iFrom], R) ? a[iFrom] : IsCollar(a[iTo], R) ? a[iTo] : null; if (cname == null) { noCollar++; continue; }
+            string cname = IsTarget(a[iFrom], R) ? a[iFrom] : IsTarget(a[iTo], R) ? a[iTo] : null; if (cname == null) { noCollar++; continue; }
             if (!string.IsNullOrEmpty(only) && cname != only) { skippedHole++; continue; }
             MeshFilter mf; if (!filters.TryGetValue(cname, out mf)) { noMesh++; continue; }
             List<Vector2> l; if (!samples.TryGetValue(mf, out l)) samples[mf] = l = new List<Vector2>(); l.Add(new Vector2(float.Parse(a[iSx], CI), float.Parse(a[iSz], CI)));
         }
-        var o = new List<string> { (apply ? "APPLY" : "DRY RUN") + " v2 vertex residual (probe " + (R.probe_m * 100).ToString("F0", CI) + " cm, radius " + R.radius_m.ToString(CI) + " m, max move " + (R.max_move_m * 100).ToString("F0", CI) + " cm, gate share-down >= " + (R.min_share_down * 100).ToString("F0", CI) + "%" + (string.IsNullOrEmpty(hole) ? "" : ", hole " + hole) + (string.IsNullOrEmpty(only) ? "" : ", only " + only) + "): " + rows + " step rows, " + noCollar + " with no collar in the pair, " + skippedHole + " outside the hole/only filter, " + noMesh + " collar mesh not in scene, " + samples.Count + " collars" };
+        var o = new List<string> { (apply ? "APPLY" : "DRY RUN") + " v2 vertex residual, target " + target + " (probe " + (R.probe_m * 100).ToString("F0", CI) + " cm, radius " + R.radius_m.ToString(CI) + " m, max move " + (R.max_move_m * 100).ToString("F0", CI) + " cm, gate share-down >= " + (R.min_share_down * 100).ToString("F0", CI) + "%" + (string.IsNullOrEmpty(hole) ? "" : ", hole " + hole) + (string.IsNullOrEmpty(only) ? "" : ", only " + only) + "): " + rows + " step rows, " + noCollar + " with no " + target + " in the pair, " + skippedHole + " outside the hole/only filter, " + noMesh + " target mesh not in scene, " + samples.Count + " " + target + " meshes" };
         if (apply) CourseCollarFlush.EnsureFolders();
         float r2 = R.radius_m * R.radius_m;
         foreach (var kv in samples)
@@ -95,7 +100,7 @@ public class CourseRimReset : EditorWindow
                     float top = float.NaN;
                     foreach (var h in Physics.RaycastAll(new Vector3(q.x, w[r].y + 5, q.y), Vector3.down, 20))
                     {
-                        if (!h.collider.transform.IsChildOf(opcd) || h.collider == col || h.collider.GetComponentInParent<LODGroup>() || h.collider.isTrigger || h.collider.name.ToLower().Contains("collar")) continue;
+                        if (!h.collider.transform.IsChildOf(opcd) || h.collider == col || h.collider.GetComponentInParent<LODGroup>() || h.collider.isTrigger || IsTarget(h.collider.name, R)) continue;   // its own class is never the neighbour
                         var pm = h.collider.sharedMaterial ? h.collider.sharedMaterial.name : ""; if (pm == "GSPleaves" || pm == "GSPtimber") continue;
                         if (float.IsNaN(top) || h.point.y > top) top = h.point.y;
                     }
@@ -104,7 +109,7 @@ public class CourseRimReset : EditorWindow
                 if (float.IsNaN(ny)) { unprobed++; continue; }
                 float d = ny - w[r].y; if (Mathf.Abs(d) > R.max_move_m) { overCap++; continue; }
                 // conform cap: never end above the designed surface at the vertex itself
-                float lim = float.NaN; foreach (var h in Physics.RaycastAll(new Vector3(w[r].x, w[r].y + 5, w[r].z), Vector3.down, 20)) { if (!h.collider.transform.IsChildOf(opcd) || h.collider == col || h.collider.GetComponentInParent<LODGroup>() || CourseCollarFlush.PinRank(h.collider.name) > 2) continue; if (float.IsNaN(lim) || h.point.y > lim) lim = h.point.y; }
+                float lim = float.NaN; foreach (var h in Physics.RaycastAll(new Vector3(w[r].x, w[r].y + 5, w[r].z), Vector3.down, 20)) { if (!h.collider.transform.IsChildOf(opcd) || h.collider == col || h.collider.GetComponentInParent<LODGroup>() || IsTarget(h.collider.name, R) || CourseCollarFlush.PinRank(h.collider.name) > 2) continue; if (float.IsNaN(lim) || h.point.y > lim) lim = h.point.y; }
                 if (!float.IsNaN(lim) && w[r].y + d > lim) { d = lim - w[r].y; capped++; }
                 if (Mathf.Abs(d) >= 0.0005f) res[r] = d;
             }
