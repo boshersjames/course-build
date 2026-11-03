@@ -29,12 +29,33 @@ public class CourseCollarFlush : EditorWindow
     const string CB = "Assets/CourseBuild"; const string GEN = CB + "/generated/collarflush"; const string LOG = "COURSEBUILD_LOG";
     static readonly CultureInfo CI = CultureInfo.InvariantCulture;
     public static string only = "";   // bridge -Set: one collar mesh name, or "" for every collar
+    public static float px = 0, pz = 0, pr = 0.6f;   // Probe: vertices of `only` within pr m of (px, pz)
 
     [MenuItem("Course Tools/Greens/Collar flush (dry run)")] static void MenuDry() { Debug.Log(DryRun()); }
     [MenuItem("Course Tools/Greens/Collar flush (apply)")] static void MenuApply() { Debug.Log(Apply()); }
     [MenuItem("Course Tools/Greens/Collar flush (revert all)")] static void MenuRevert() { Debug.Log(Revert()); }
 
     public static string DryRun() { return Run(false); }
+
+    // read-only: the collar mesh's own vertices near a point, with the top-collider height at each (is the mesh one sheet? did the interior move?)
+    public static string Probe()
+    {
+        Physics.SyncTransforms(); var opcdGo = GameObject.Find("OPCD Meshes"); if (!opcdGo || string.IsNullOrEmpty(only)) return "set only=<collar mesh>, px, pz";
+        var mf = opcdGo.transform.GetComponentsInChildren<MeshFilter>(false).FirstOrDefault(f => f.name == only); if (!mf) return "no " + only;
+        var src = mf.sharedMesh; var w = src.vertices.Select(v => mf.transform.TransformPoint(v)).ToArray(); var t = src.triangles; var c = new Vector2(px, pz);
+        var cnt = new Dictionary<long, int>(); Func<int, int, long> K = (a, b) => a < b ? ((long)a << 32) | (uint)b : ((long)b << 32) | (uint)a;
+        for (int i = 0; i < t.Length; i += 3) for (int e = 0; e < 3; e++) { var k = K(t[i + e], t[i + (e + 1) % 3]); int n; cnt[k] = cnt.TryGetValue(k, out n) ? n + 1 : 1; }
+        var rim = new HashSet<int>(); foreach (var kv in cnt) if (kv.Value == 1) { rim.Add((int)(kv.Key >> 32)); rim.Add((int)(kv.Key & 0xffffffff)); }
+        var o = new List<string> { only + ": mesh " + src.name + " (" + AssetDatabase.GetAssetPath(src) + "), " + w.Length + " vertices, " + t.Length / 3 + " triangles, " + rim.Count + " unwelded rim vertices; collider mesh " + (mf.GetComponent<MeshCollider>() && mf.GetComponent<MeshCollider>().sharedMesh ? mf.GetComponent<MeshCollider>().sharedMesh.name : "none"), "i,x,z,y,rim,top_y,top_collider" };
+        var near = Enumerable.Range(0, w.Length).Where(i => (new Vector2(w[i].x, w[i].z) - c).magnitude <= pr).OrderBy(i => (new Vector2(w[i].x, w[i].z) - c).magnitude).Take(60);
+        foreach (var i in near)
+        {
+            float topY = float.NaN; string topN = "-";
+            foreach (var h in Physics.RaycastAll(new Vector3(w[i].x, 600, w[i].z), Vector3.down, 1200)) { if (!h.collider.transform.IsChildOf(opcdGo.transform) || h.collider.GetComponentInParent<LODGroup>()) continue; if (float.IsNaN(topY) || h.point.y > topY) { topY = h.point.y; topN = h.collider.name; } }
+            o.Add(i + "," + w[i].x.ToString("F3", CI) + "," + w[i].z.ToString("F3", CI) + "," + w[i].y.ToString("F4", CI) + "," + (rim.Contains(i) ? "rim" : "in") + "," + topY.ToString("F4", CI) + "," + topN);
+        }
+        return string.Join("\n", o.ToArray());
+    }
     public static string Apply() { return Run(true); }
 
     static FlushRule Rules()
@@ -116,9 +137,10 @@ public class CourseCollarFlush : EditorWindow
             if (float.IsNaN(best)) { unpinned++; continue; } maxPin = Mathf.Max(maxPin, Mathf.Abs(best - w[r].y)); y[r] = best; pinned.Add(r);
         }
         var free = reps.Where(r => !pinned.Contains(r) && !bnd.Contains(r)).ToList();
-        for (int it = 0; it < R.laplace_iterations; it++) foreach (var r in free) { HashSet<int> s; if (!nb.TryGetValue(r, out s) || s.Count == 0) continue; y[r] = s.Average(q => y[weld[q]]); }
-        float mx = 0, up = 0; foreach (var r in reps) { float d = y[r] - w[r].y; mx = Mathf.Max(mx, Mathf.Abs(d)); up = Mathf.Max(up, d); }
-        string res = mf.name + ": " + reps.Count + " vertices, " + pinned.Count + " rim pinned (largest rim move " + (maxPin * 100).ToString("F1", CI) + " cm), " + unpinned + " rim left as is, interior moved up to " + (mx * 100).ToString("F1", CI) + " cm (max rise " + (up * 100).ToString("F1", CI) + " cm)";
+        float resid = 0;
+        for (int it = 0; it < R.laplace_iterations; it++) { resid = 0; foreach (var r in free) { HashSet<int> s; if (!nb.TryGetValue(r, out s) || s.Count == 0) continue; float ny = s.Average(q => y[weld[q]]); resid = Mathf.Max(resid, Mathf.Abs(ny - y[r])); y[r] = ny; } }
+        float mx = 0, up = 0, inMean = 0; foreach (var r in reps) { float d = y[r] - w[r].y; mx = Mathf.Max(mx, Mathf.Abs(d)); up = Mathf.Max(up, d); } foreach (var r in free) inMean += Mathf.Abs(y[r] - w[r].y); inMean = free.Count > 0 ? inMean / free.Count : 0;
+        string res = mf.name + ": " + reps.Count + " welded vertices (" + N + " raw), " + bnd.Count + " rim, " + pinned.Count + " pinned (largest rim move " + (maxPin * 100).ToString("F1", CI) + " cm), " + unpinned + " rim left as is; " + free.Count + " interior, mean move " + (inMean * 100).ToString("F1", CI) + " cm, last-pass residual " + (resid * 1000).ToString("F2", CI) + " mm; overall up to " + (mx * 100).ToString("F1", CI) + " cm (max rise " + (up * 100).ToString("F1", CI) + " cm)";
         if (!apply) return res;
         var nv = new Vector3[N]; for (int i = 0; i < N; i++) { var p = w[i]; p.y = y[weld[i]]; nv[i] = mf.transform.InverseTransformPoint(p); }
         var nm = SaveMesh(src, nv, mf.name + "_flush", "_cf"); Swap(mf, nm, "collarflush"); return res;
