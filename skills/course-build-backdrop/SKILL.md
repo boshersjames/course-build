@@ -11,7 +11,7 @@ Run from the course folder (or with `COURSE_JSON` set). Every number these enfor
 
 - `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate [--end-fit]`: every flight path and poster frame, so what the backdrop must cover is known before anything is built; rules `flyovers.render`, `backdrop.far_backdrop_km`.
 - `offsite_trees.py` and `backdrop.py` (per course, from `pipeline.fixes`): LiDAR trees to `backdrop.offsite_trees_m` and the outer DEM; `buildings.py`, `building_heights.py` (`tools/moorpark_tools/`): OSM footprints with LiDAR roof heights.
-- (no tool yet: skyline fit RMS against the photo from the highest tee at `backdrop.skyline_fit_rms_px_max`; `tools/pose_solve.py` (in progress) computes the LiDAR skyline that this needs; candidate for `tools/`)
+- (no tool yet: skyline fit RMS against the photo from the highest tee at `backdrop.skyline_fit_rms_px_max`; `tools/pose_solve.py` (diagnostic only) computes the LiDAR skyline that this needs; candidate for `tools/`)
 
 # Backdrop and surroundings
 
