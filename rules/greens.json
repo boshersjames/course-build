@@ -39,7 +39,10 @@
         "green blend",
         "fairway / tee / apron",
         "anything else"
-      ]
+      ],
+      "conform_max": true,
+      "conform_probe_m": 0.12,
+      "conform_note": "after the membrane, every collar vertex is capped at the highest designed surface found at its position or conform_probe_m to each side (green mesh, green blend, fairway, tee, apron: never the rough, which is sunk instead). A collar is never proud of the surface it meets; a true maximum rule, applied to every collar, no mesh names."
     }
   },
   "tiers": {

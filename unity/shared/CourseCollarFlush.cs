@@ -23,7 +23,7 @@ using Object = UnityEngine.Object;
 
 public class CourseCollarFlush : EditorWindow
 {
-    [Serializable] public class FlushRule { public float rim_probe_m = 0.12f; public float weld_mm = 5f; public int laplace_iterations = 400; public float sink_under_rim_m = 0.005f, sink_under_in_m = 0.03f, sink_rim_band_m = 0.4f; public float rim_loop_min_frac = 0.25f; }
+    [Serializable] public class FlushRule { public float rim_probe_m = 0.12f; public float weld_mm = 5f; public int laplace_iterations = 400; public float sink_under_rim_m = 0.005f, sink_under_in_m = 0.03f, sink_rim_band_m = 0.4f; public float rim_loop_min_frac = 0.25f; public bool conform_max = true; public float conform_probe_m = 0.12f; }
     [Serializable] class Collar { public FlushRule flush_tool = new FlushRule(); }
     [Serializable] class GreensRules { public Collar collar = new Collar(); }
     const string CB = "Assets/CourseBuild"; const string GEN = CB + "/generated/collarflush"; const string LOG = "COURSEBUILD_LOG";
@@ -175,8 +175,23 @@ public class CourseCollarFlush : EditorWindow
         var free = reps.Where(r => !pinned.Contains(r) && !bnd.Contains(r)).ToList();
         float resid = 0;
         for (int it = 0; it < R.laplace_iterations; it++) { resid = 0; foreach (var r in free) { HashSet<int> s; if (!nb.TryGetValue(r, out s) || s.Count == 0) continue; float ny = s.Average(q => y[weld[q]]); resid = Mathf.Max(resid, Mathf.Abs(ny - y[r])); y[r] = ny; } }
+        // conform (max): no collar vertex above the designed surface at or beside it (green mesh, green blend, fairway, tee: never the rough, which is sunk instead)
+        int capped = 0; float capMax = 0;
+        if (R.conform_max) foreach (var r in reps)
+        {
+            float lim = float.NaN;
+            foreach (var off in new[] { Vector2.zero, new Vector2(R.conform_probe_m, 0), new Vector2(-R.conform_probe_m, 0), new Vector2(0, R.conform_probe_m), new Vector2(0, -R.conform_probe_m) })
+            {
+                foreach (var h in Physics.RaycastAll(new Vector3(w[r].x + off.x, w[r].y + 5, w[r].z + off.y), Vector3.down, 20))
+                {
+                    if (!h.collider.transform.IsChildOf(opcd) || h.collider == col || h.collider.GetComponentInParent<LODGroup>() || PinRank(h.collider.name) > 2) continue;
+                    if (float.IsNaN(lim) || h.point.y > lim) lim = h.point.y;   // the highest designed surface nearby is the ceiling
+                }
+            }
+            if (!float.IsNaN(lim) && y[r] > lim) { capMax = Mathf.Max(capMax, y[r] - lim); y[r] = lim; capped++; }
+        }
         float mx = 0, up = 0, inMean = 0; foreach (var r in reps) { float d = y[r] - w[r].y; mx = Mathf.Max(mx, Mathf.Abs(d)); up = Mathf.Max(up, d); } foreach (var r in free) inMean += Mathf.Abs(y[r] - w[r].y); inMean = free.Count > 0 ? inMean / free.Count : 0;
-        string res = mf.name + ": " + reps.Count + " welded vertices (" + N + " raw), " + bnd.Count + " rim (" + seamVerts + " seam vertices left free), " + pinned.Count + " pinned (largest rim move " + (maxPin * 100).ToString("F1", CI) + " cm), " + unpinned + " rim left as is; " + free.Count + " interior, mean move " + (inMean * 100).ToString("F1", CI) + " cm, last-pass residual " + (resid * 1000).ToString("F2", CI) + " mm; overall up to " + (mx * 100).ToString("F1", CI) + " cm (max rise " + (up * 100).ToString("F1", CI) + " cm)";
+        string res = mf.name + ": " + reps.Count + " welded vertices (" + N + " raw), " + bnd.Count + " rim (" + seamVerts + " seam vertices left free), " + pinned.Count + " pinned (largest rim move " + (maxPin * 100).ToString("F1", CI) + " cm), " + unpinned + " rim left as is; " + free.Count + " interior, mean move " + (inMean * 100).ToString("F1", CI) + " cm, last-pass residual " + (resid * 1000).ToString("F2", CI) + " mm; conform cap on " + capped + " vertices (largest " + (capMax * 100).ToString("F1", CI) + " cm); overall up to " + (mx * 100).ToString("F1", CI) + " cm (max rise " + (up * 100).ToString("F1", CI) + " cm)";
         if (!apply) return res;
         var nv = new Vector3[N]; for (int i = 0; i < N; i++) { var p = w[i]; p.y = y[weld[i]]; nv[i] = mf.transform.InverseTransformPoint(p); }
         var nm = SaveMesh(src, nv, mf.name + "_flush", "_cf"); Swap(mf, nm, "collarflush"); return res;
