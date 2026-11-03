@@ -67,6 +67,7 @@ When BoJa changes a rule, change the JSON and the matching line in the skill; th
 | `tools/scan_index.py` | Phone LAS scans registered to the LiDAR; MAD, coverage, doubled ground; ACCEPT / RESCAN | LAS, heightmap, SVG |
 | `tools/audit_pairs.py --renders <dir>` | Photo, before, after sheets from the same pose with measured turf colour and a verdict row per photo | renders from the PC |
 | `tools/pose_solve.py [--sheets]` | Skyline fit of each photo against the heightmap + LiDAR trees; diagnostic only (notes + compass flags). Validated on Tierra: applying it is worse than the compass, so the real pose solve stays the Unity panorama fit | heightmap, trees, display JPEGs |
+| `tools/photo_sync.py push / pull / ls / check` | Originals (HEIC, LAS, MP4) between course_photos and an S3-compatible bucket (Cloudflare R2); git keeps only the index and small derived files | R2 credentials in the environment |
 | `tools/coverage.py` | Share of the site-visit capture checklist each hole has behind it (photos, accepted scans, drone frames); the next-visit list | index.csv, scans/index.csv |
 | `tools/drone_frames.py fetch / segments / cut` | Online flyover to per-hole frames with drafted poses, merged into the photo index at low confidence | yt-dlp, ffmpeg |
 | Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`) | Edge survey, collider vs render, tiers, crowns over, pin area on every green; writes AutomationOutput/checks | Unity, synced course.json + rules |
@@ -92,6 +93,7 @@ python ../course-build/tools/drone_frames.py cut --video course_photos/drone/fro
 python ../course-build/tools/audit_pairs.py --renders latest [--before <previous run>/shots]
 ```
 
+Originals live in a bucket (`paths.photo_store`, `photo_sync.py`), never in git; git holds `index.csv`, sheets and verdicts.
 Every image, scan and drone frame ends up as a row in `course_photos/index.csv` with a hole, a position confidence and a pose; the
 audit adds measured colour and a verdict per photo. The rules are in `rules/photos.json`; drone frames never set colour.
 
