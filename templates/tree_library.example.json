@@ -1,0 +1,5 @@
+[
+  { "region": "socal_oak", "prefabs": ["Assets/TierraRejada/Trees/TR_Oak.prefab"], "ref_height_m": 12.63 },
+  { "region": "socal_pepper", "prefabs": ["Assets/TierraRejada/Trees/TR_PepperMulti.prefab"], "ref_height_m": 11.84 },
+  { "region": "socal_eucalyptus", "prefabs": ["Assets/TierraRejada/Trees/TR_Eucalyptus.prefab"], "ref_height_m": 20.0 }
+]

@@ -1,0 +1,13 @@
+{
+  "course": "TierraRejada",
+  "generated": "2026-11-03",
+  "bunkers": [
+    { "hole": 12, "spline": "Spline_bunker_7", "steepness_delta_pct": 22.5,
+      "edge": [ { "x": 1512.3, "z": 988.1 }, { "x": 1513.0, "z": 989.4 }, { "x": 1515.2, "z": 990.0 }, { "x": 1516.0, "z": 988.2 } ] }
+  ],
+  "trees": [
+    { "hole": 6, "x": 1388.2, "z": 1120.7, "osm_tag": "natural=tree;species=Quercus agrifolia", "region_tag": "socal_oak", "height_m": 11.5, "crown_radius_m": 4.0, "action": "add" },
+    { "hole": 6, "x": 1390.0, "z": 1118.0, "action": "move", "existing_name": "TR_Oak_0412", "to_x": 1396.5, "to_z": 1116.0 }
+  ],
+  "colour": [ { "hole": 10, "material": "Fairway_Tierra", "delta_rg": -0.14, "delta_bg": -0.09 } ]
+}
