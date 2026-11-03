@@ -44,8 +44,11 @@ def main():
     root = C.path("photos_root") if "photos_root" in C.get("paths", {}) else os.path.join(C.dir, "course_photos")
     rd = a.renders
     if rd == "latest":
-        run = latest_automation_run(C); rd = os.path.join(run, "shots") if run else None
-        if not rd: sys.exit("no AutomationOutput/latest.txt on this machine; pass --renders <dir>")
+        run = latest_automation_run(C); rd = os.path.join(run, "shots") if run and os.path.isdir(os.path.join(run, "shots")) else None
+        if not rd:  # no Unity here: newest synced run under course_photos/renders/ (photo_sync.py push --what renders on the PC, pull here)
+            rr = os.path.join(root, "renders"); runs = sorted(os.listdir(rr)) if os.path.isdir(rr) else []
+            rd = os.path.join(rr, runs[-1]) if runs else None
+        if not rd: sys.exit("no render run: AutomationOutput/latest.txt absent and course_photos/renders/ empty; pass --renders <dir>")
     out = a.out or os.path.join(root, "audit"); os.makedirs(out, exist_ok=True)
     idx = list(csv.DictReader(open(os.path.join(root, "index.csv"), encoding="utf-8-sig")))
     holes = set(a.holes.split(",")) if a.holes else None

@@ -1,7 +1,9 @@
 """Sync course photos, scans and drone video between a course folder and an S3-compatible bucket (Cloudflare R2, Backblaze B2, S3).
 Git keeps the index and small derived files; the bucket keeps the originals; this moves them.
 
-    python tools/photo_sync.py push [--what unsorted|scans|drone|all] [--dry-run]     # local course_photos -> bucket (new/changed only)
+    python tools/photo_sync.py push [--what unsorted|scans|drone|renders|all] [--dry-run]   # local course_photos -> bucket (new/changed only)
+    python tools/photo_sync.py push --what renders [--run latest|<folder>]            # copies the PC's AutomationOutput/<run>/shots into
+                                                                                      # course_photos/renders/<run>/ then uploads, so the cloud can audit
     python tools/photo_sync.py pull [--what ...] [--hole 10] [--imgs IMG_4651,IMG_4652] [--dry-run]   # bucket -> local, on demand
     python tools/photo_sync.py ls [--what ...]                                        # what the bucket holds for this course
     python tools/photo_sync.py check                                                  # credentials, endpoint, bucket reachable, counts
@@ -17,7 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from course_io import course
 
 ORIG = (".heic", ".heif", ".jpg", ".jpeg", ".png", ".las", ".laz", ".mp4", ".mov", ".dng")
-WHAT = {"unsorted": "unsorted", "scans": "scans", "drone": "drone"}
+WHAT = {"unsorted": "unsorted", "scans": "scans", "drone": "drone", "renders": "renders"}
 
 
 def client_and_bucket(C):
@@ -55,7 +57,19 @@ def remote_listing(s3, bucket, prefix):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cmd", choices=["push", "pull", "ls", "check"]); ap.add_argument("--what", default="all"); ap.add_argument("--hole", type=int); ap.add_argument("--imgs"); ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--run", default="latest", help="renders: AutomationOutput run folder to stage (default latest)")
     a = ap.parse_args(); C = course(); s3, bucket, prefix = client_and_bucket(C); root = local_root(C)
+    if a.cmd == "push" and a.what in ("renders", "all"):
+        # stage the PC's render run into course_photos/renders/<run>/ (ignored by git) so it syncs like any other original
+        import shutil
+        from course_io import latest_automation_run
+        run = latest_automation_run(C) if a.run == "latest" else a.run
+        if run and os.path.isdir(os.path.join(run, "shots")):
+            dst = os.path.join(root, "renders", os.path.basename(run.rstrip("/\\"))); os.makedirs(dst, exist_ok=True); n = 0
+            for f in os.listdir(os.path.join(run, "shots")):
+                if f.lower().endswith((".png", ".jpg")) and not os.path.exists(os.path.join(dst, f)): shutil.copy2(os.path.join(run, "shots", f), dst); n += 1
+            print("staged %d renders from %s -> %s" % (n, run, dst))
+        elif a.what == "renders": sys.exit("no render run found (AutomationOutput/latest.txt); pass --run <folder>")
     subs = list(WHAT.values()) if a.what == "all" else [WHAT[a.what]]
     rprefix = (prefix + "/" if prefix else "") + "course_photos"
     if a.cmd == "check":
