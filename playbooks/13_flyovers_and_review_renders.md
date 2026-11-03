@@ -144,3 +144,8 @@ the course cannot change. Use `course-build-flyovers` for review renders and gat
 - What James changed after seeing the MP4s (speed, end spot, rise) per hole, and whether any hole was swapped.
 - Whether a feature beat is wanted, and the waypoint rule if so.
 - Encode settings and whether 1080p render time was acceptable.
+
+
+## Cinematic paths have their own limits (2026-11-03)
+
+`CommercialFlyoverPath.cs` builds the premiere flyover from the hole data: a centripetal Catmull-Rom spline from 15 m behind the active tee through a fairway reveal, a 3.5 m dip over each bunker complex in the corridor, an approach point, and a 360 degree orbit of the green complex. BoJa's rule against fast camera rotation still applies, so the orbit radius is never smaller than the orbit speed divided by the cinematic yaw limit (`flyovers.cinematic.limits.max_yaw_deg_s`, 12 deg/s, against 5 deg/s for review renders), bank is a capped function of turn rate (6 deg, 0 disables it), the worst one-second window of yaw and pitch is logged with a PASS/FAIL, and the path is lifted wherever it would come within 3 m of the ground or a course mesh. The frames render through the normal batch shot list so the premiere look (post profile on) needs the editor, as every post-processed render does.

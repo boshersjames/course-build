@@ -4,6 +4,7 @@ description: Use when making showcase or premiere flyover videos of a GSPro cour
 ---
 
 ## Tools
+- Unity `Course Flyover > Generate Cinematic Path` (`CommercialFlyoverPath.cs`, bridge `invoke -Tool CommercialFlyoverPath -Method RunPathGeneration -Set @{ hole = 10; tee = "Blue" }`): the premiere path with bunker dips and a green orbit under `flyovers.cinematic.limits` (yaw 12 deg/s, bank <= 6 deg); writes the trajectory JSON, a batch shot list for the frames, and an AnimationClip. Review renders keep `flyovers.path` (5 deg/s, no roll).
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
 

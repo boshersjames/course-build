@@ -1,10 +1,92 @@
 {
-  "element": "flyovers", "skill": "course-build-flyovers", "playbook": "playbooks/13_flyovers_and_review_renders.md",
-  "render": {"length_s": 20, "fps": 25, "min_res": [1280, 720], "pose_height_tol_m": 0.02},
-  "path": {"max_yaw_deg_s": 5, "max_pitch_deg_s": 5, "roll": 0, "no_flips": true, "min_clear_m": 6, "key_min_height_m": 10},
-  "end": {"short_of_pin_m": 12, "height_m": 8, "hold_s": 2.5, "whole_green_in_frame": true},
-  "first_frame": {"on_sign": true, "move_camera_m": [2, 5]},
+  "element": "flyovers",
+  "skill": "course-build-flyovers",
+  "playbook": "playbooks/13_flyovers_and_review_renders.md",
+  "render": {
+    "length_s": 20,
+    "fps": 25,
+    "min_res": [
+      1280,
+      720
+    ],
+    "pose_height_tol_m": 0.02
+  },
+  "path": {
+    "max_yaw_deg_s": 5,
+    "max_pitch_deg_s": 5,
+    "roll": 0,
+    "no_flips": true,
+    "min_clear_m": 6,
+    "key_min_height_m": 10
+  },
+  "end": {
+    "short_of_pin_m": 12,
+    "height_m": 8,
+    "hold_s": 2.5,
+    "whole_green_in_frame": true
+  },
+  "first_frame": {
+    "on_sign": true,
+    "move_camera_m": [
+      2,
+      5
+    ]
+  },
   "pins_shown": false,
-  "poster_frames": ["first", "rise", "mid", "approach", "end"],
-  "pose_confidence_for_verdict": ["high", "medium"]
+  "poster_frames": [
+    "first",
+    "rise",
+    "mid",
+    "approach",
+    "end"
+  ],
+  "pose_confidence_for_verdict": [
+    "high",
+    "medium"
+  ],
+  "cinematic": {
+    "note": "commercial / premiere flyovers only (course-premiere-flyovers); review renders keep path.* limits",
+    "start_behind_tee_m": 15,
+    "start_height_m": 12,
+    "reveal_height_m": 28,
+    "reveal_fov_deg": 42,
+    "approach_fov_deg": 52,
+    "fov_blend_m": 40,
+    "bunker_dip_height_m": 3.5,
+    "bunker_dip_entry_m": 40,
+    "bunker_cluster_m": 25,
+    "bunker_corridor_m": 28,
+    "bunker_along_range": [
+      0.25,
+      0.85
+    ],
+    "lookahead_m": 30,
+    "approach_short_m": 40,
+    "approach_height_m": 15,
+    "orbit": {
+      "radius_margin_m": 18,
+      "height_m": 10,
+      "degrees": 360,
+      "speed_factor": 0.5,
+      "decel_lead_m": 30,
+      "look_at": "pin"
+    },
+    "speed": {
+      "base_m_s": 22,
+      "ease_in_fraction": 0.2,
+      "ease_in_start_factor": 0.15,
+      "straight_boost": 1.4,
+      "straight_min_len_m": 80,
+      "straight_max_turn_deg_per_m": 0.25
+    },
+    "limits": {
+      "max_yaw_deg_s": 12,
+      "max_pitch_deg_s": 8,
+      "bank_max_deg": 6,
+      "bank_per_yaw_rate": 0.4,
+      "min_clear_m": 3.0
+    },
+    "fps": 25,
+    "sample_m": 0.5
+  }
 }
