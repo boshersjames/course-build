@@ -1,12 +1,78 @@
 {
-  "element": "lidar_review", "skill": "course-build-lidar-review", "playbook": "playbooks/20_lidar_detail_review.md",
-  "surveys": {"socal_wildfires_b3_2018": {"ql": 2, "pts_m2": 4}, "CA_LosAngeles_1_B23": {"ql": 1, "pts_m2": [38, 45]}},
-  "registration_shifts_typical_m": {"osm": [1.5, 3], "scan_xy": 1.5, "scan_z": [2, 4], "photo_gps": [3, 80]},
-  "must_close_before_playable": ["D7", "D13"],
-  "in_person_always": ["D1", "D3", "D6", "D9", "D14", "D18", "phone LAS per green"],
-  "ql1_settles": ["D4", "D5", "D8", "D12", "D17"],
-  "d17_tee_flat_min_m2": 40, "d17_within_osm_tee_m": 60,
-  "d18_shrub_max_h_m": 3, "d18_oak_max_m": 16,
-  "d1_scrub_cover_pct": [70, 80], "d1_slope_min_deg": 15,
-  "d7_scan_fit": {"mad_max_m": 0.05, "coverage_min_pct": 80}
+  "element": "lidar_review",
+  "skill": "course-build-lidar-review",
+  "playbook": "playbooks/20_lidar_detail_review.md",
+  "surveys": {
+    "socal_wildfires_b3_2018": {
+      "ql": 2,
+      "pts_m2": 4,
+      "courses": [
+        "tierra-rejada",
+        "moorpark"
+      ]
+    },
+    "CA_LosAngeles_1_B23": {
+      "ql": 1,
+      "pts_m2": [
+        38,
+        45
+      ],
+      "courses": [
+        "hansen-dam",
+        "penmar",
+        "harding",
+        "wilson",
+        "angeles-national"
+      ],
+      "vegetation_classes": false
+    }
+  },
+  "registration_shifts_typical_m": {
+    "osm": [
+      1.5,
+      3
+    ],
+    "scan_xy": 1.5,
+    "scan_z": [
+      2,
+      4
+    ],
+    "photo_gps": [
+      3,
+      80
+    ]
+  },
+  "must_close_before_playable": [
+    "D7",
+    "D13"
+  ],
+  "in_person_always": [
+    "D1",
+    "D3",
+    "D6",
+    "D9",
+    "D14",
+    "D18",
+    "phone LAS per green"
+  ],
+  "ql1_settles": [
+    "D4",
+    "D5",
+    "D8",
+    "D12",
+    "D17"
+  ],
+  "d17_tee_flat_min_m2": 40,
+  "d17_within_osm_tee_m": 60,
+  "d18_shrub_max_h_m": 3,
+  "d18_oak_max_m": 16,
+  "d1_scrub_cover_pct": [
+    70,
+    80
+  ],
+  "d1_slope_min_deg": 15,
+  "d7_scan_fit": {
+    "mad_max_m": 0.05,
+    "coverage_min_pct": 80
+  }
 }

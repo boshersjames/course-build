@@ -21,7 +21,7 @@ Run against the course's LiDAR, satellite and OSM before anything is built; reco
 
 ## First: which survey
 
-Each course README states it. Tierra, Hansen Dam, Moorpark: 2018 SoCal Wildfires B3, QL2, ~4 pts/m² (nothing under ~1 m wide or 5 cm tall is real). Angeles National: CA_LosAngeles_1_B23, QL1 2023-24, 38-45 pts/m². The LiDAR is the frame; every other input is fitted to it and its shift recorded before use (D13).
+Each course README and course.json (`lidar.survey`, `lidar.quality_level`) state it. Tierra, Moorpark: 2018 SoCal Wildfires B3, QL2, ~4 pts/m² (nothing under ~1 m wide or 5 cm tall is real). Hansen Dam (21.7 pts/m²), Penmar (17.2), Harding, Wilson (23.9), Angeles National (38-45): CA_LosAngeles_1_B23, QL1 2023-24, no vegetation classes. The LiDAR is the frame; every other input is fitted to it and its shift recorded before use (D13).
 
 ## The decision points
 
