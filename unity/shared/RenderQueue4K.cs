@@ -30,7 +30,7 @@ public class RenderQueue4K : EditorWindow
     [Serializable] public class MotionBlur { public float shutter_deg = 180; public int subframes = 4; }
     [Serializable] public class Quality { public float shadow_distance_m = 5000, lod_bias = 10, tree_distance_m = 5000, detail_distance_m = 2000, basemap_distance_m = 5000; public int shadow_cascades = 4, texture_limit = 0; public bool force_lod0_on_lodgroups = true; }
     [Serializable] public class Disk { public float png_estimate_mb = 12, hole_estimate_gb = 18, min_free_gb = 25; }
-    [Serializable] public class R4K { public int width = 3840, height = 2160, fps = 60, msaa = 8; public float supersample = 1.5f; public MotionBlur motion_blur = new MotionBlur(); public Quality quality = new Quality(); public Disk disk = new Disk(); }
+    [Serializable] public class R4K { public int width = 3840, height = 2160, fps = 60, msaa = 8; public float supersample = 1.5f; public bool resume = true; public int housekeeping_every_frames = 25; public MotionBlur motion_blur = new MotionBlur(); public Quality quality = new Quality(); public Disk disk = new Disk(); }
     [Serializable] public class FlyRules { public R4K render_4k = new R4K(); }
 
     const string CB = "Assets/CourseBuild";
@@ -109,8 +109,13 @@ public class RenderQueue4K : EditorWindow
         try
         {
             UnityEditor.AnimationMode.StartAnimationMode();
+            int skipped = 0;
             for (int f = 0; f < frames; f++)
             {
+                string outPath = folder + "/frame_" + f.ToString("00000") + ".png";
+                if (R.resume && File.Exists(outPath) && new FileInfo(outPath).Length > 1024) { skipped++; continue; }   // resume after a crash: frames already on disk are kept
+                // housekeeping: the editor leaked GPU resources across thousands of manual Camera.Render calls (Tierra 10 died in D3DKMTOpenResource at frame 401 of 1,200)
+                if (R.housekeeping_every_frames > 0 && f % R.housekeeping_every_frames == 0 && f > 0) { GL.Flush(); Resources.UnloadUnusedAssets(); GC.Collect(); }
                 // accumulate sub-frames across the open shutter, then average: a true 180 deg shutter blur, deterministic
                 for (int k = 0; k < sub; k++)
                 {
@@ -121,7 +126,7 @@ public class RenderQueue4K : EditorWindow
                     else { Graphics.Blit(big, tmp); accMat.SetFloat("_Lerp", 1f / (k + 1)); accMat.SetTexture("_NewTex", tmp); Graphics.Blit(acc, acc2, accMat); var sw2 = acc; acc = acc2; acc2 = sw2; }   // acc = lerp(acc, new, 1/(k+1)) = running mean
                 }
                 var pa = RenderTexture.active; RenderTexture.active = acc; tex.ReadPixels(new Rect(0, 0, R.width, R.height), 0, 0); tex.Apply(); RenderTexture.active = pa;
-                var png = ImageConversion.EncodeToPNG(tex); File.WriteAllBytes(folder + "/frame_" + f.ToString("00000") + ".png", png); bytesWritten += png.LongLength;
+                var png = ImageConversion.EncodeToPNG(tex); File.WriteAllBytes(outPath, png); bytesWritten += png.LongLength; png = null;
                 if (f % 60 == 0) { if (EditorUtility.DisplayCancelableProgressBar("Render 4K hole " + hole, "frame " + f + " / " + frames, f / (float)frames)) { log.Add("hole " + hole + ": cancelled at frame " + f); break; } }
             }
         }
@@ -130,7 +135,8 @@ public class RenderQueue4K : EditorWindow
             UnityEditor.AnimationMode.StopAnimationMode(); EditorUtility.ClearProgressBar();
             UnityEngine.Object.DestroyImmediate(go); big.Release(); acc.Release(); acc2.Release(); tmp.Release(); UnityEngine.Object.DestroyImmediate(tex); UnityEngine.Object.DestroyImmediate(accMat);
         }
-        return string.Format(CI, "rendered {0} frames in {1:F0} s -> {2}", frames, (DateTime.Now - started).TotalSeconds, folder);
+        int onDisk = Directory.GetFiles(folder, "frame_*.png").Length;
+        return string.Format(CI, "rendered {0} frames in {1:F0} s ({2} on disk) -> {3}", frames, (DateTime.Now - started).TotalSeconds, onDisk, folder);
     }
 
     public static string RunRenderQueue()

@@ -46,6 +46,23 @@ class Bridge:
         self.inbox = os.path.join(project, "Automation", "inbox"); self.outbox = os.path.join(project, "Automation", "outbox"); self.timeout = timeout; self.poll = poll
         os.makedirs(self.inbox, exist_ok=True); os.makedirs(self.outbox, exist_ok=True)
 
+    def send_watch(self, cmd, tool, method, set_, timeout, watch_dirs, stall_s):
+        """send, then wait for the answer while watching the frame folders: a long step whose frames stop arriving for stall_s means the editor is gone."""
+        cid = time.strftime("%Y%m%d_%H%M%S_") + ("%03d" % int((time.time() % 1) * 1000))
+        body = {"id": cid, "cmd": cmd, "config": "", "steps": "", "shots": True, "tool": tool, "method": method, "path": "", "scene": "", "set": [{"field": k, "value": str(v)} for k, v in (set_ or {}).items()]}
+        tmp = os.path.join(self.inbox, cid + ".tmp"); json.dump(body, open(tmp, "w"), indent=1); os.replace(tmp, os.path.join(self.inbox, cid + ".json"))
+        ans = os.path.join(self.outbox, cid + ".json"); t0 = time.time(); last_change = t0; last_count = -1
+        while time.time() - t0 < timeout:
+            if os.path.exists(ans):
+                try: return json.load(open(ans, encoding="utf-8-sig"))
+                except Exception: time.sleep(0.2); continue
+            n = sum(len(glob.glob(os.path.join(d, "frame_*.png"))) for d in watch_dirs)
+            if n != last_count: last_count = n; last_change = time.time()
+            elif time.time() - last_change > stall_s:
+                return {"id": cid, "status": "stalled", "message": "no new frame for %.0f s (%d on disk): the editor has stopped or crashed; check %%LOCALAPPDATA%%\\Unity\\Editor\\Editor.log, reopen Unity with the live bridge, and re-run: render_4k.resume keeps the frames already written" % (stall_s, n)}
+            time.sleep(5)
+        return {"id": cid, "status": "timeout", "message": "no answer from Unity in %.0f s" % timeout}
+
     def send(self, cmd, tool="", method="", set_=None, path="", config="", timeout=None):
         cid = time.strftime("%Y%m%d_%H%M%S_") + ("%03d" % int((time.time() % 1) * 1000))
         body = {"id": cid, "cmd": cmd, "config": config, "steps": "", "shots": True, "tool": tool, "method": method, "path": path, "scene": "", "set": [{"field": k, "value": str(v)} for k, v in (set_ or {}).items()]}
@@ -63,7 +80,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--course", required=True); ap.add_argument("--hole", type=int, default=0, help="0 = all enabled holes"); ap.add_argument("--tee", default="Blue")
     ap.add_argument("--audit", help="audit JSON for BatchCourseFixer"); ap.add_argument("--apply-fixes", action="store_true"); ap.add_argument("--skip", default="")
-    ap.add_argument("--continue-on-error", action="store_true"); ap.add_argument("--step-timeout", type=float, default=7200); ap.add_argument("--ping-timeout", type=float, default=30)
+    ap.add_argument("--continue-on-error", action="store_true"); ap.add_argument("--step-timeout", type=float, default=7200); ap.add_argument("--ping-timeout", type=float, default=30); ap.add_argument("--render-stall", type=float, default=300, help="render step: seconds without a new frame before the editor is declared gone")
     ap.add_argument("--project", help="Unity project folder (default course.json paths.unity_project)"); ap.add_argument("--dry-run", action="store_true"); ap.add_argument("--codec", default=None)
     a = ap.parse_args()
     cdir = resolve_course(a.course); os.environ["COURSE_JSON"] = os.path.join(cdir, "course.json"); C = course(cdir); G = GKD(C)
@@ -145,7 +162,8 @@ def main():
     t0 = time.time()
     if "render" in skip: record("render", "skipped", t0, "skipped by flag")
     else:
-        ans = br.send("invoke", "RenderQueue4K", "RunRenderQueue", {"holes": ",".join(map(str, holes)), "dryRun": "false"}, timeout=max(a.step_timeout, 3600 * len(holes)))
+        ans = br.send_watch("invoke", "RenderQueue4K", "RunRenderQueue", {"holes": ",".join(map(str, holes)), "dryRun": "false"}, timeout=max(a.step_timeout, 3600 * len(holes)),
+                            watch_dirs=[os.path.join(AO, "renders_4k", "Hole_%02d" % h) for h in holes], stall_s=a.render_stall)
         halted = "DISK_SPACE_EXCEEDED" in (ans.get("message") or "")
         # the queue answers ok even when a hole's render returned at once (disk guard, no clip, dry-run flag): read its own log and count the frames
         qlog = sorted(glob.glob(os.path.join(AO, "logs", "render_queue_*.json")))[-1:]; per_hole = {}; frame_count = {}

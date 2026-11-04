@@ -121,11 +121,11 @@
     "fps": 60,
     "format": "png (lossless; Unity's encoder has no compression setting)",
     "msaa": 8,
-    "supersample": 1.5,
+    "supersample": 1.0,
     "supersample_note": "render target = width*supersample, clamped to SystemInfo.maxTextureSize, bilinear downsample",
     "motion_blur": {
       "shutter_deg": 180,
-      "subframes": 8,
+      "subframes": 4,
       "method": "accumulation across shutter/360 of the frame interval; PPv2 MotionBlur disabled during the pass"
     },
     "quality": {
@@ -147,7 +147,10 @@
     },
     "output": "AutomationOutput/renders_4k/Hole_XX/frame_%05d.png",
     "log": "AutomationOutput/logs/render_queue_<stamp>.json",
-    "note": "a 25 s hole is ~1,500 frames, ~18 GB; 18 holes ~300 GB; editor only (post-processing needs the editor, batch mode has none)"
+    "note": "a 25 s hole is ~1,500 frames, ~18 GB; 18 holes ~300 GB; editor only (post-processing needs the editor, batch mode has none)",
+    "resume": true,
+    "housekeeping_every_frames": 25,
+    "crash_note": "Tierra 10, 11/3: the editor died in D3DKMTOpenResource at frame 401 of 1,200 with supersample 1.5, MSAA 8 and 8 sub-frames (a 5760x3240 MSAA-8 target, ~600 MB, and 3,200 manual Camera.Render calls through the post stack). Now: supersample 1.0 with MSAA 8 plus 4 accumulated sub-frames, GL.Flush / UnloadUnusedAssets / GC every housekeeping_every_frames, and resume keeps frames already on disk so a crash costs minutes, not the hole."
   },
   "package": {
     "codec": "hevc",
