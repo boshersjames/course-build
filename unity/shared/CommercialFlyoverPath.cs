@@ -37,7 +37,7 @@ public class CommercialFlyoverPath : EditorWindow
     {
         public float start_behind_tee_m = 15, start_height_m = 12, reveal_height_m = 28, reveal_fov_deg = 42, approach_fov_deg = 52, fov_blend_m = 40;
         public float bunker_dip_height_m = 3.5f, bunker_dip_entry_m = 40, bunker_cluster_m = 25, bunker_corridor_m = 28; public float[] bunker_along_range = { 0.25f, 0.85f };
-        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0; public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
+        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0, flight_s = 0, end_height_m = 15; public Intro intro = new Intro(); public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
     }
     [Serializable] public class FlyRules { public Cinematic cinematic = new Cinematic(); }
     [Serializable] class P { public float x, y, z; }
@@ -45,7 +45,10 @@ public class CommercialFlyoverPath : EditorWindow
     [Serializable] class Pin { public string Day; public P Position; }
     [Serializable] class Hole { public int HoleNumber; public int Par; public Tee[] Tees; public Pin[] Pins; }
     [Serializable] class G { public Hole[] Holes; }
-    [Serializable] public class Paths { public string gkd, course_repo_abs; }
+    [Serializable] public class Paths { public string gkd, course_repo_abs, signs; }
+    [Serializable] class SignEntry { public int hole; public float x, z, yaw; }
+    [Serializable] class SignFile { public SignEntry[] items; }
+    [Serializable] public class Intro { public float seconds = 5, eye_height_m = 1.7f, back_m = 4.5f, side_m = 1.6f, look_ahead_m = 120; }
     [Serializable] public class CourseJson { public string name; public Paths paths = new Paths(); }
 
     const string CB = "Assets/CourseBuild";
@@ -72,6 +75,18 @@ public class CommercialFlyoverPath : EditorWindow
         if (Path.IsPathRooted(c.paths.gkd)) return c.paths.gkd;
         foreach (var r in new[] { c.paths.course_repo_abs, Path.Combine(ProjectDir(), "..") }) { if (string.IsNullOrEmpty(r)) continue; var p = Path.GetFullPath(Path.Combine(r, c.paths.gkd)); if (File.Exists(p)) return p; }
         return null;
+    }
+    // the hole sign from course.json paths.signs (a JSON list of {hole, x, z, yaw}); null when the file or the hole is missing
+    static SignEntry FindSign(CourseJson c, int hole)
+    {
+        try
+        {
+            if (c == null || c.paths == null || string.IsNullOrEmpty(c.paths.signs)) return null; string p = c.paths.signs;
+            if (!Path.IsPathRooted(p)) { p = null; foreach (var r in new[] { c.paths.course_repo_abs, Path.Combine(ProjectDir(), "..") }) { if (string.IsNullOrEmpty(r)) continue; var q = Path.GetFullPath(Path.Combine(r, c.paths.signs)); if (File.Exists(q)) { p = q; break; } } }
+            if (p == null) return null; var txt = File.ReadAllText(p).TrimStart('\uFEFF').Trim(); if (txt.StartsWith("[")) txt = "{\"items\":" + txt + "}";
+            var f = JsonUtility.FromJson<SignFile>(txt); return f == null || f.items == null ? null : f.items.FirstOrDefault(e => e.hole == hole && (e.x != 0 || e.z != 0));
+        }
+        catch { return null; }
     }
     static float Ground(float x, float z)
     {
@@ -141,7 +156,12 @@ public class CommercialFlyoverPath : EditorWindow
         // control points
         var dir0 = (XZ(line[1]) - XZ(line[0])).normalized; var cps = new List<Vector3>(); var names = new List<string>();
         Action<Vector3, string> add = (p, nm) => { cps.Add(p); names.Add(nm); };
-        var s0 = teeP.Value - new Vector3(dir0.x, 0, dir0.y) * R.start_behind_tee_m; add(new Vector3(s0.x, Ground(s0.x, s0.z) + R.start_height_m, s0.z), "start");
+        // intro camera: eye level by the hole sign (course.json paths.signs), back_m behind it and side_m to the side, looking down the line; the tee when there is no sign
+        var sign = FindSign(C, hole); Vector2 introXZ; var right = new Vector2(dir0.y, -dir0.x);
+        if (sign != null) introXZ = new Vector2(sign.x, sign.z) - dir0 * R.intro.back_m + right * R.intro.side_m; else introXZ = XZ(teeP.Value) - dir0 * (R.start_behind_tee_m + R.intro.back_m);
+        var introPos = new Vector3(introXZ.x, Ground(introXZ.x, introXZ.y) + R.intro.eye_height_m, introXZ.y); var introLook = along(Mathf.Min(R.intro.look_ahead_m, holeLen)); introLook.y = Ground(introLook.x, introLook.z) + R.intro.eye_height_m;
+        add(introPos, "start");
+        var s0 = teeP.Value - new Vector3(dir0.x, 0, dir0.y) * Mathf.Max(0f, R.start_behind_tee_m - 8f); add(new Vector3(s0.x, Ground(s0.x, s0.z) + R.start_height_m, s0.z), "rise");
         float revealD = Mathf.Min(holeLen * 0.3f, Mathf.Max(60f, holeLen * 0.3f)); var rv = along(revealD); add(new Vector3(rv.x, GroundMax(rv.x, rv.z, 20) + R.reveal_height_m, rv.z), "reveal");
         float lastD = revealD;
         float vOrbitPre = R.speed.base_m_s * R.orbit.speed_factor; float radiusPre = Mathf.Max(greenR + R.orbit.radius_margin_m, vOrbitPre / (R.limits.max_yaw_deg_s * Mathf.Deg2Rad)); float approachDPre = Mathf.Max(R.approach_short_m, radiusPre + R.approach_outside_orbit_m);
@@ -158,13 +178,14 @@ public class CommercialFlyoverPath : EditorWindow
         float approachD = Mathf.Max(R.approach_short_m, radius + R.approach_outside_orbit_m);
         var ap = along(holeLen - approachD); add(new Vector3(ap.x, GroundMax(ap.x, ap.z, 15) + R.approach_height_m, ap.z), "approach");
         float ang0 = Mathf.Atan2(ap.x - gc.Value.x, ap.z - gc.Value.z); int nOrb = Mathf.Max(8, Mathf.RoundToInt(R.orbit.degrees / 30f)); int orbitStart = cps.Count;
-        for (int k = 0; k <= nOrb; k++) { float a = ang0 + Mathf.Deg2Rad * R.orbit.degrees * k / nOrb; var p = new Vector3(gc.Value.x + Mathf.Sin(a) * radius, 0, gc.Value.z + Mathf.Cos(a) * radius); add(new Vector3(p.x, GroundMax(p.x, p.z, 8) + R.orbit.height_m, p.z), k == 0 ? "orbit-in" : k == nOrb ? "orbit-out" : "orbit"); }
+        if (R.orbit.degrees >= 15f) { for (int k = 0; k <= nOrb; k++) { float a = ang0 + Mathf.Deg2Rad * R.orbit.degrees * k / nOrb; var p = new Vector3(gc.Value.x + Mathf.Sin(a) * radius, 0, gc.Value.z + Mathf.Cos(a) * radius); add(new Vector3(p.x, GroundMax(p.x, p.z, 8) + R.orbit.height_m, p.z), k == 0 ? "orbit-in" : k == nOrb ? "orbit-out" : "orbit"); } }
+        else { var e = gc.Value; add(new Vector3(e.x, GroundMax(e.x, e.z, 10) + R.end_height_m, e.z), "end"); }   // no orbit: the flight ends over the green looking at the pin
         log.Add(string.Format(CI, "hole {0} par {1}: tee {2}, line {3:F0} m, green r {4:F1} m, {5} bunker complex(es) dipped, orbit r {6:F1} m at {7:F1} m/s ({8} control points)", hole, H.Par, tee, holeLen, greenR, clusters.Count, radius, vOrbit, cps.Count));
         // sample, clearance lift, arc length
         var pts = SampleSpline(cps, R.sample_m); int lifted = 0;
         for (int i = 0; i < pts.Count; i++) { float gmax = GroundMax(pts[i].x, pts[i].z, 4); if (pts[i].y < gmax + R.limits.min_clear_m) { pts[i] = new Vector3(pts[i].x, gmax + R.limits.min_clear_m, pts[i].z); lifted++; } }
         var arc = new List<float> { 0 }; for (int i = 1; i < pts.Count; i++) arc.Add(arc[i - 1] + Vector3.Distance(pts[i - 1], pts[i])); float total = arc[arc.Count - 1];
-        float orbitArc = 0; { var oin = cps[orbitStart]; int bi = 0; float bd = 1e9f; for (int i = 0; i < pts.Count; i++) { float d = Vector3.Distance(pts[i], oin); if (d < bd) { bd = d; bi = i; } } orbitArc = arc[bi]; }
+        float orbitArc = total; if (R.orbit.degrees >= 15f) { var oin = cps[orbitStart]; int bi = 0; float bd = 1e9f; for (int i = 0; i < pts.Count; i++) { float d = Vector3.Distance(pts[i], oin); if (d < bd) { bd = d; bi = i; } } orbitArc = arc[bi]; }
         // straight sections: turn per metre below threshold over >= straight_min_len_m
         var turnPerM = new float[pts.Count];
         for (int i = 1; i < pts.Count - 1; i++) { var a = XZ(pts[i] - pts[i - 1]); var b = XZ(pts[i + 1] - pts[i]); float ang = Vector2.Angle(a, b); turnPerM[i] = ang / Mathf.Max(Vector3.Distance(pts[i - 1], pts[i + 1]) / 2, 1e-3f); }
@@ -188,18 +209,34 @@ public class CommercialFlyoverPath : EditorWindow
         float dt = 1f / R.fps; var frames = new List<string>(); var shots = new List<string>(); var yaws = new List<float>(); var pitches = new List<float>(); var rolls = new List<float>();
         var posCurveX = new AnimationCurve(); var posCurveY = new AnimationCurve(); var posCurveZ = new AnimationCurve(); var rotX = new AnimationCurve(); var rotY = new AnimationCurve(); var rotZ = new AnimationCurve(); var fovCurve = new AnimationCurve();
         float d_ = 0, tf = 0; int fi = 0; float prevYaw = float.NaN, prevPitch = 0, minClear = 1e9f;
+        // intro hold: the camera stands still at eye level for intro.seconds, looking down the line (the banner goes here in the packager)
+        int introFrames = Mathf.RoundToInt(Mathf.Max(0f, R.intro.seconds) * R.fps);
+        for (int k = 0; k < introFrames; k++)
+        {
+            var p = introPos; var fwd = introLook - p; float yaw = Mathf.Atan2(fwd.x, fwd.z) * Mathf.Rad2Deg; float pitch = -Mathf.Atan2(fwd.y, new Vector2(fwd.x, fwd.z).magnitude) * Mathf.Rad2Deg; float fov = R.approach_fov_deg;
+            yaws.Add(0); pitches.Add(0); rolls.Add(0);
+            frames.Add(string.Format(CI, "{{\"f\":{0},\"t\":{1:F3},\"d\":0,\"pos\":[{2:F2},{3:F2},{4:F2}],\"lookAt\":[{5:F2},{6:F2},{7:F2}],\"yaw\":{8:F2},\"pitch\":{9:F2},\"roll\":0,\"fov\":{10:F1},\"speed\":0,\"clear\":{11:F2},\"orbit\":false,\"intro\":true}}", fi, tf, p.x, p.y, p.z, introLook.x, introLook.y, introLook.z, yaw, pitch, fov, R.intro.eye_height_m));
+            shots.Add(string.Format(CI, "{{\"name\":\"H{0:00}_cin_{1:0000}\",\"pos\":[{2:F3},{3:F3},{4:F3}],\"lookAt\":[{5:F3},{6:F3},{7:F3}],\"aboveGround\":false,\"fov\":{8:F2}}}", hole, fi, p.x, p.y, p.z, introLook.x, introLook.y, introLook.z, fov));
+            if (k == 0 || k == introFrames - 1) { posCurveX.AddKey(tf, p.x); posCurveY.AddKey(tf, p.y); posCurveZ.AddKey(tf, p.z); rotX.AddKey(tf, pitch); rotY.AddKey(tf, yaw); rotZ.AddKey(tf, 0); fovCurve.AddKey(tf, fov); }
+            prevYaw = yaw; prevPitch = pitch; tf += dt; fi++;
+        }
+        float introT = tf;
+        // flight speed scale: a first pass at rule speeds measures the flight time; the second pass scales speed so the flight lasts flight_s
+        float speedScale = 1f;
+        if (R.flight_s > 0) { float tt = 0, dd = 0; int guard = 0; while (dd <= total && guard++ < 200000) { dd += speedAt(dd) * dt; tt += dt; } speedScale = tt / Mathf.Max(R.flight_s, 1f); }
         while (d_ <= total && fi < 20000)
         {
             var p = posAt(d_); bool inOrbit = d_ >= orbitArc; var ahead = posAt(Mathf.Min(d_ + R.lookahead_m, total));
             Vector3 lookAt = inOrbit ? (R.orbit.look_at == "pin" ? pin : gc.Value) : ahead;
             if (!inOrbit && d_ > orbitArc - R.orbit.decel_lead_m) lookAt = Vector3.Lerp(ahead, pin, Smootherstep((d_ - (orbitArc - R.orbit.decel_lead_m)) / R.orbit.decel_lead_m));
+            if (R.orbit.degrees < 15f && d_ > total - R.orbit.decel_lead_m) lookAt = Vector3.Lerp(ahead, pin, Smootherstep((d_ - (total - R.orbit.decel_lead_m)) / R.orbit.decel_lead_m));   // no orbit: settle on the pin over the last decel_lead_m
             float distGreen = Vector2.Distance(XZ(p), XZ(gc.Value)); float hAbove = p.y - Ground(p.x, p.z); minClear = Mathf.Min(minClear, hAbove);
             float fovT = Smootherstep((hAbove - 12f) / 16f) * (1f - Smootherstep(1f - Mathf.Clamp01((distGreen - radius - 20f) / R.fov_blend_m)));   // high & far -> wide
             float fov = Mathf.Lerp(R.approach_fov_deg, R.reveal_fov_deg, fovT); if (inOrbit) fov = R.approach_fov_deg;
             var fwd = (lookAt - p); float yaw = Mathf.Atan2(fwd.x, fwd.z) * Mathf.Rad2Deg; float pitch = -Mathf.Atan2(fwd.y, new Vector2(fwd.x, fwd.z).magnitude) * Mathf.Rad2Deg;
             float yawRate = float.IsNaN(prevYaw) ? 0 : Mathf.DeltaAngle(prevYaw, yaw) / dt; float pitchRate = float.IsNaN(prevYaw) ? 0 : (pitch - prevPitch) / dt;
             float roll = Mathf.Clamp(-R.limits.bank_per_yaw_rate * yawRate, -R.limits.bank_max_deg, R.limits.bank_max_deg);
-            yaws.Add(yawRate); pitches.Add(pitchRate); rolls.Add(roll); float v = speedAt(d_);
+            yaws.Add(yawRate); pitches.Add(pitchRate); rolls.Add(roll); float v = speedAt(d_) * speedScale;
             frames.Add(string.Format(CI, "{{\"f\":{0},\"t\":{1:F3},\"d\":{2:F2},\"pos\":[{3:F2},{4:F2},{5:F2}],\"lookAt\":[{6:F2},{7:F2},{8:F2}],\"yaw\":{9:F2},\"pitch\":{10:F2},\"roll\":{11:F2},\"fov\":{12:F1},\"speed\":{13:F2},\"clear\":{14:F2},\"orbit\":{15}}}", fi, tf, d_, p.x, p.y, p.z, lookAt.x, lookAt.y, lookAt.z, yaw, pitch, roll, fov, v, hAbove, inOrbit ? "true" : "false"));
             shots.Add(string.Format(CI, "{{\"name\":\"H{0:00}_cin_{1:0000}\",\"pos\":[{2:F3},{3:F3},{4:F3}],\"lookAt\":[{5:F3},{6:F3},{7:F3}],\"aboveGround\":false,\"fov\":{8:F2}}}", hole, fi, p.x, p.y, p.z, lookAt.x, lookAt.y, lookAt.z, fov));
             posCurveX.AddKey(tf, p.x); posCurveY.AddKey(tf, p.y); posCurveZ.AddKey(tf, p.z); rotX.AddKey(tf, pitch); rotY.AddKey(tf, yaw); rotZ.AddKey(tf, roll); fovCurve.AddKey(tf, fov);
@@ -210,7 +247,7 @@ public class CommercialFlyoverPath : EditorWindow
         for (int i = 0; i + win <= yaws.Count; i++) { float sy = 0, sp = 0; for (int k = i; k < i + win; k++) { sy += yaws[k] * dt; sp += pitches[k] * dt; } maxYaw = Mathf.Max(maxYaw, Mathf.Abs(sy)); maxPitch = Mathf.Max(maxPitch, Mathf.Abs(sp)); }
         bool rateOk = maxYaw <= R.limits.max_yaw_deg_s && maxPitch <= R.limits.max_pitch_deg_s; bool clearOk = minClear >= R.limits.min_clear_m - 0.05f;
         log.Add(string.Format(CI, "{0} frames, {1:F1} s at {2} fps, arc {3:F0} m; worst 1 s yaw {4:F1} deg (limit {5}), pitch {6:F1} deg (limit {7}); min clearance {8:F1} m ({9} samples lifted); max bank {10:F1} deg -> {11}{12}",
-            fi, tf, R.fps, total, maxYaw, R.limits.max_yaw_deg_s, maxPitch, R.limits.max_pitch_deg_s, minClear, lifted, rolls.Count > 0 ? rolls.Max(Mathf.Abs) : 0, rateOk && clearOk ? "PASS" : "FAIL", R.target_duration_s > 0 ? string.Format(CI, "; duration {0:F1} s vs target {1:F0} s{2}", tf, R.target_duration_s, tf > R.target_duration_s * 1.25f ? " (over: raise speed.base_m_s or cut orbit.degrees in rules/flyovers.json cinematic)" : "") : ""));
+            fi, tf, R.fps, total, maxYaw, R.limits.max_yaw_deg_s, maxPitch, R.limits.max_pitch_deg_s, minClear, lifted, rolls.Count > 0 ? rolls.Max(Mathf.Abs) : 0, rateOk && clearOk ? "PASS" : "FAIL", string.Format(CI, "; intro {0:F1} s + flight {1:F1} s = {2:F1} s", introT, tf - introT, tf) + (R.target_duration_s > 0 ? string.Format(CI, " vs target {0:F0} s{1}", R.target_duration_s, Mathf.Abs(tf - R.target_duration_s) > 1.5f ? " (OFF TARGET: check intro.seconds and flight_s in rules/flyovers.json cinematic)" : "") : "")));
         // outputs
         string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss"); string dir = ProjectDir() + "/AutomationOutput/flyovers"; Directory.CreateDirectory(dir);
         var cpJson = string.Join(",", cps.Select((c, i) => string.Format(CI, "{{\"name\":\"{0}\",\"pos\":[{1:F2},{2:F2},{3:F2}]}}", names[i], c.x, c.y, c.z)).ToArray());

@@ -6,7 +6,7 @@
 1. Verify: AutomationOutput/renders_4k/Hole_XX/frame_%05d.png must be contiguous from 0, match the expected count (from the cinematic
    trajectory JSON in AutomationOutput/flyovers, else --expect), all the same size, and every PNG must decode (CRC check via PIL verify()).
 2. Overlays, one ffmpeg filtergraph: intro card (course name, hole, par, tee yardages from the GKD) for package.intro.seconds with fades;
-   semi-transparent logo watermark (course.json paths.logo); lower-third distance-to-pin HUD (text + progress bar) driven by the trajectory
+   lower-left banner over the intro hold (hole, card yardage, par: rules package.banner); optional logo watermark (course.json paths.logo); lower-third distance-to-pin HUD (text + progress bar) driven by the trajectory
    JSON through sendcmd, so it changes every package.hud.interval_s without re-encoding per frame.
 3. Encode: libx265 -crf 18 -preset slow, 3840x2160 @ 60, yuv420p, hvc1 tag, faststart (or ProRes 422 HQ .mov with --codec prores).
 4. Verify the MP4 (ffprobe frame count == source frames), then purge the PNG folder unless --keep-frames.
@@ -88,14 +88,16 @@ def bar_expr(traj, bar_w, segments=16):
 
 def build_filter(R, W, H, font, intro, logo, cmds_path, hud_on, bar_w_expr="2"):
     fg = []; vin = "[0:v]"; k = H / float(R.get("height", 2160))   # rule sizes are for 2160 px; scale to the frame
-    I = dict(R["intro"]); I["font_px"] = max(12, int(I["font_px"] * k)); I["sub_font_px"] = max(10, int(I["sub_font_px"] * k)); fade = I["fade_s"]; T = I["seconds"]
+    B = dict(R["banner"]); T = B["seconds"]; fade = B["fade_s"]
+    bw, bh, mx, my = int(B["width_px"] * k), int(B["height_px"] * k), int(B["margin_x_px"] * k), int(B["margin_y_px"] * k); tpx, spx = max(12, int(B["title_px"] * k)), max(10, int(B["sub_px"] * k)); pad = int(B["pad_px"] * k)
     alpha = "if(lt(t\\,%.2f)\\,t/%.2f\\,if(lt(t\\,%.2f)\\,1\\,max(0\\,(%.2f-t)/%.2f)))" % (fade, fade, T - fade, T, fade)
-    y0 = int(H * 0.42)
-    intro_f = ("drawtext=fontfile='%s':text='%s':fontsize=%d:fontcolor=%s:shadowcolor=%s:shadowx=3:shadowy=3:x=(w-text_w)/2:y=%d:alpha='%s':enable='lt(t\\,%.2f)'"
-               % (font, esc(intro["title"]), I["font_px"], I["color"], I["shadow"], y0, alpha, T))
-    sub_f = ("drawtext=fontfile='%s':text='%s':fontsize=%d:fontcolor=%s:shadowcolor=%s:shadowx=2:shadowy=2:x=(w-text_w)/2:y=%d:alpha='%s':enable='lt(t\\,%.2f)'"
-             % (font, esc(intro["sub"]), I["sub_font_px"], I["color"], I["shadow"], y0 + I["font_px"] + 24, alpha, T))
-    chain = vin + intro_f + "," + sub_f
+    y_box = H - my - bh
+    box_f = "drawbox=x=%d:y=%d:w=%d:h=%d:color=%s:t=fill:enable='lt(t\\,%.2f)'" % (mx, y_box, bw, bh, B["bg"], T)
+    intro_f = ("drawtext=fontfile='%s':text='%s':fontsize=%d:fontcolor=%s:x=%d:y=%d:alpha='%s':enable='lt(t\\,%.2f)'"
+               % (font, esc(intro["title"]), tpx, B["color"], mx + pad, y_box + pad, alpha, T))
+    sub_f = ("drawtext=fontfile='%s':text='%s':fontsize=%d:fontcolor=%s:x=%d:y=%d:alpha='%s':enable='lt(t\\,%.2f)'"
+             % (font, esc(intro["sub"]), spx, B["color"], mx + pad, y_box + pad + tpx + int(8 * k), alpha, T))
+    chain = vin + box_f + "," + intro_f + "," + sub_f
     if hud_on:
         Hh = dict(R["hud"]); m = int(Hh["margin_px"] * k); bw, bh = int(Hh["bar_px"][0] * k), max(2, int(Hh["bar_px"][1] * k)); Hh["font_px"] = max(10, int(Hh["font_px"] * k))
         chain += (",sendcmd=f='%s',drawbox@barbg=x=%d:y=%d:w=%d:h=%d:color=white@0.25:t=fill,drawbox@bar=x=%d:y=%d:w='%s':h=%d:color=white@0.85:t=fill,"
@@ -140,7 +142,8 @@ def main():
         n = ver["found"]; W, H = ver["dims"] or (R["width"], R["height"])
         h = G.hole(hn); tees = {k: t for k, t in h.playing_tees().items()}
         yard = ", ".join("%s %d" % (k, round(t.get("Distance", 0) * 1.09361)) for k, t in sorted(tees.items(), key=lambda kv: -kv[1].get("Distance", 0)))
-        intro = {"title": "%s   Hole %d   Par %s" % (C.get("display_name", C["name"]), hn, h.par), "sub": yard or ""}
+        tee_name = (traj or {}).get("tee"); tee_m = (tees.get(tee_name) or (max(tees.values(), key=lambda t: t.get("Distance", 0)) if tees else {})).get("Distance", 0)
+        intro = {"title": R["banner"]["title"].format(hole=hn), "sub": R["banner"]["sub"].format(yd=int(round(tee_m * 1.09361)), par=h.par, tee=tee_name or "")}   # the lower-left banner over the intro hold: hole, card yardage of the flyover tee, par
         ext = "mp4" if codec == "hevc" else "mov"; out_path = os.path.join(out_dir, "%s_H%02d_4K.%s" % (C["name"], hn, ext))
         cmds = os.path.join(logs, "hud_H%02d.cmd" % hn); hud_on = bool(traj and traj.get("frames_data")) and not a.no_overlays
         bar_w_expr = "2"

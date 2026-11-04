@@ -66,7 +66,7 @@
     "orbit": {
       "radius_margin_m": 18,
       "height_m": 10,
-      "degrees": 60,
+      "degrees": 0,
       "speed_factor": 0.4,
       "decel_lead_m": 30,
       "look_at": "pin"
@@ -89,8 +89,18 @@
     "fps": 25,
     "sample_m": 0.5,
     "approach_outside_orbit_m": 8,
-    "target_duration_s": 15,
-    "duration_note": "target_duration_s is the commercial length; the yaw limit (limits.max_yaw_deg_s) makes an orbit of N degrees take N / max_yaw_deg_s seconds whatever the radius, so a 60 deg orbit is 5 s and the fairway leg at base_m_s carries the rest. A par 4 of 330 m at 30 m/s is about 11 s of fairway plus the reveal: 18 s is what these limits allow; the path tool prints its duration against the target. approach_outside_orbit_m: the approach point sits that far outside the orbit circle, never inside it (Tierra 10, 11/3: approach 40 m short inside a 52.5 m orbit made a 180 deg hairpin)."
+    "target_duration_s": 20,
+    "duration_note": "20 s commercial flyover (2026-11-04): a 5 s eye-level hold at the tee with the hole sign and the banner, then a 15 s flight tee to green (flight_s: the tool scales its speed profile to it) ending over the green on the pin. No orbit (orbit.degrees 0), no title card, no outro. The yaw/pitch limits still gate the path; a hole whose 15 s flight breaks them prints FAIL and the limit, and the answer is a longer flight_s for that hole in course.json rule_overrides, not a faster camera.",
+    "flight_s": 15,
+    "end_height_m": 15,
+    "intro": {
+      "seconds": 5,
+      "eye_height_m": 1.7,
+      "back_m": 4.5,
+      "side_m": 1.6,
+      "look_ahead_m": 120,
+      "note": "eye-level hold by the hole sign (course.json paths.signs), back_m behind and side_m beside it, looking down the line; the packager's banner sits over it. No sign: the same spot behind the back tee."
+    }
   },
   "render_4k": {
     "width": 3840,
@@ -136,14 +146,6 @@
     "fps": 60,
     "width": 3840,
     "height": 2160,
-    "intro": {
-      "seconds": 3.0,
-      "fade_s": 0.5,
-      "font_px": 96,
-      "sub_font_px": 56,
-      "color": "white",
-      "shadow": "black@0.6"
-    },
     "watermark": {
       "opacity": 0.35,
       "width_px": 360,
@@ -170,6 +172,22 @@
     "cleanup": {
       "purge_frames_after_verified_encode": true,
       "keep_frames_flag": "--keep-frames"
+    },
+    "banner": {
+      "seconds": 5,
+      "fade_s": 0.4,
+      "title": "Hole #{hole}",
+      "sub": "{yd} Yard • Par {par}",
+      "title_px": 64,
+      "sub_px": 40,
+      "color": "white",
+      "bg": "0x1a44c8@0.88",
+      "width_px": 720,
+      "height_px": 160,
+      "margin_x_px": 0,
+      "margin_y_px": 96,
+      "pad_px": 28,
+      "note": "lower-left banner over the intro hold, as a commercial flyover card: hole number, the flyover tee's card yardage, par; sizes for 2160 px, scaled to the frame"
     }
   }
 }

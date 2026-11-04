@@ -61,3 +61,6 @@ New: Find / SetOff / SetOn / RebakeCollider / UndoActive through the bridge; act
 
 ## GKD positions and JsonUtility (2026-11-04)
 `"Position": null` in a GKD becomes P(0,0,0) under JsonUtility. Every shared reader now treats x == 0 && z == 0 as missing (CommercialFlyoverPath, CourseGreenChecks, BuildTeeMarkers, MoorparkClearTees). Tierra 10 flew a 4,023 m line through the course origin before this.
+
+## CommercialFlyoverPath intro + flight_s (2026-11-04)
+Intro hold frames (static camera by the sign, FindSign from paths.signs via JsonUtility list wrapper), no-orbit end point over the green, two-pass speed scale to flight_s, lookAt settles on the pin over the last decel_lead_m. Locals p/fwd/yaw/pitch/fov are declared in both the intro for-body and the flight while-body (sibling scopes). Not yet compiled on the PC.
