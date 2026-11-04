@@ -201,13 +201,14 @@
       "title_px": 64,
       "sub_px": 40,
       "color": "white",
-      "bg": "0x1a44c8@0.88",
+      "bg": "0x3c5164@0.92",
       "width_px": 720,
       "height_px": 160,
       "margin_x_px": 0,
       "margin_y_px": 96,
       "pad_px": 28,
-      "note": "lower-left banner over the intro hold, as a commercial flyover card: hole number, the flyover tee's card yardage, par; sizes for 2160 px, scaled to the frame"
+      "note": "lower-left banner over the intro hold, as a commercial flyover card: hole number, the flyover tee's card yardage, par; sizes for 2160 px, scaled to the frame",
+      "colour_note": "the sign's slate blue, sampled from the Tierra Rejada logo panel at rgb(60, 81, 100) = #3c5164, white text; a course sets its own in course.json rule_overrides.flyovers.package.banner.bg"
     },
     "frame_tolerance": 6,
     "frame_tolerance_note": "frames may fall short of seconds x fps by up to this many at the tail (clip length rounding); any gap in the sequence still fails"
