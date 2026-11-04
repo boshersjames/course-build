@@ -11,8 +11,9 @@ Steps, in order (each logged with status, seconds, outputs; the run ABORTS on th
                 No such tool exists in course-build today (trees come from PlantLidarTrees / the tree tools); this slot is for it when it does.
   4 path-check  tools/flyover_path.py: the headless twin builds and checks every hole's flight first (LiDAR ground, same limits)
   4 path        Unity CommercialFlyoverPath.RunPathGeneration per hole (hole, tee)
-  5 render      Unity RenderQueue4K.RunRenderQueue for the hole list (4K/60 PNG; ~18 GB per hole; the disk guard can halt it)
-  6 package     tools/flyover_packager.py --holes <hole> per hole (python subprocess; verify, overlays, HEVC, verify, purge)
+  5 render      Unity RenderQueue4K.RunRenderQueue, ONE hole at a time (4K/60 PNG, ~13 GB per hole; the disk guard can halt it)
+  6 package     tools/flyover_packager.py --holes <hole> right after that hole's render (verify, banner, HEVC, verify, purge), so the disk
+                holds one hole's frames at a time; then the next hole
 
 Why the live bridge and not Unity batch mode: calibration and the 4K renders need post-processing, which Unity does not run in batch
 mode (the Uber shader is unsupported there). So the editor must be open with Course Tools > Automation > Live bridge on; this script
@@ -158,32 +159,32 @@ def main():
             no_report = " frames, " not in msg   # a path that was built always reports its frames; anything else is the tool refusing (GKD not found, hole missing)
             if not record("path", "ok" if (ans.get("status") == "ok" and not smooth_fail and not no_report) else "failed", t0, msg + ("\npath smoothness check FAILED: not rendering this path" if smooth_fail else "") + ("\npath tool returned no path report: step failed" if no_report else ""), outs, {"hole": h}): fail()
 
-    # 5 render queue
-    t0 = time.time()
-    if "render" in skip: record("render", "skipped", t0, "skipped by flag")
-    else:
-        ans = br.send_watch("invoke", "RenderQueue4K", "RunRenderQueue", {"holes": ",".join(map(str, holes)), "dryRun": "false"}, timeout=max(a.step_timeout, 3600 * len(holes)),
-                            watch_dirs=[os.path.join(AO, "renders_4k", "Hole_%02d" % h) for h in holes], stall_s=a.render_stall)
+    # 5 + 6: per hole, render then package (the packager purges the frames after a verified encode), so 18 holes need one hole's frames of
+    # disk at a time, ~13 GB, not 18 x that (Tierra 11/4: 118 GB free, 230 GB of frames if every hole rendered first)
+    def render_hole(h):
+        t0 = time.time()
+        ans = br.send_watch("invoke", "RenderQueue4K", "RunRenderQueue", {"holes": str(h), "dryRun": "false"}, timeout=max(a.step_timeout, 3600),
+                            watch_dirs=[os.path.join(AO, "renders_4k", "Hole_%02d" % h)], stall_s=a.render_stall)
         halted = "DISK_SPACE_EXCEEDED" in (ans.get("message") or "")
-        # the queue answers ok even when a hole's render returned at once (disk guard, no clip, dry-run flag): read its own log and count the frames
-        qlog = sorted(glob.glob(os.path.join(AO, "logs", "render_queue_*.json")))[-1:]; per_hole = {}; frame_count = {}
+        qlog = sorted(glob.glob(os.path.join(AO, "logs", "render_queue_*.json")))[-1:]; status = "no entry"
         try:
             if qlog:
-                for it in json.load(open(qlog[0], encoding="utf-8-sig")).get("items", []): per_hole[int(it["hole"])] = it
-        except Exception as e: per_hole = {"error": str(e)}
-        for h in holes: frame_count[h] = len(glob.glob(os.path.join(AO, "renders_4k", "Hole_%02d" % h, "frame_*.png")))
-        bad = [h for h in holes if frame_count[h] == 0 or (isinstance(per_hole.get(h), dict) and not str(per_hole[h].get("status", "")).startswith("rendered"))]
-        msg = (ans.get("message") or "") + "\n" + "\n".join("hole %d: %d frames on disk; queue status: %s" % (h, frame_count[h], per_hole[h].get("status") if isinstance(per_hole.get(h), dict) else "no entry") for h in holes)
-        if not record("render", "failed" if (ans.get("status") != "ok" or halted or bad) else "ok", t0, msg, qlog, {"halted": halted, "frames": frame_count}): fail()
-
-    # 6 package per hole
-    if "package" in skip: record("package", "skipped", time.time(), "skipped by flag")
-    else:
-        for h in holes:
-            t0 = time.time(); cmd = [sys.executable, os.path.join(TOOLS, "flyover_packager.py"), "--holes", str(h)] + (["--codec", a.codec] if a.codec else [])
-            r = subprocess.run(cmd, cwd=cdir, capture_output=True, text=True)
-            outs = sorted(glob.glob(os.path.join(AO, "deliverables", "%s_H%02d_4K.*" % (C["name"], h))))
-            if not record("package", "ok" if r.returncode == 0 else "failed", t0, r.stdout[-1200:] + r.stderr[-400:], outs, {"hole": h}): fail()
+                for it in json.load(open(qlog[0], encoding="utf-8-sig")).get("items", []):
+                    if int(it["hole"]) == h: status = str(it.get("status", ""))
+        except Exception as e: status = "log unreadable: %s" % e
+        n = len(glob.glob(os.path.join(AO, "renders_4k", "Hole_%02d" % h, "frame_*.png")))
+        bad = n == 0 or not status.startswith("rendered")
+        return record("render", "failed" if (ans.get("status") != "ok" or halted or bad) else "ok", t0, (ans.get("message") or "") + "\nhole %d: %d frames on disk; queue status: %s" % (h, n, status), qlog, {"hole": h, "halted": halted, "frames": n})
+    def package_hole(h):
+        t0 = time.time(); cmd = [sys.executable, os.path.join(TOOLS, "flyover_packager.py"), "--holes", str(h)] + (["--codec", a.codec] if a.codec else [])
+        r = subprocess.run(cmd, cwd=cdir, capture_output=True, text=True)
+        outs = sorted(glob.glob(os.path.join(AO, "deliverables", "%s_H%02d_4K.*" % (C["name"], h))))
+        return record("package", "ok" if r.returncode == 0 else "failed", t0, r.stdout[-1200:] + r.stderr[-400:], outs, {"hole": h})
+    for h in holes:
+        if "render" in skip: record("render", "skipped", time.time(), "skipped by flag", extra={"hole": h})
+        elif not render_hole(h): fail(); continue   # fail() exits unless --continue-on-error; then this hole is not packaged and the next is rendered
+        if "package" in skip: record("package", "skipped", time.time(), "skipped by flag", extra={"hole": h})
+        elif not package_hole(h): fail()
 
     finish(0 if all(s["status"] in ("ok", "skipped") for s in master["steps"]) else 1)
 
