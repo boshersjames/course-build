@@ -126,6 +126,7 @@ def main():
     ap.add_argument("--logo"); ap.add_argument("--font"); ap.add_argument("--expect", type=int, help="expected frame count when no trajectory JSON exists"); ap.add_argument("--fps", type=int)
     a = ap.parse_args()
     C = course(); R = rules(C)["flyovers"]["package"]; G = GKD(C)
+    global FRAME_TOL; FRAME_TOL = int(R.get("frame_tolerance", 6))
     AO = C.path("automation_output"); renders = a.renders or os.path.join(AO, "renders_4k"); flyover_dir = os.path.join(AO, "flyovers")
     out_dir = a.out or os.path.join(AO, "deliverables"); logs = os.path.join(AO, "logs"); os.makedirs(out_dir, exist_ok=True); os.makedirs(logs, exist_ok=True)
     codec = a.codec or R["codec"]; fps = a.fps or R["fps"]; font = find_font(a.font)
