@@ -68,3 +68,5 @@ Use with `course-build-gates` and `course-build-look` (say which look each sheet
 
 - `python ../course-build/tools/flyover_path.py [--holes 10] [--tee Black] [--set cinematic.key=value]`: headless twin of CommercialFlyoverPath; builds and checks every hole's flight against `flyovers.cinematic.limits` on the LiDAR ground; `--set` tries a rule value on all 18 before it is committed. `run_pipeline.py` runs it before asking Unity for a path.
 - Render crash recovery: `render_4k.resume` keeps frames already on disk, so after a Unity crash reopen the editor with the live bridge and re-run the same pipeline command; `--render-stall` (300 s) is how long the pipeline waits without a new frame before declaring the editor gone.
+
+- One hole's commercial video: `python ../course-build/tools/run_pipeline.py --course <course> --hole 13 --tee Black --keep-frames` (headless check, Unity path, 4K render, banner, HEVC under `AutomationOutput/deliverables`, frames kept); approve, then `python ../course-build/tools/flyover_packager.py --holes 13 --purge` deletes the frames. `--hole 0` does every hole, one at a time.

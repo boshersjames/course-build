@@ -129,7 +129,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--holes", default="1-18"); ap.add_argument("--renders"); ap.add_argument("--out"); ap.add_argument("--codec", choices=["hevc", "prores"])
     ap.add_argument("--keep-frames", action="store_true"); ap.add_argument("--no-overlays", action="store_true"); ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--logo"); ap.add_argument("--font"); ap.add_argument("--expect", type=int, help="expected frame count when no trajectory JSON exists"); ap.add_argument("--fps", type=int)
+    ap.add_argument("--purge", action="store_true", help="only delete the frame folders of --holes (after the video is approved)"); ap.add_argument("--logo"); ap.add_argument("--font"); ap.add_argument("--expect", type=int, help="expected frame count when no trajectory JSON exists"); ap.add_argument("--fps", type=int)
     a = ap.parse_args()
     C = course(); R = rules(C)["flyovers"]["package"]; G = GKD(C)
     global FRAME_TOL; FRAME_TOL = int(R.get("frame_tolerance", 6))
@@ -142,6 +142,12 @@ def main():
     for part in a.holes.split(","):
         if "-" in part: x, y = part.split("-"); holes += list(range(int(x), int(y) + 1))
         else: holes.append(int(part))
+    if a.purge:
+        for hn in holes:
+            d = os.path.join(a.renders or os.path.join(AO, "renders_4k"), "Hole_%02d" % hn); n = len(glob.glob(os.path.join(d, "frame_*.png")))
+            if n: shutil.rmtree(d, ignore_errors=True); print("hole %d: purged %d frames (%s)" % (hn, n, d))
+            else: print("hole %d: no frames to purge" % hn)
+        sys.exit(0)
     stamp = time.strftime("%Y%m%d_%H%M%S"); items = []; any_fail = False
     for hn in holes:
         folder = os.path.join(renders, "Hole_%02d" % hn); item = {"hole": hn, "folder": folder}

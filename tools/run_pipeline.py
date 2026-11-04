@@ -1,5 +1,7 @@
 """Master orchestrator: one command from fixes to packaged flyover videos for a course, through the Unity live bridge.
 
+    python tools/run_pipeline.py --course tierra-rejada --hole 13 --tee Black --keep-frames     # one hole's 4K video with the banner, frames kept until approved
+    python tools/flyover_packager.py --holes 13 --purge                                        # approved: delete that hole's frames
     python tools/run_pipeline.py --course tierra-rejada [--hole 0|10] [--tee Blue] [--audit <audit.json>] [--apply-fixes]
                                  [--skip fixer,calibrate,osm,path,render,package] [--continue-on-error] [--step-timeout 7200] [--dry-run]
 
@@ -81,7 +83,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--course", required=True); ap.add_argument("--hole", type=int, default=0, help="0 = all enabled holes"); ap.add_argument("--tee", default="Blue")
     ap.add_argument("--audit", help="audit JSON for BatchCourseFixer"); ap.add_argument("--apply-fixes", action="store_true"); ap.add_argument("--skip", default="")
-    ap.add_argument("--continue-on-error", action="store_true"); ap.add_argument("--step-timeout", type=float, default=7200); ap.add_argument("--ping-timeout", type=float, default=30); ap.add_argument("--render-stall", type=float, default=300, help="render step: seconds without a new frame before the editor is declared gone")
+    ap.add_argument("--continue-on-error", action="store_true"); ap.add_argument("--step-timeout", type=float, default=7200); ap.add_argument("--ping-timeout", type=float, default=30); ap.add_argument("--render-stall", type=float, default=300, help="render step: seconds without a new frame before the editor is declared gone"); ap.add_argument("--keep-frames", action="store_true", help="package but keep the PNG frames until the video is approved (then flyover_packager.py --holes N --purge)")
     ap.add_argument("--project", help="Unity project folder (default course.json paths.unity_project)"); ap.add_argument("--dry-run", action="store_true"); ap.add_argument("--codec", default=None)
     a = ap.parse_args()
     cdir = resolve_course(a.course); os.environ["COURSE_JSON"] = os.path.join(cdir, "course.json"); C = course(cdir); G = GKD(C)
@@ -176,7 +178,7 @@ def main():
         bad = n == 0 or not status.startswith("rendered")
         return record("render", "failed" if (ans.get("status") != "ok" or halted or bad) else "ok", t0, (ans.get("message") or "") + "\nhole %d: %d frames on disk; queue status: %s" % (h, n, status), qlog, {"hole": h, "halted": halted, "frames": n})
     def package_hole(h):
-        t0 = time.time(); cmd = [sys.executable, os.path.join(TOOLS, "flyover_packager.py"), "--holes", str(h)] + (["--codec", a.codec] if a.codec else [])
+        t0 = time.time(); cmd = [sys.executable, os.path.join(TOOLS, "flyover_packager.py"), "--holes", str(h)] + (["--codec", a.codec] if a.codec else []) + (["--keep-frames"] if a.keep_frames else [])
         r = subprocess.run(cmd, cwd=cdir, capture_output=True, text=True)
         outs = sorted(glob.glob(os.path.join(AO, "deliverables", "%s_H%02d_4K.*" % (C["name"], h))))
         return record("package", "ok" if r.returncode == 0 else "failed", t0, r.stdout[-1200:] + r.stderr[-400:], outs, {"hole": h})
