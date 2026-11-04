@@ -2,7 +2,8 @@
 //   Find          -Set @{ name = "<substring>" }   lists active and inactive objects (any root) whose name contains it
 //   FindPlants    -Set @{ px = "1688"; pz = "815"; pr = "15" }  LODGroup plants within pr m of a point: name, root, height, crown
 //   FindNear      -Set @{ px = ...; pz = ...; pr = "10" }  every renderer near a point, collider or not (render-only props)
-//   FindOnHole    -Set @{ hole = "10"; width = "30" }       every non-plant renderer within width m of the hole line (rocks, props on a fairway): active, position, collider
+//   FindOnHole    -Set @{ hole = "10"; width = "30" }       every non-plant renderer within width m of the hole line (rocks, props on a fairway)
+//   GroundProbe   -Set @{ px = ...; pz = ... }               every collider under a point with height and layer, the terrain height, what Ground() returns: active, position, collider
 //                                                  vs render dy (MeshCollider raycast at 1/50 of the vertices), physic material
 //   SetOff/SetOn  -Set @{ name = "<exact name>" }  SetActive(false/true) on that object; logged "active|<name>|<was>" in COURSEBUILD_LOG
 //   RebakeCollider -Set @{ name = "<exact name>" } MeshCollider.sharedMesh re-pointed at the MeshFilter's mesh (dy back to 0 when the
@@ -83,6 +84,22 @@ public class CourseSceneOps : EditorWindow
     }
     [Serializable] class PLite { public float x, y, z; } [Serializable] class TeeLite { public string TeeType; public PLite Position; } [Serializable] class HoleLite { public int HoleNumber; public TeeLite[] Tees; } [Serializable] class GLite { public HoleLite[] Holes; }
     [Serializable] class PathsLite { public string gkd, course_repo_abs; } [Serializable] class CourseJsonLite { public PathsLite paths; }
+
+    // what "ground" means at a point: every collider under it with height and layer (all layers), the active terrain's own sampled height, and what
+    // the flyover tools' Ground() (default raycast layers, LODGroups skipped) would return. Says why a camera at ground + 1.7 m ends up inside the hill.
+    public static string GroundProbe()
+    {
+        var o = new List<string> { "ground at (" + px.ToString("F1", CI) + ", " + pz.ToString("F1", CI) + ")" }; float best = float.MinValue, bestDef = float.MinValue;
+        foreach (var h in Physics.RaycastAll(new Vector3(px, 800, pz), Vector3.down, 1600, ~0).OrderByDescending(h => h.point.y))
+        {
+            bool lod = h.collider.GetComponentInParent<LODGroup>(); bool inDefault = (Physics.DefaultRaycastLayers & (1 << h.collider.gameObject.layer)) != 0;
+            o.Add("  " + h.point.y.ToString("F2", CI) + "  " + h.collider.name + "  layer " + LayerMask.LayerToName(h.collider.gameObject.layer) + (inDefault ? "" : " (NOT in the default raycast layers)") + (lod ? "  plant" : "") + (h.collider is TerrainCollider ? "  terrain" : "") + (h.collider.isTrigger ? "  trigger" : ""));
+            if (h.point.y > best) best = h.point.y; if (inDefault && !lod && !h.collider.isTrigger && h.point.y > bestDef) bestDef = h.point.y;
+        }
+        foreach (var t in Terrain.activeTerrains) { var tp = t.GetPosition(); var sz = t.terrainData.size; if (px >= tp.x && pz >= tp.z && px <= tp.x + sz.x && pz <= tp.z + sz.z) o.Add("  terrain " + t.name + " SampleHeight " + (t.SampleHeight(new Vector3(px, 0, pz)) + tp.y).ToString("F2", CI) + "  layer " + LayerMask.LayerToName(t.gameObject.layer) + (t.GetComponent<TerrainCollider>() ? "" : "  NO TerrainCollider")); }
+        o.Add("highest collider " + (best == float.MinValue ? "none" : best.ToString("F2", CI)) + "; flyover Ground() would use " + (bestDef == float.MinValue ? "the terrain fallback" : bestDef.ToString("F2", CI)));
+        return string.Join("\n", o.ToArray());
+    }
 
     public static string Find()
     {
