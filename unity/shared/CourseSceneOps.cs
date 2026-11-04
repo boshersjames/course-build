@@ -55,11 +55,14 @@ public class CourseSceneOps : EditorWindow
 
     static string SetActive(bool on)
     {
-        var t = All().FirstOrDefault(x => x.name == name); if (!t) return "no object named " + name;
+        // several objects may share a name (tree prefabs): with px/pz set, the one nearest that point is taken, and the result says where it was
+        var cands = All().Where(x => x.name == name).ToList(); if (cands.Count == 0) return "no object named " + name;
+        var t = (px != 0 || pz != 0) ? cands.OrderBy(x => (new Vector2(x.position.x, x.position.z) - new Vector2(px, pz)).sqrMagnitude).First() : cands[0];
+        if (cands.Count > 1 && px == 0 && pz == 0) return cands.Count + " objects named " + name + ": pass px, pz to pick the one nearest a point";
         bool was = t.gameObject.activeSelf; if (was == on) return name + " already " + (on ? "active" : "off");
-        var log = GameObject.Find(LOG) ?? new GameObject(LOG); new GameObject("active|" + name + "|" + (was ? "1" : "0")).transform.SetParent(log.transform, false);
+        var log = GameObject.Find(LOG) ?? new GameObject(LOG); new GameObject("active|" + name + "|" + (was ? "1" : "0") + "|" + t.position.x.ToString("F2", CI) + "|" + t.position.z.ToString("F2", CI)).transform.SetParent(log.transform, false);
         Undo.RecordObject(t.gameObject, "scene ops"); t.gameObject.SetActive(on); EditorUtility.SetDirty(t.gameObject); Physics.SyncTransforms();
-        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(t.gameObject.scene); return name + (on ? " active" : " OFF") + " (was " + (was ? "active" : "off") + "; UndoActive puts it back)";
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(t.gameObject.scene); return name + " under " + t.root.name + " at (" + t.position.x.ToString("F1", CI) + ", " + t.position.z.ToString("F1", CI) + ")" + (on ? " active" : " OFF") + " (was " + (was ? "active" : "off") + "; UndoActive puts it back)";
     }
     public static string SetOff() { return SetActive(false); }
     public static string SetOn() { return SetActive(true); }
@@ -79,7 +82,8 @@ public class CourseSceneOps : EditorWindow
         var log = GameObject.Find(LOG); if (!log) return "no " + LOG; int n = 0; var o = new List<string>();
         foreach (var e in log.transform.Cast<Transform>().Reverse().ToList())
         {
-            var p = e.name.Split('|'); if (p.Length < 3 || p[0] != "active") continue; var t = All().FirstOrDefault(x => x.name == p[1]); if (!t) { o.Add(p[1] + " not found"); continue; }
+            var p = e.name.Split('|'); if (p.Length < 3 || p[0] != "active") continue; var same = All().Where(x => x.name == p[1]).ToList(); if (same.Count == 0) { o.Add(p[1] + " not found"); continue; }
+            var t = p.Length >= 5 ? same.OrderBy(x => (new Vector2(x.position.x, x.position.z) - new Vector2(float.Parse(p[3], CI), float.Parse(p[4], CI))).sqrMagnitude).First() : same[0];
             t.gameObject.SetActive(p[2] == "1"); EditorUtility.SetDirty(t.gameObject); UnityEngine.Object.DestroyImmediate(e.gameObject); n++;
         }
         Physics.SyncTransforms(); return n + " objects put back" + (o.Count > 0 ? "\n" + string.Join("\n", o.ToArray()) : "");
