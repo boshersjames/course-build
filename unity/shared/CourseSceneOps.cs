@@ -1,6 +1,7 @@
 // CourseSceneOps: small, logged scene operations through the bridge (course-build-unity-tools). No course names, no constants.
 //   Find          -Set @{ name = "<substring>" }   lists active and inactive objects (any root) whose name contains it
-//   FindPlants    -Set @{ px = "1688"; pz = "815"; pr = "15" }  LODGroup plants within pr m of a point: name, root, height, crown: active, position, collider
+//   FindPlants    -Set @{ px = "1688"; pz = "815"; pr = "15" }  LODGroup plants within pr m of a point: name, root, height, crown
+//   FindNear      -Set @{ px = ...; pz = ...; pr = "10" }  every renderer near a point, collider or not (render-only props): active, position, collider
 //                                                  vs render dy (MeshCollider raycast at 1/50 of the vertices), physic material
 //   SetOff/SetOn  -Set @{ name = "<exact name>" }  SetActive(false/true) on that object; logged "active|<name>|<was>" in COURSEBUILD_LOG
 //   RebakeCollider -Set @{ name = "<exact name>" } MeshCollider.sharedMesh re-pointed at the MeshFilter's mesh (dy back to 0 when the
@@ -40,6 +41,19 @@ public class CourseSceneOps : EditorWindow
         var ra = f.sharedMesh.vertices; float worst = 0; int step = Mathf.Max(1, ra.Length / 50);
         for (int i = 0; i < ra.Length; i += step) { var wp = f.transform.TransformPoint(ra[i]); RaycastHit h; if (mc.Raycast(new Ray(wp + Vector3.up * 5, Vector3.down), out h, 20)) worst = Mathf.Max(worst, Mathf.Abs(h.point.y - wp.y)); }
         return worst;
+    }
+
+    // every renderer within pr m of (px, pz), collider or not: render-only props that no census or audit can see (the rock on Tierra 10's fairway)
+    public static string FindNear()
+    {
+        var c = new Vector2(px, pz); var o = new List<string>();
+        foreach (var r in UnityEngine.Object.FindObjectsOfType<Renderer>())
+        {
+            var b = r.bounds; float d = (new Vector2(b.center.x, b.center.z) - c).magnitude; if (d > pr) continue; if (r.transform.GetComponentInParent<Terrain>()) continue;
+            var t = r.transform; string path = t.name; for (var u = t.parent; u; u = u.parent) path = u.name + "/" + path;
+            o.Add(path + "  at (" + b.center.x.ToString("F1", CI) + ", " + b.center.z.ToString("F1", CI) + ")  " + d.ToString("F1", CI) + " m, size " + b.size.x.ToString("F1", CI) + "x" + b.size.y.ToString("F1", CI) + "x" + b.size.z.ToString("F1", CI) + (r.GetComponent<Collider>() ? "  collider" : "  no collider") + (r.GetComponentInParent<LODGroup>() ? "  plant" : ""));
+        }
+        return o.Count + " renderers within " + pr.ToString(CI) + " m of (" + px.ToString("F1", CI) + ", " + pz.ToString("F1", CI) + ")\n" + string.Join("\n", o.OrderBy(x => x).Take(80).ToArray());
     }
 
     public static string Find()
