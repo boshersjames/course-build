@@ -70,3 +70,4 @@ Reuse before writing. Tools live in `unity_editor/` on `claude/moorpark-unity` (
 
 1. Merge course-specific builders into the shared set now or after the next course (default: after Wilson proves the set).
 2. Two editors or one that day (under ~4 GB free RAM means one).
+- A course's `unity_editor/` never shadows a toolkit tool: the sync skips (and names) any course script with the same file name as one in `unity/shared/`; delete such copies from the course repo (Tierra, 11/4: an old BuildCartPaths.cs in the course folder overwrote the toolkit's and the new bridge methods were missing).

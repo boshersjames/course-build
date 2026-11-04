@@ -52,7 +52,9 @@ if ($SyncTools) {
     Get-ChildItem (Join-Path $toolkit "unity\shared\*.shader") | ForEach-Object { Copy-Item $_.FullName $res -Force; Write-Host "copied $($_.Name) -> Assets\Editor\Resources" }
     # the course's own editor scripts, if it has any
     $courseEditor = Join-Path $courseDir "unity_editor"
-    if (Test-Path $courseEditor) { Get-ChildItem (Join-Path $courseEditor "*.cs") | ForEach-Object { Copy-Item $_.FullName $editor -Force; Write-Host "copied $($_.Name) (course) -> Assets\Editor" } }
+    if (Test-Path $courseEditor) { Get-ChildItem (Join-Path $courseEditor "*.cs") | ForEach-Object {
+        if (Test-Path (Join-Path $toolkit ("unity\shared\" + $_.Name))) { Write-Host "SKIPPED $($_.Name) (course copy shadows the toolkit's unity/shared version; delete it from unity_editor)" -ForegroundColor Yellow }
+        else { Copy-Item $_.FullName $editor -Force; Write-Host "copied $($_.Name) (course) -> Assets\Editor" } } }
     $cfgDir = Join-Path $Project "Assets\CourseAutomation"
     New-Item -ItemType Directory -Force $cfgDir | Out-Null
     Copy-Item $Config $cfgDir -Force
