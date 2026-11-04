@@ -245,7 +245,7 @@ public class CourseGreenChecks : EditorWindow
             row.crown = worstOver;
 
             // 5. pins: GreenKeeper pin-area test + edge distance; usable % and valid areas on the green
-            var pins = (h.Pins ?? new Pin[0]).Where(p => p.Position != null && (p.Position.x != 0 || p.Position.z != 0)).ToList();   // JsonUtility: a null Position reads as (0,0,0) row.pins = pins.Count;
+            var pins = (h.Pins ?? new Pin[0]).Where(p => p.Position != null && (p.Position.x != 0 || p.Position.z != 0)).ToList(); row.pins = pins.Count;   // JsonUtility: a null Position reads as (0,0,0)
             foreach (var p in pins)
             {
                 float ang = PinArea(opcd, p.Position.x, p.Position.z, P); var on = TopHit(opcd, p.Position.x, p.Position.z); float ed = DistToEdges(edges, w, new Vector2(p.Position.x, p.Position.z));
