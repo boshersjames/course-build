@@ -67,3 +67,6 @@ Intro hold frames (static camera by the sign, FindSign from paths.signs via Json
 
 ## CommercialFlyoverPath end ease / rise offset (2026-11-04)
 Ported from tools/flyover_path.py after the sweep: end_ease_m / end_speed_factor in speedAt for no-orbit flights, rise point keeps rise_keep_offset of the sideways offset (latOff via Vector2.Dot with `right`, declared in the intro block), reveal_fraction. `right` is declared before use in the intro block. Not yet compiled on the PC.
+
+## BuildCartPaths CheckTurf / SinkTurf (2026-11-04)
+Static bridge methods appended; added `using System; using System.Linq;`. Nested JsonUtility classes for rules and the GKD line filter. Uses CourseCollarFlush.SaveMesh / Swap / EnsureFolders (public). `hole` is a static string field for -Set. Not yet compiled on the PC.

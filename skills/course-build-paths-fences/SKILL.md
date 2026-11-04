@@ -75,3 +75,5 @@ Use with `course-build-gates`. Full guide: `course-build/playbooks/09_cart_paths
 1. Which off-course roads/entrances are in the flyover envelope (default: anything visible from flyover height along the edge).
 2. Ropes as photographed per hole (default yes where a photo shows one).
 3. Fence tint per course from a photo.
+
+- Unity `BuildCartPaths` bridge `invoke -Tool BuildCartPaths -Method CheckTurf [-Set @{ hole = "10" }]`: share of each cart path's surface where a turf mesh is the top collider, by mesh and extent, against `paths_fences.checks.rough_poke_max_pct`; `-Method SinkTurf` sinks those turf vertices `checks.turf_under_path_sink_m` under the path (no triangles removed, so no sawtooth; revert via `CourseCollarFlush.Revert`).

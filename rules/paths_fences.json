@@ -1,10 +1,51 @@
 {
-  "element": "paths_fences", "skill": "course-build-paths-fences", "playbook": "playbooks/09_cart_paths_roads_and_fences.md",
-  "cart_path": {"width_m": [2.4, 2.5], "lift_min_m": 0.04, "physics": "GSPconcrete", "joint_every_m": 2.7, "roundabout": "solid disc", "roundabout_min_segments": 48},
-  "curb": {"height_m": 0.15, "only_where_photographed": true},
+  "element": "paths_fences",
+  "skill": "course-build-paths-fences",
+  "playbook": "playbooks/09_cart_paths_roads_and_fences.md",
+  "cart_path": {
+    "width_m": [
+      2.4,
+      2.5
+    ],
+    "lift_min_m": 0.04,
+    "physics": "GSPconcrete",
+    "joint_every_m": 2.7,
+    "roundabout": "solid disc",
+    "roundabout_min_segments": 48
+  },
+  "curb": {
+    "height_m": 0.15,
+    "only_where_photographed": true
+  },
   "road_4lane_width_m": 22.4,
-  "fence": {"split_rail_h_m": 1.07, "split_rails": 2, "post_spacing_m": 2.7, "chain_link_h_ft": 12},
-  "rope": {"dia_m": 0.01, "stake_h_m": [0.45, 0.5], "spacing_m": 5, "off_concrete_m": 0.3, "tie_height_m": 0.42},
-  "net": {"pole_h_m": 19, "transparency": 0.5},
-  "checks": {"overlap_grid_m": 0.25, "edge_sample_m": 0.5, "edge_gap_max_m": 0.03, "edge_step_max_m": 0.02, "rough_poke_max_pct": 2, "tee_pad_off_path_m": 2}
+  "fence": {
+    "split_rail_h_m": 1.07,
+    "split_rails": 2,
+    "post_spacing_m": 2.7,
+    "chain_link_h_ft": 12
+  },
+  "rope": {
+    "dia_m": 0.01,
+    "stake_h_m": [
+      0.45,
+      0.5
+    ],
+    "spacing_m": 5,
+    "off_concrete_m": 0.3,
+    "tie_height_m": 0.42
+  },
+  "net": {
+    "pole_h_m": 19,
+    "transparency": 0.5
+  },
+  "checks": {
+    "overlap_grid_m": 0.25,
+    "edge_sample_m": 0.5,
+    "edge_gap_max_m": 0.03,
+    "edge_step_max_m": 0.02,
+    "rough_poke_max_pct": 2,
+    "tee_pad_off_path_m": 2,
+    "turf_under_path_sink_m": 0.05,
+    "turf_note": "BuildCartPaths.CheckTurf samples every cart path collider on overlap_grid_m and reports where a turf mesh is the top collider (share of the path surface, by mesh, extent); over rough_poke_max_pct fails. SinkTurf moves those turf vertices to path top minus turf_under_path_sink_m: no triangle is removed, so no sawtooth edge (Tierra 10 approach, 11/4: tee and fairway turf standing over the path in the 4K flyover)."
+  }
 }
