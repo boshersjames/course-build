@@ -5,7 +5,8 @@
 //   FindOnHole    -Set @{ hole = "10"; width = "30" }       every non-plant renderer within width m of the hole line (rocks, props on a fairway)
 //   GroundProbe   -Set @{ px = ...; pz = ... }               every collider under a point with height and layer, the terrain height, what Ground() returns
 //   TerrainReport -Set @{ px = ...; pz = ...; pr = "10" }  terrain detail / tree prototypes, and what is painted near a point (painted objects are not GameObjects)
-//   ClearTerrainDetails -Set @{ px = ...; pz = ...; pr = "3" }  clear painted details within pr m (Undo-registered): active, position, collider
+//   ClearTerrainDetails -Set @{ px = ...; pz = ...; pr = "3" }  clear painted details within pr m (Undo-registered)
+//   DetailsOnTurfDryRun / DetailsOnTurfClear                  painted details whose top collider is green / collar / fairway / tee turf: list, or clear (rules brush.no_details_on_mown_turf): active, position, collider
 //                                                  vs render dy (MeshCollider raycast at 1/50 of the vertices), physic material
 //   SetOff/SetOn  -Set @{ name = "<exact name>" }  SetActive(false/true) on that object; logged "active|<name>|<was>" in COURSEBUILD_LOG
 //   RebakeCollider -Set @{ name = "<exact name>" } MeshCollider.sharedMesh re-pointed at the MeshFilter's mesh (dy back to 0 when the
@@ -146,6 +147,47 @@ public class CourseSceneOps : EditorWindow
             }
         }
         return (total == 0 ? "nothing painted within " + pr.ToString(CI) + " m of (" + px.ToString("F1", CI) + ", " + pz.ToString("F1", CI) + ")" : string.Join("\n", o.ToArray()) + "\n(Edit > Undo reverses; save the scene to keep)");
+    }
+
+    // painted terrain details on mown turf: every detail cell with instances whose top collider is green, collar, fairway or tee turf is listed (dry run)
+    // or cleared (apply). A dead-brush billboard on a fairway reads as a rock from the air (Tierra 10, 11/4). Undo-registered.
+    public static string DetailsOnTurfDryRun() { return DetailsOnTurf(false); }
+    public static string DetailsOnTurfClear() { return DetailsOnTurf(true); }
+    static bool MownTurf(Collider c)
+    {
+        if (!c || c.GetComponentInParent<LODGroup>() || c is TerrainCollider) return false; var pm = c.sharedMaterial ? c.sharedMaterial.name : ""; var n = c.name.ToLower();
+        return pm == "GSPgreen" || pm == "GSPfairway" || pm == "GSPtee" || n.Contains("_green_-_mesh") || n.Contains("fairway") || n.Contains("_tee_-_mesh") || n.Contains("collar");
+    }
+    static string DetailsOnTurf(bool apply)
+    {
+        Physics.SyncTransforms(); var o = new List<string>(); int totalCells = 0, totalInst = 0;
+        foreach (var t in Terrain.activeTerrains)
+        {
+            var td = t.terrainData; if (td.detailPrototypes.Length == 0) continue; var tp = t.GetPosition(); var sz = td.size; int dw = td.detailWidth, dh = td.detailHeight;
+            if (apply) Undo.RegisterCompleteObjectUndo(td, "clear details on turf");
+            var perLayer = new int[td.detailPrototypes.Length]; var byMesh = new Dictionary<string, int>(); var turfCell = new bool?[dh, dw];
+            for (int i = 0; i < td.detailPrototypes.Length; i++)
+            {
+                var layer = td.GetDetailLayer(0, 0, dw, dh, i); bool changed = false;
+                for (int a = 0; a < dh; a++) for (int b = 0; b < dw; b++)
+                {
+                    if (layer[a, b] == 0) continue;
+                    if (turfCell[a, b] == null)
+                    {
+                        float wx = tp.x + (b + 0.5f) / dw * sz.x, wz = tp.z + (a + 0.5f) / dh * sz.z; Collider top = null; float topY = float.MinValue;
+                        foreach (var h in Physics.RaycastAll(new Vector3(wx, 800, wz), Vector3.down, 1600)) { if (h.collider.GetComponentInParent<LODGroup>() || h.collider.isTrigger) continue; if (h.point.y > topY) { topY = h.point.y; top = h.collider; } }
+                        bool turf = MownTurf(top); turfCell[a, b] = turf; if (turf) { int n; byMesh.TryGetValue(top.name, out n); byMesh[top.name] = n + 1; }
+                    }
+                    if (turfCell[a, b] == true) { perLayer[i] += layer[a, b]; totalInst += layer[a, b]; totalCells++; if (apply) { layer[a, b] = 0; changed = true; } }
+                }
+                if (apply && changed) td.SetDetailLayer(0, 0, i, layer);
+            }
+            o.Add(t.name + ": " + totalCells + " detail cells on mown turf, " + totalInst + " instances" + (apply ? " CLEARED" : ""));
+            for (int i = 0; i < perLayer.Length; i++) if (perLayer[i] > 0) o.Add("  detail " + i + " " + (td.detailPrototypes[i].prototypeTexture ? td.detailPrototypes[i].prototypeTexture.name : td.detailPrototypes[i].prototype ? td.detailPrototypes[i].prototype.name : "?") + ": " + perLayer[i]);
+            foreach (var kv in byMesh.OrderByDescending(k => k.Value).Take(25)) o.Add("  on " + kv.Key + ": " + kv.Value + " cells");
+        }
+        if (o.Count == 0) return "no terrain with detail layers";
+        return string.Join("\n", o.ToArray()) + (apply ? "\n(Edit > Undo reverses; save the scene to keep)" : "\nDetailsOnTurfClear clears them");
     }
 
     public static string Find()

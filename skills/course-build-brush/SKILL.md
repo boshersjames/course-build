@@ -64,3 +64,5 @@ Use with `course-build-gates` (process, editors, photo pairs, hole-10 control). 
 2. Density on signature hillsides (one photo per flagged hill).
 3. Which hills are OB vs deep rough in play.
 4. Accent species only from photos.
+
+- `invoke -Tool CourseSceneOps -Method DetailsOnTurfDryRun` then `DetailsOnTurfClear`: painted terrain details on mown turf (`brush.no_details_on_mown_turf`); `TerrainReport -Set @{ px; pz; pr }` lists what is painted near a point.
