@@ -37,7 +37,7 @@ public class CommercialFlyoverPath : EditorWindow
     {
         public float start_behind_tee_m = 15, start_height_m = 12, reveal_height_m = 28, reveal_fov_deg = 42, approach_fov_deg = 52, fov_blend_m = 40;
         public float bunker_dip_height_m = 3.5f, bunker_dip_entry_m = 40, bunker_cluster_m = 25, bunker_corridor_m = 28; public float[] bunker_along_range = { 0.25f, 0.85f };
-        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0, flight_s = 0, end_height_m = 15, end_short_m = 20, fast_flight_m_s = 20, bunker_dip_height_fast_m = 8; public string end_look = "green"; public Intro intro = new Intro(); public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
+        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0, flight_s = 0, end_height_m = 15, end_short_m = 20, fast_flight_m_s = 20, bunker_dip_height_fast_m = 8; public string end_look = "green"; public float end_gaze_fraction = 0.6f; public Intro intro = new Intro(); public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
     }
     [Serializable] public class FlyRules { public Cinematic cinematic = new Cinematic(); }
     [Serializable] class P { public float x, y, z; }
@@ -232,7 +232,7 @@ public class CommercialFlyoverPath : EditorWindow
             var p = posAt(d_); bool inOrbit = d_ >= orbitArc; var ahead = posAt(Mathf.Min(d_ + R.lookahead_m, total));
             Vector3 lookAt = inOrbit ? (R.orbit.look_at == "pin" ? pin : gc.Value) : ahead;
             if (!inOrbit && d_ > orbitArc - R.orbit.decel_lead_m) lookAt = Vector3.Lerp(ahead, pin, Smootherstep((d_ - (orbitArc - R.orbit.decel_lead_m)) / R.orbit.decel_lead_m));
-            if (R.orbit.degrees < 15f && d_ > total - 2f * R.orbit.decel_lead_m) lookAt = Vector3.Lerp(ahead, R.end_look == "pin" ? pin : gc.Value, Smootherstep((d_ - (total - 2f * R.orbit.decel_lead_m)) / (2f * R.orbit.decel_lead_m)));   // end gaze: the green centre by default, so the camera never crosses its own look target   // no orbit: settle on the pin over the last decel_lead_m
+            { float gz = Mathf.Max(2f * R.orbit.decel_lead_m, total * Mathf.Clamp01(R.end_gaze_fraction)); if (R.orbit.degrees < 15f && d_ > total - gz) lookAt = Vector3.Lerp(ahead, R.end_look == "pin" ? pin : gc.Value, Smootherstep((d_ - (total - gz)) / gz)); }   // the gaze settles on the green over end_gaze_fraction of the flight: 50 deg over 2.4 s was 22 deg/s of pitch (Tierra 10)   // end gaze: the green centre by default, so the camera never crosses its own look target   // no orbit: settle on the pin over the last decel_lead_m
             if (introFrames > 0 && d_ < R.lookahead_m * 2f) lookAt = Vector3.Lerp(introLook, lookAt, Smootherstep(d_ / (R.lookahead_m * 2f)));   // leave the intro's gaze smoothly: no pitch jump at the first flight frame
             float distGreen = Vector2.Distance(XZ(p), XZ(gc.Value)); float hAbove = p.y - Ground(p.x, p.z); minClear = Mathf.Min(minClear, hAbove);
             float fovT = Smootherstep((hAbove - 12f) / 16f) * (1f - Smootherstep(1f - Mathf.Clamp01((distGreen - radius - 20f) / R.fov_blend_m)));   // high & far -> wide

@@ -101,11 +101,12 @@
       "look_ahead_m": 120,
       "note": "eye-level hold by the hole sign (course.json paths.signs), back_m behind and side_m beside it, looking down the line; the packager's banner sits over it. No sign: the same spot behind the back tee."
     },
-    "end_short_m": 10,
+    "end_short_m": 15,
     "fast_flight_m_s": 20,
     "bunker_dip_height_fast_m": 8,
-    "end_note": "no orbit: the flight ends end_short_m short of the green centre at end_height_m, gaze settling on end_look (green centre: the camera never crosses its own look target, so no heading flip; 'pin' is the other value). 20 m / 15 m stopped visibly short of the green (Tierra 10, 11/4), 10 m / 12 m fills the frame with it. A flight averaging over fast_flight_m_s gets no bunker dips at all and follows the line (a dip at 25 m/s was 43 deg/s of yaw on Tierra 10); bunker_dip_height_fast_m is kept for a course that lowers fast_flight_m_s.",
-    "end_look": "green"
+    "end_note": "no orbit: the flight ends end_short_m short of the green centre at end_height_m, gaze settling on end_look (green centre: the camera never crosses its own look target, so no heading flip; 'pin' is the other value). 20 m / 15 m stopped visibly short of the green (Tierra 10, 11/4), 10 m / 12 m fills the frame with it. A flight averaging over fast_flight_m_s gets no bunker dips at all and follows the line (a dip at 25 m/s was 43 deg/s of yaw on Tierra 10); bunker_dip_height_fast_m is kept for a course that lowers fast_flight_m_s. end_gaze_fraction: the share of the flight over which the gaze moves from the line ahead to the green; 0.6 of a 15 s flight is 9 s, and a 40 deg swing eased over 9 s peaks near the 8 deg/s pitch limit.",
+    "end_look": "green",
+    "end_gaze_fraction": 0.6
   },
   "render_4k": {
     "width": 3840,
