@@ -124,7 +124,8 @@ def main():
         if d.get("status") != "ok": record("osm", "skipped", t0, "SpeedTreeOSMImporter is not in the project (no such tool in course-build yet): " + (d.get("message") or "")[:200])
         else:
             ans = br.send("invoke", "SpeedTreeOSMImporter", "Run", {"hole": a.hole, "tee": a.tee})
-            if not record("osm", "ok" if ans.get("status") == "ok" else "failed", t0, ans.get("message")): fail()
+            if ans.get("status") != "ok" and "isn't compiled" in (ans.get("message") or ""): record("osm", "skipped", t0, "SpeedTreeOSMImporter is not compiled in this project (no such tool in course-build yet)")
+            elif not record("osm", "ok" if ans.get("status") == "ok" else "failed", t0, ans.get("message")): fail()
 
     # 4 path per hole
     if "path" in skip: record("path", "skipped", time.time(), "skipped by flag")
@@ -140,7 +141,16 @@ def main():
     else:
         ans = br.send("invoke", "RenderQueue4K", "RunRenderQueue", {"holes": ",".join(map(str, holes)), "dryRun": "false"}, timeout=max(a.step_timeout, 3600 * len(holes)))
         halted = "DISK_SPACE_EXCEEDED" in (ans.get("message") or "")
-        if not record("render", "failed" if (ans.get("status") != "ok" or halted) else "ok", t0, ans.get("message"), sorted(glob.glob(os.path.join(AO, "logs", "render_queue_*.json")))[-1:], {"halted": halted}): fail()
+        # the queue answers ok even when a hole's render returned at once (disk guard, no clip, dry-run flag): read its own log and count the frames
+        qlog = sorted(glob.glob(os.path.join(AO, "logs", "render_queue_*.json")))[-1:]; per_hole = {}; frame_count = {}
+        try:
+            if qlog:
+                for it in json.load(open(qlog[0], encoding="utf-8-sig")).get("items", []): per_hole[int(it["hole"])] = it
+        except Exception as e: per_hole = {"error": str(e)}
+        for h in holes: frame_count[h] = len(glob.glob(os.path.join(AO, "renders_4k", "Hole_%02d" % h, "frame_*.png")))
+        bad = [h for h in holes if frame_count[h] == 0 or (isinstance(per_hole.get(h), dict) and not str(per_hole[h].get("status", "")).startswith("rendered"))]
+        msg = (ans.get("message") or "") + "\n" + "\n".join("hole %d: %d frames on disk; queue status: %s" % (h, frame_count[h], per_hole[h].get("status") if isinstance(per_hole.get(h), dict) else "no entry") for h in holes)
+        if not record("render", "failed" if (ans.get("status") != "ok" or halted or bad) else "ok", t0, msg, qlog, {"halted": halted, "frames": frame_count}): fail()
 
     # 6 package per hole
     if "package" in skip: record("package", "skipped", time.time(), "skipped by flag")
