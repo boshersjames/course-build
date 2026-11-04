@@ -11,7 +11,7 @@ description: "Use before writing any Unity editor script for a GSPro course: the
 
 Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
 
-- `..\course-build\automation\Run-CourseAutomation.ps1 -SyncTools [-CourseJson <path>] [-Steps "a,b"] [-NoShots]`: reads `course.json` (project path, config), copies `unity/shared/*.cs`, the course's own `unity_editor/*.cs`, `course.json` and `rules/*.json` into the project, runs the batch; output under `AutomationOutput/<stamp>/summary.md`.
+- `..\course-build\automation\Run-CourseAutomation.ps1 -SyncTools [-SyncOnly] [-CourseJson <path>] [-Steps "a,b"] [-NoShots]` (`-SyncOnly` copies with Unity open, then `refresh` and `ping`): reads `course.json` (project path, config), copies `unity/shared/*.cs`, the course's own `unity_editor/*.cs`, `course.json` and `rules/*.json` into the project, runs the batch; output under `AutomationOutput/<stamp>/summary.md`.
 - `..\course-build\automation\Send-UnityCommand.ps1 ping|run|shots|invoke|describe|menu|save|refresh [-Tool <class>] [-Method <method>] [-Steps ...] [-Path <menu path>]`: the live bridge; `describe -Tool X` lists a tool's menu items, fields and methods before you call it.
 - Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`, `RunAll` for the bridge): the all-18 green table; written in the cloud, compile it once on the PC.
 - Unity `Course Look > Apply Tint JSON` (`ApplyTintJson.cs`): tint multipliers from `colour_match.py --json`; written in the cloud, compile it once on the PC.

@@ -5,6 +5,7 @@
 #   .\automation\Run-CourseAutomation.ps1 -Steps "Plant shrubs,Paint grass"
 #   .\automation\Run-CourseAutomation.ps1 -Steps none             # just check the scene and take screenshots
 #   .\automation\Run-CourseAutomation.ps1 -SyncTools              # copy the toolkit's editor tools, course.json and rules into the project first
+#   .\automation\Run-CourseAutomation.ps1 -SyncTools -SyncOnly    # the copy alone, Unity may stay open; then Send-UnityCommand.ps1 refresh + ping
 # If Unity is open, use Send-UnityCommand.ps1 instead (the live bridge).
 param(
     [string]$Project = "",
@@ -13,6 +14,7 @@ param(
     [string]$Steps = "",
     [switch]$NoShots,
     [switch]$SyncTools,
+    [switch]$SyncOnly,      # with -SyncTools: copy and stop, no batch run; works with Unity open (the copy touches no locked file)
     [string]$Unity = ""
 )
 $ErrorActionPreference = "Stop"
@@ -42,13 +44,6 @@ if (-not $Unity) {
     if (-not $Unity) { throw "Unity 2018.2.8f1 not found. Pass -Unity 'C:\path\to\Unity.exe'." }
 }
 
-# Unity holds Temp\UnityLockfile open while the project is open
-$lock = Join-Path $Project "Temp\UnityLockfile"
-if (Test-Path $lock) {
-    try { $s = [IO.File]::Open($lock, 'Open', 'ReadWrite', 'None'); $s.Close() }
-    catch { throw "Unity has the project open. Close it, or use .\automation\Send-UnityCommand.ps1 run" }
-}
-
 if ($SyncTools) {
     $editor = Join-Path $Project "Assets\Editor"
     New-Item -ItemType Directory -Force $editor | Out-Null
@@ -68,6 +63,16 @@ if ($SyncTools) {
     $cj | ConvertTo-Json -Depth 10 | Set-Content (Join-Path $cb "course.json") -Encoding UTF8
     Copy-Item (Join-Path $toolkit "rules\*.json") (Join-Path $cb "rules") -Force
     Write-Host "synced course.json + rules -> Assets\CourseBuild"
+    if ($SyncOnly) { Write-Host "sync only: done (Unity may be open; run Send-UnityCommand.ps1 refresh, then ping)"; exit 0 }
+}
+
+
+
+# Unity holds Temp\UnityLockfile open while the project is open
+$lock = Join-Path $Project "Temp\UnityLockfile"
+if (Test-Path $lock) {
+    try { $s = [IO.File]::Open($lock, 'Open', 'ReadWrite', 'None'); $s.Close() }
+    catch { throw "Unity has the project open. Close it, or use .\automation\Send-UnityCommand.ps1 run" }
 }
 
 $out = Join-Path $Project "AutomationOutput"

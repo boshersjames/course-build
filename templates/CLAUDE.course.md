@@ -7,7 +7,7 @@ Real course rebuilt for GSPro (Unity 2018.2.8f1, OPCD). Toolkit: `{{TOOLKIT}}` (
 ## Where things are
 - `course.json`: frame, paths, GKD fields, tee slot map, overrides. Every script reads paths from here.
 - Unity project: `{{UNITY}}`. Editor tools in `Assets\Editor\` are copies from `{{TOOLKIT}}\unity\shared\`; sync with
-  `{{TOOLKIT}}\automation\Run-CourseAutomation.ps1 -SyncTools`.
+  `{{TOOLKIT}}\automation\Run-CourseAutomation.ps1 -SyncTools -SyncOnly` (Unity open) or `-SyncTools`.
 - Automation output: `{{UNITY}}\AutomationOutput\latest.txt` then that folder's `summary.md` and `shots\`.
 - Never change `C:\GSProV1\Core\GSP\Courses\` without backing up the GKD first.
 
