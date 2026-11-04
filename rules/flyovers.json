@@ -152,7 +152,10 @@
     "note": "a 25 s hole is ~1,500 frames, ~18 GB; 18 holes ~300 GB; editor only (post-processing needs the editor, batch mode has none)",
     "resume": true,
     "housekeeping_every_frames": 25,
-    "crash_note": "Tierra 10, 11/3: the editor died in D3DKMTOpenResource at frame 401 of 1,200 with supersample 1.5, MSAA 8 and 8 sub-frames (a 5760x3240 MSAA-8 target, ~600 MB, and 3,200 manual Camera.Render calls through the post stack). Now: supersample 1.0 with MSAA 8 plus 4 accumulated sub-frames, GL.Flush / UnloadUnusedAssets / GC every housekeeping_every_frames, and resume keeps frames already on disk so a crash costs minutes, not the hole."
+    "crash_note": "Tierra 10, 11/3: the editor died in D3DKMTOpenResource at frame 401 of 1,200 with supersample 1.5, MSAA 8 and 8 sub-frames (a 5760x3240 MSAA-8 target, ~600 MB, and 3,200 manual Camera.Render calls through the post stack). Now: supersample 1.0 with MSAA 8 plus 4 accumulated sub-frames, GL.Flush / UnloadUnusedAssets / GC every housekeeping_every_frames, and resume keeps frames already on disk so a crash costs minutes, not the hole.",
+    "near_clip_m": 0.3,
+    "unload_every_frames": 200,
+    "near_clip_note": "the render camera is a copy of the Main Camera, whose near clip plane is tuned for flight height; during the eye-level hold that plane cut the turf out of the frame and the hillside appeared to hang over sky (Tierra 10, 11/4). The render camera uses near_clip_m."
   },
   "package": {
     "codec": "hevc",

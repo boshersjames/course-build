@@ -30,7 +30,7 @@ public class RenderQueue4K : EditorWindow
     [Serializable] public class MotionBlur { public float shutter_deg = 180; public int subframes = 4; }
     [Serializable] public class Quality { public float shadow_distance_m = 5000, lod_bias = 10, tree_distance_m = 5000, detail_distance_m = 2000, basemap_distance_m = 5000; public int shadow_cascades = 4, texture_limit = 0; public bool force_lod0_on_lodgroups = true; }
     [Serializable] public class Disk { public float png_estimate_mb = 12, hole_estimate_gb = 18, min_free_gb = 25; }
-    [Serializable] public class R4K { public int width = 3840, height = 2160, fps = 60, msaa = 8; public float supersample = 1.5f; public bool resume = true; public int housekeeping_every_frames = 25; public MotionBlur motion_blur = new MotionBlur(); public Quality quality = new Quality(); public Disk disk = new Disk(); }
+    [Serializable] public class R4K { public int width = 3840, height = 2160, fps = 60, msaa = 8; public float supersample = 1.5f; public bool resume = true; public int housekeeping_every_frames = 25, unload_every_frames = 200; public float near_clip_m = 0.3f; public MotionBlur motion_blur = new MotionBlur(); public Quality quality = new Quality(); public Disk disk = new Disk(); }
     [Serializable] public class FlyRules { public R4K render_4k = new R4K(); }
 
     const string CB = "Assets/CourseBuild";
@@ -98,7 +98,7 @@ public class RenderQueue4K : EditorWindow
         // dedicated camera: a copy of the Main Camera (keeps its PostProcessLayer and settings), driven by the clip
         var main = Camera.main; if (!main) return "no Main Camera to copy (tag MainCamera)";
         var go = UnityEngine.Object.Instantiate(main.gameObject); go.name = "Render4K_Camera"; go.transform.SetParent(null); foreach (var al in go.GetComponentsInChildren<AudioListener>()) UnityEngine.Object.DestroyImmediate(al);
-        var cam = go.GetComponent<Camera>(); cam.enabled = false; cam.allowMSAA = true;
+        var cam = go.GetComponent<Camera>(); cam.enabled = false; cam.allowMSAA = true; cam.nearClipPlane = Mathf.Max(0.01f, R.near_clip_m);   // the Main Camera's near plane is set for flight height; at eye level it cuts the turf out of the picture (Tierra 10 hold, 11/4)
         int sw = Mathf.Min(SystemInfo.maxTextureSize, Mathf.RoundToInt(R.width * R.supersample)), sh = Mathf.Min(SystemInfo.maxTextureSize, Mathf.RoundToInt(R.height * R.supersample));
         var big = new RenderTexture(sw, sh, 24, RenderTextureFormat.ARGB32); big.antiAliasing = Mathf.Clamp(R.msaa, 1, 8); big.Create();
         var acc = new RenderTexture(R.width, R.height, 0, RenderTextureFormat.ARGBFloat); var acc2 = new RenderTexture(R.width, R.height, 0, RenderTextureFormat.ARGBFloat); var tmp = new RenderTexture(R.width, R.height, 0, RenderTextureFormat.ARGBFloat);
@@ -114,7 +114,7 @@ public class RenderQueue4K : EditorWindow
                 string outPath = folder + "/frame_" + f.ToString("00000") + ".png";
                 if (R.resume && File.Exists(outPath) && new FileInfo(outPath).Length > 1024) { skippedTotal++; continue; }   // resume after a crash: frames already on disk are kept
                 // housekeeping: the editor leaked GPU resources across thousands of manual Camera.Render calls (Tierra 10 died in D3DKMTOpenResource at frame 401 of 1,200)
-                if (R.housekeeping_every_frames > 0 && f % R.housekeeping_every_frames == 0 && f > 0) { GL.Flush(); Resources.UnloadUnusedAssets(); GC.Collect(); }
+                if (R.housekeeping_every_frames > 0 && f % R.housekeeping_every_frames == 0 && f > 0) { GL.Flush(); GC.Collect(); if (R.unload_every_frames > 0 && f % R.unload_every_frames == 0) Resources.UnloadUnusedAssets(); }   // the unload pass is the slow one (1,165 s vs 406 s per hole with it every 25 frames)
                 // accumulate sub-frames across the open shutter, then average: a true 180 deg shutter blur, deterministic
                 for (int k = 0; k < sub; k++)
                 {
