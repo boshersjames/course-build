@@ -104,7 +104,7 @@
     "end_short_m": 20,
     "fast_flight_m_s": 20,
     "bunker_dip_height_fast_m": 8,
-    "end_note": "no orbit: the flight ends end_short_m short of the green centre at end_height_m looking across at the pin; over the pin the heading flips (Tierra 10: 56 deg/s). A flight averaging over fast_flight_m_s gets the shallow dip bunker_dip_height_fast_m."
+    "end_note": "no orbit: the flight ends end_short_m short of the green centre at end_height_m looking across at the pin; over the pin the heading flips (Tierra 10: 56 deg/s). A flight averaging over fast_flight_m_s gets no bunker dips at all and follows the line (a dip at 25 m/s was 43 deg/s of yaw on Tierra 10); bunker_dip_height_fast_m is kept for a course that lowers fast_flight_m_s."
   },
   "render_4k": {
     "width": 3840,

@@ -165,6 +165,8 @@ public class CommercialFlyoverPath : EditorWindow
         var s0 = along(Mathf.Min(alongOf(introPos) + 15f, holeLen * 0.2f)); add(new Vector3(s0.x, GroundMax(s0.x, s0.z, 10) + R.start_height_m, s0.z), "rise");
         float revealD = Mathf.Min(holeLen * 0.3f, Mathf.Max(60f, holeLen * 0.3f)); var rv = along(revealD); add(new Vector3(rv.x, GroundMax(rv.x, rv.z, 20) + R.reveal_height_m, rv.z), "reveal");
         float lastD = revealD;
+        bool fastFlight = R.flight_s > 0 && holeLen / R.flight_s > R.fast_flight_m_s;
+        if (fastFlight) clusters.Clear();   // a fast commercial flight follows the line: a bunker detour at 25 m/s is an 18 m sideways swing in 80 m, 43 deg/s of yaw (Tierra 10)
         float vOrbitPre = R.speed.base_m_s * R.orbit.speed_factor; float radiusPre = Mathf.Max(greenR + R.orbit.radius_margin_m, vOrbitPre / (R.limits.max_yaw_deg_s * Mathf.Deg2Rad)); float approachDPre = R.orbit.degrees >= 15f ? Mathf.Max(R.approach_short_m, radiusPre + R.approach_outside_orbit_m) : R.approach_short_m;
         foreach (var c in clusters)
         {
