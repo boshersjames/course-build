@@ -53,6 +53,8 @@ if ($SyncTools) {
     $editor = Join-Path $Project "Assets\Editor"
     New-Item -ItemType Directory -Force $editor | Out-Null
     Get-ChildItem (Join-Path $toolkit "unity\shared\*.cs") | ForEach-Object { Copy-Item $_.FullName $editor -Force; Write-Host "copied $($_.Name) -> Assets\Editor" }
+    $res = Join-Path $editor "Resources"; if (-not (Test-Path $res)) { New-Item -ItemType Directory -Path $res | Out-Null }
+    Get-ChildItem (Join-Path $toolkit "unity\shared\*.shader") | ForEach-Object { Copy-Item $_.FullName $res -Force; Write-Host "copied $($_.Name) -> Assets\Editor\Resources" }
     # the course's own editor scripts, if it has any
     $courseEditor = Join-Path $courseDir "unity_editor"
     if (Test-Path $courseEditor) { Get-ChildItem (Join-Path $courseEditor "*.cs") | ForEach-Object { Copy-Item $_.FullName $editor -Force; Write-Host "copied $($_.Name) (course) -> Assets\Editor" } }
