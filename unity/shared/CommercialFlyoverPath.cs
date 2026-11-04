@@ -37,7 +37,7 @@ public class CommercialFlyoverPath : EditorWindow
     {
         public float start_behind_tee_m = 15, start_height_m = 12, reveal_height_m = 28, reveal_fov_deg = 42, approach_fov_deg = 52, fov_blend_m = 40;
         public float bunker_dip_height_m = 3.5f, bunker_dip_entry_m = 40, bunker_cluster_m = 25, bunker_corridor_m = 28; public float[] bunker_along_range = { 0.25f, 0.85f };
-        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15; public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
+        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0; public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
     }
     [Serializable] public class FlyRules { public Cinematic cinematic = new Cinematic(); }
     [Serializable] class P { public float x, y, z; }
@@ -144,16 +144,19 @@ public class CommercialFlyoverPath : EditorWindow
         var s0 = teeP.Value - new Vector3(dir0.x, 0, dir0.y) * R.start_behind_tee_m; add(new Vector3(s0.x, Ground(s0.x, s0.z) + R.start_height_m, s0.z), "start");
         float revealD = Mathf.Min(holeLen * 0.3f, Mathf.Max(60f, holeLen * 0.3f)); var rv = along(revealD); add(new Vector3(rv.x, GroundMax(rv.x, rv.z, 20) + R.reveal_height_m, rv.z), "reveal");
         float lastD = revealD;
+        float vOrbitPre = R.speed.base_m_s * R.orbit.speed_factor; float radiusPre = Mathf.Max(greenR + R.orbit.radius_margin_m, vOrbitPre / (R.limits.max_yaw_deg_s * Mathf.Deg2Rad)); float approachDPre = Mathf.Max(R.approach_short_m, radiusPre + R.approach_outside_orbit_m);
         foreach (var c in clusters)
         {
             float d = alongOf(c); if (d - lastD < R.bunker_dip_entry_m + 10) continue;
             var e = along(d - R.bunker_dip_entry_m); add(new Vector3(e.x, GroundMax(e.x, e.z, 15) + R.start_height_m, e.z), "dip-entry");
             add(new Vector3(c.x, GroundMax(c.x, c.z, 6) + R.bunker_dip_height_m, c.z), "bunker-dip");
-            var x = along(Mathf.Min(d + R.bunker_dip_entry_m, holeLen - R.approach_short_m - 10)); add(new Vector3(x.x, GroundMax(x.x, x.z, 15) + R.start_height_m, x.z), "dip-exit"); lastD = d + R.bunker_dip_entry_m;
+            var x = along(Mathf.Min(d + R.bunker_dip_entry_m, holeLen - approachDPre - 10)); add(new Vector3(x.x, GroundMax(x.x, x.z, 15) + R.start_height_m, x.z), "dip-exit"); lastD = d + R.bunker_dip_entry_m;
         }
-        var ap = along(holeLen - R.approach_short_m); add(new Vector3(ap.x, GroundMax(ap.x, ap.z, 15) + R.approach_height_m, ap.z), "approach");
         // orbit: radius from green size, never below v_orbit / max yaw rate; start on the approach side, go round, end there
         float vOrbit = R.speed.base_m_s * R.orbit.speed_factor; float radius = Mathf.Max(greenR + R.orbit.radius_margin_m, vOrbit / (R.limits.max_yaw_deg_s * Mathf.Deg2Rad));
+        // the approach point sits outside the orbit circle, or the camera overshoots the entry and doubles back (Tierra 10: approach 40 m short, orbit r 52.5 m, a 180 deg hairpin, 130 deg/s yaw)
+        float approachD = Mathf.Max(R.approach_short_m, radius + R.approach_outside_orbit_m);
+        var ap = along(holeLen - approachD); add(new Vector3(ap.x, GroundMax(ap.x, ap.z, 15) + R.approach_height_m, ap.z), "approach");
         float ang0 = Mathf.Atan2(ap.x - gc.Value.x, ap.z - gc.Value.z); int nOrb = Mathf.Max(8, Mathf.RoundToInt(R.orbit.degrees / 30f)); int orbitStart = cps.Count;
         for (int k = 0; k <= nOrb; k++) { float a = ang0 + Mathf.Deg2Rad * R.orbit.degrees * k / nOrb; var p = new Vector3(gc.Value.x + Mathf.Sin(a) * radius, 0, gc.Value.z + Mathf.Cos(a) * radius); add(new Vector3(p.x, GroundMax(p.x, p.z, 8) + R.orbit.height_m, p.z), k == 0 ? "orbit-in" : k == nOrb ? "orbit-out" : "orbit"); }
         log.Add(string.Format(CI, "hole {0} par {1}: tee {2}, line {3:F0} m, green r {4:F1} m, {5} bunker complex(es) dipped, orbit r {6:F1} m at {7:F1} m/s ({8} control points)", hole, H.Par, tee, holeLen, greenR, clusters.Count, radius, vOrbit, cps.Count));
@@ -206,8 +209,8 @@ public class CommercialFlyoverPath : EditorWindow
         int win = R.fps; float maxYaw = 0, maxPitch = 0;
         for (int i = 0; i + win <= yaws.Count; i++) { float sy = 0, sp = 0; for (int k = i; k < i + win; k++) { sy += yaws[k] * dt; sp += pitches[k] * dt; } maxYaw = Mathf.Max(maxYaw, Mathf.Abs(sy)); maxPitch = Mathf.Max(maxPitch, Mathf.Abs(sp)); }
         bool rateOk = maxYaw <= R.limits.max_yaw_deg_s && maxPitch <= R.limits.max_pitch_deg_s; bool clearOk = minClear >= R.limits.min_clear_m - 0.05f;
-        log.Add(string.Format(CI, "{0} frames, {1:F1} s at {2} fps, arc {3:F0} m; worst 1 s yaw {4:F1} deg (limit {5}), pitch {6:F1} deg (limit {7}); min clearance {8:F1} m ({9} samples lifted); max bank {10:F1} deg -> {11}",
-            fi, tf, R.fps, total, maxYaw, R.limits.max_yaw_deg_s, maxPitch, R.limits.max_pitch_deg_s, minClear, lifted, rolls.Count > 0 ? rolls.Max(Mathf.Abs) : 0, rateOk && clearOk ? "PASS" : "FAIL"));
+        log.Add(string.Format(CI, "{0} frames, {1:F1} s at {2} fps, arc {3:F0} m; worst 1 s yaw {4:F1} deg (limit {5}), pitch {6:F1} deg (limit {7}); min clearance {8:F1} m ({9} samples lifted); max bank {10:F1} deg -> {11}{12}",
+            fi, tf, R.fps, total, maxYaw, R.limits.max_yaw_deg_s, maxPitch, R.limits.max_pitch_deg_s, minClear, lifted, rolls.Count > 0 ? rolls.Max(Mathf.Abs) : 0, rateOk && clearOk ? "PASS" : "FAIL", R.target_duration_s > 0 ? string.Format(CI, "; duration {0:F1} s vs target {1:F0} s{2}", tf, R.target_duration_s, tf > R.target_duration_s * 1.25f ? " (over: raise speed.base_m_s or cut orbit.degrees in rules/flyovers.json cinematic)" : "") : ""));
         // outputs
         string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss"); string dir = ProjectDir() + "/AutomationOutput/flyovers"; Directory.CreateDirectory(dir);
         var cpJson = string.Join(",", cps.Select((c, i) => string.Format(CI, "{{\"name\":\"{0}\",\"pos\":[{1:F2},{2:F2},{3:F2}]}}", names[i], c.x, c.y, c.z)).ToArray());

@@ -66,13 +66,13 @@
     "orbit": {
       "radius_margin_m": 18,
       "height_m": 10,
-      "degrees": 360,
-      "speed_factor": 0.5,
+      "degrees": 60,
+      "speed_factor": 0.4,
       "decel_lead_m": 30,
       "look_at": "pin"
     },
     "speed": {
-      "base_m_s": 22,
+      "base_m_s": 30,
       "ease_in_fraction": 0.2,
       "ease_in_start_factor": 0.15,
       "straight_boost": 1.4,
@@ -87,7 +87,10 @@
       "min_clear_m": 3.0
     },
     "fps": 25,
-    "sample_m": 0.5
+    "sample_m": 0.5,
+    "approach_outside_orbit_m": 8,
+    "target_duration_s": 15,
+    "duration_note": "target_duration_s is the commercial length; the yaw limit (limits.max_yaw_deg_s) makes an orbit of N degrees take N / max_yaw_deg_s seconds whatever the radius, so a 60 deg orbit is 5 s and the fairway leg at base_m_s carries the rest. A par 4 of 330 m at 30 m/s is about 11 s of fairway plus the reveal: 18 s is what these limits allow; the path tool prints its duration against the target. approach_outside_orbit_m: the approach point sits that far outside the orbit circle, never inside it (Tierra 10, 11/3: approach 40 m short inside a 52.5 m orbit made a 180 deg hairpin)."
   },
   "render_4k": {
     "width": 3840,
