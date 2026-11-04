@@ -161,7 +161,8 @@ public class CommercialFlyoverPath : EditorWindow
         if (sign != null) introXZ = new Vector2(sign.x, sign.z) - dir0 * R.intro.back_m + right * R.intro.side_m; else introXZ = XZ(teeP.Value) - dir0 * (R.start_behind_tee_m + R.intro.back_m);
         var introPos = new Vector3(introXZ.x, Ground(introXZ.x, introXZ.y) + R.intro.eye_height_m, introXZ.y); var introLook = along(Mathf.Min(R.intro.look_ahead_m, holeLen)); introLook.y = Ground(introLook.x, introLook.z) + R.intro.eye_height_m;
         add(introPos, "start");
-        var s0 = teeP.Value - new Vector3(dir0.x, 0, dir0.y) * Mathf.Max(0f, R.start_behind_tee_m - 8f); add(new Vector3(s0.x, Ground(s0.x, s0.z) + R.start_height_m, s0.z), "rise");
+        // first flight point: ahead of the intro camera along the line, never behind it (a sign 3 m forward of the tee with a rise point 7 m behind it made a hairpin on Tierra 10)
+        var s0 = along(Mathf.Min(alongOf(introPos) + 15f, holeLen * 0.2f)); add(new Vector3(s0.x, GroundMax(s0.x, s0.z, 10) + R.start_height_m, s0.z), "rise");
         float revealD = Mathf.Min(holeLen * 0.3f, Mathf.Max(60f, holeLen * 0.3f)); var rv = along(revealD); add(new Vector3(rv.x, GroundMax(rv.x, rv.z, 20) + R.reveal_height_m, rv.z), "reveal");
         float lastD = revealD;
         float vOrbitPre = R.speed.base_m_s * R.orbit.speed_factor; float radiusPre = Mathf.Max(greenR + R.orbit.radius_margin_m, vOrbitPre / (R.limits.max_yaw_deg_s * Mathf.Deg2Rad)); float approachDPre = Mathf.Max(R.approach_short_m, radiusPre + R.approach_outside_orbit_m);
@@ -230,6 +231,7 @@ public class CommercialFlyoverPath : EditorWindow
             Vector3 lookAt = inOrbit ? (R.orbit.look_at == "pin" ? pin : gc.Value) : ahead;
             if (!inOrbit && d_ > orbitArc - R.orbit.decel_lead_m) lookAt = Vector3.Lerp(ahead, pin, Smootherstep((d_ - (orbitArc - R.orbit.decel_lead_m)) / R.orbit.decel_lead_m));
             if (R.orbit.degrees < 15f && d_ > total - R.orbit.decel_lead_m) lookAt = Vector3.Lerp(ahead, pin, Smootherstep((d_ - (total - R.orbit.decel_lead_m)) / R.orbit.decel_lead_m));   // no orbit: settle on the pin over the last decel_lead_m
+            if (introFrames > 0 && d_ < R.lookahead_m * 2f) lookAt = Vector3.Lerp(introLook, lookAt, Smootherstep(d_ / (R.lookahead_m * 2f)));   // leave the intro's gaze smoothly: no pitch jump at the first flight frame
             float distGreen = Vector2.Distance(XZ(p), XZ(gc.Value)); float hAbove = p.y - Ground(p.x, p.z); minClear = Mathf.Min(minClear, hAbove);
             float fovT = Smootherstep((hAbove - 12f) / 16f) * (1f - Smootherstep(1f - Mathf.Clamp01((distGreen - radius - 20f) / R.fov_blend_m)));   // high & far -> wide
             float fov = Mathf.Lerp(R.approach_fov_deg, R.reveal_fov_deg, fovT); if (inOrbit) fov = R.approach_fov_deg;
