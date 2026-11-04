@@ -3,7 +3,9 @@
 //   FindPlants    -Set @{ px = "1688"; pz = "815"; pr = "15" }  LODGroup plants within pr m of a point: name, root, height, crown
 //   FindNear      -Set @{ px = ...; pz = ...; pr = "10" }  every renderer near a point, collider or not (render-only props)
 //   FindOnHole    -Set @{ hole = "10"; width = "30" }       every non-plant renderer within width m of the hole line (rocks, props on a fairway)
-//   GroundProbe   -Set @{ px = ...; pz = ... }               every collider under a point with height and layer, the terrain height, what Ground() returns: active, position, collider
+//   GroundProbe   -Set @{ px = ...; pz = ... }               every collider under a point with height and layer, the terrain height, what Ground() returns
+//   TerrainReport -Set @{ px = ...; pz = ...; pr = "10" }  terrain detail / tree prototypes, and what is painted near a point (painted objects are not GameObjects)
+//   ClearTerrainDetails -Set @{ px = ...; pz = ...; pr = "3" }  clear painted details within pr m (Undo-registered): active, position, collider
 //                                                  vs render dy (MeshCollider raycast at 1/50 of the vertices), physic material
 //   SetOff/SetOn  -Set @{ name = "<exact name>" }  SetActive(false/true) on that object; logged "active|<name>|<was>" in COURSEBUILD_LOG
 //   RebakeCollider -Set @{ name = "<exact name>" } MeshCollider.sharedMesh re-pointed at the MeshFilter's mesh (dy back to 0 when the
@@ -99,6 +101,51 @@ public class CourseSceneOps : EditorWindow
         foreach (var t in Terrain.activeTerrains) { var tp = t.GetPosition(); var sz = t.terrainData.size; if (px >= tp.x && pz >= tp.z && px <= tp.x + sz.x && pz <= tp.z + sz.z) o.Add("  terrain " + t.name + " SampleHeight " + (t.SampleHeight(new Vector3(px, 0, pz)) + tp.y).ToString("F2", CI) + "  layer " + LayerMask.LayerToName(t.gameObject.layer) + (t.GetComponent<TerrainCollider>() ? "" : "  NO TerrainCollider")); }
         o.Add("highest collider " + (best == float.MinValue ? "none" : best.ToString("F2", CI)) + "; flyover Ground() would use " + (bestDef == float.MinValue ? "the terrain fallback" : bestDef.ToString("F2", CI)));
         return string.Join("\n", o.ToArray());
+    }
+
+    // the Unity terrains' painted layers: detail prototypes (grass / rock meshes) and tree prototypes, and near (px, pz) within pr m the
+    // painted detail counts per layer and the tree instances. Painted objects are not GameObjects, so no Find sees them.
+    public static string TerrainReport()
+    {
+        var o = new List<string>(); var c = new Vector2(px, pz);
+        foreach (var t in Terrain.activeTerrains)
+        {
+            var td = t.terrainData; var tp = t.GetPosition(); var sz = td.size; o.Add(t.name + ": " + sz.x.ToString("F0", CI) + " x " + sz.z.ToString("F0", CI) + " m, " + td.detailPrototypes.Length + " detail prototypes, " + td.treePrototypes.Length + " tree prototypes, " + td.treeInstanceCount + " tree instances");
+            for (int i = 0; i < td.detailPrototypes.Length; i++) { var dp = td.detailPrototypes[i]; o.Add("  detail " + i + ": " + (dp.usePrototypeMesh ? "mesh " + (dp.prototype ? dp.prototype.name : "?") : "texture " + (dp.prototypeTexture ? dp.prototypeTexture.name : "?")) + " render " + dp.renderMode); }
+            for (int i = 0; i < td.treePrototypes.Length; i++) { var tr = td.treePrototypes[i]; o.Add("  tree " + i + ": " + (tr.prefab ? tr.prefab.name : "?")); }
+            if (px == 0 && pz == 0) continue;
+            if (px < tp.x || pz < tp.z || px > tp.x + sz.x || pz > tp.z + sz.z) { o.Add("  point outside this terrain"); continue; }
+            int dw = td.detailWidth, dh = td.detailHeight; float cx = (px - tp.x) / sz.x * dw, cz = (pz - tp.z) / sz.z * dh; int r = Mathf.CeilToInt(pr / sz.x * dw) + 1;
+            int x0 = Mathf.Clamp(Mathf.FloorToInt(cx - r), 0, dw - 1), x1 = Mathf.Clamp(Mathf.CeilToInt(cx + r), 0, dw - 1), z0 = Mathf.Clamp(Mathf.FloorToInt(cz - r), 0, dh - 1), z1 = Mathf.Clamp(Mathf.CeilToInt(cz + r), 0, dh - 1);
+            for (int i = 0; i < td.detailPrototypes.Length; i++)
+            {
+                var layer = td.GetDetailLayer(x0, z0, x1 - x0 + 1, z1 - z0 + 1, i); int n = 0, cells = 0;
+                for (int a = 0; a < layer.GetLength(0); a++) for (int b = 0; b < layer.GetLength(1); b++) if (layer[a, b] > 0) { n += layer[a, b]; cells++; }
+                if (n > 0) o.Add("  near the point: detail " + i + " painted in " + cells + " cells (" + n + " instances) within ~" + pr.ToString(CI) + " m");
+            }
+            int trees = 0; foreach (var ti in td.treeInstances) { var wp = new Vector2(tp.x + ti.position.x * sz.x, tp.z + ti.position.z * sz.z); if ((wp - c).magnitude <= pr) { trees++; if (trees <= 20) o.Add("  near the point: tree prototype " + ti.prototypeIndex + " (" + (td.treePrototypes[ti.prototypeIndex].prefab ? td.treePrototypes[ti.prototypeIndex].prefab.name : "?") + ") at (" + wp.x.ToString("F1", CI) + ", " + wp.y.ToString("F1", CI) + ")"); } }
+            if (trees > 20) o.Add("  ... " + trees + " tree instances within " + pr.ToString(CI) + " m");
+        }
+        return string.Join("\n", o.ToArray());
+    }
+
+    // clear painted detail layers (and optionally terrain trees) within pr m of (px, pz): Undo-registered on the TerrainData, so Edit > Undo reverses it
+    public static string ClearTerrainDetails()
+    {
+        var c = new Vector2(px, pz); var o = new List<string>(); int total = 0;
+        foreach (var t in Terrain.activeTerrains)
+        {
+            var td = t.terrainData; var tp = t.GetPosition(); var sz = td.size; if (px < tp.x || pz < tp.z || px > tp.x + sz.x || pz > tp.z + sz.z) continue;
+            Undo.RegisterCompleteObjectUndo(td, "clear terrain details"); int dw = td.detailWidth, dh = td.detailHeight; float cx = (px - tp.x) / sz.x * dw, cz = (pz - tp.z) / sz.z * dh; float rr = pr / sz.x * dw;
+            int x0 = Mathf.Clamp(Mathf.FloorToInt(cx - rr), 0, dw - 1), x1 = Mathf.Clamp(Mathf.CeilToInt(cx + rr), 0, dw - 1), z0 = Mathf.Clamp(Mathf.FloorToInt(cz - rr), 0, dh - 1), z1 = Mathf.Clamp(Mathf.CeilToInt(cz + rr), 0, dh - 1);
+            for (int i = 0; i < td.detailPrototypes.Length; i++)
+            {
+                var layer = td.GetDetailLayer(x0, z0, x1 - x0 + 1, z1 - z0 + 1, i); int n = 0;
+                for (int a = 0; a < layer.GetLength(0); a++) for (int b = 0; b < layer.GetLength(1); b++) { float dx = (x0 + b) - cx, dz = (z0 + a) - cz; if (dx * dx + dz * dz <= rr * rr && layer[a, b] > 0) { n += layer[a, b]; layer[a, b] = 0; } }
+                if (n > 0) { td.SetDetailLayer(x0, z0, i, layer); total += n; o.Add(t.name + ": detail " + i + " cleared " + n + " instances"); }
+            }
+        }
+        return (total == 0 ? "nothing painted within " + pr.ToString(CI) + " m of (" + px.ToString("F1", CI) + ", " + pz.ToString("F1", CI) + ")" : string.Join("\n", o.ToArray()) + "\n(Edit > Undo reverses; save the scene to keep)");
     }
 
     public static string Find()
