@@ -1,5 +1,6 @@
 // CourseSceneOps: small, logged scene operations through the bridge (course-build-unity-tools). No course names, no constants.
-//   Find          -Set @{ name = "<substring>" }   lists active and inactive OPCD objects whose name contains it: active, position, collider
+//   Find          -Set @{ name = "<substring>" }   lists active and inactive objects (any root) whose name contains it
+//   FindPlants    -Set @{ px = "1688"; pz = "815"; pr = "15" }  LODGroup plants within pr m of a point: name, root, height, crown: active, position, collider
 //                                                  vs render dy (MeshCollider raycast at 1/50 of the vertices), physic material
 //   SetOff/SetOn  -Set @{ name = "<exact name>" }  SetActive(false/true) on that object; logged "active|<name>|<was>" in COURSEBUILD_LOG
 //   RebakeCollider -Set @{ name = "<exact name>" } MeshCollider.sharedMesh re-pointed at the MeshFilter's mesh (dy back to 0 when the
@@ -15,9 +16,23 @@ using UnityEngine;
 public class CourseSceneOps : EditorWindow
 {
     const string LOG = "COURSEBUILD_LOG"; static readonly CultureInfo CI = CultureInfo.InvariantCulture;
-    public static string name = "";
+    public static string name = ""; public static float px = 0, pz = 0, pr = 15f;   // FindPlants: LODGroup plants within pr m of (px, pz), any root
 
-    static IEnumerable<Transform> All() { var o = GameObject.Find("OPCD Meshes"); return o ? o.GetComponentsInChildren<Transform>(true).Where(t => t != o.transform) : Enumerable.Empty<Transform>(); }
+    // every transform in the scene (all roots), so plants, props and course meshes can all be named, switched and listed
+    static IEnumerable<Transform> All() { return UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<Transform>(true)); }
+
+    // plants near a point: every LODGroup within pr m of (px, pz), with its root, height, crown radius (renderer bounds) and state
+    public static string FindPlants()
+    {
+        var c = new Vector2(px, pz); var o = new List<string>();
+        foreach (var lg in UnityEngine.Object.FindObjectsOfType<LODGroup>().Concat(All().Select(t => t.GetComponent<LODGroup>()).Where(l => l)).Distinct())
+        {
+            var p = lg.transform.position; float d = (new Vector2(p.x, p.z) - c).magnitude; if (d > pr) continue;
+            var rs = lg.GetComponentsInChildren<Renderer>(true); Bounds b = rs.Length > 0 ? rs[0].bounds : new Bounds(p, Vector3.zero); foreach (var r in rs) b.Encapsulate(r.bounds);
+            o.Add(lg.name + "  root " + lg.transform.root.name + (lg.gameObject.activeInHierarchy ? "  active" : "  OFF") + "  at (" + p.x.ToString("F1", CI) + ", " + p.z.ToString("F1", CI) + ")  " + d.ToString("F1", CI) + " m away, height " + b.size.y.ToString("F1", CI) + " m, crown r " + (Mathf.Max(b.extents.x, b.extents.z)).ToString("F1", CI) + " m");
+        }
+        return o.Count + " plants within " + pr.ToString(CI) + " m of (" + px.ToString("F1", CI) + ", " + pz.ToString("F1", CI) + ")\n" + string.Join("\n", o.OrderBy(x => x).ToArray());
+    }
 
     static float ColliderDy(MeshFilter f)
     {
@@ -40,7 +55,7 @@ public class CourseSceneOps : EditorWindow
 
     static string SetActive(bool on)
     {
-        var t = All().FirstOrDefault(x => x.name == name); if (!t) return "no OPCD object named " + name;
+        var t = All().FirstOrDefault(x => x.name == name); if (!t) return "no object named " + name;
         bool was = t.gameObject.activeSelf; if (was == on) return name + " already " + (on ? "active" : "off");
         var log = GameObject.Find(LOG) ?? new GameObject(LOG); new GameObject("active|" + name + "|" + (was ? "1" : "0")).transform.SetParent(log.transform, false);
         Undo.RecordObject(t.gameObject, "scene ops"); t.gameObject.SetActive(on); EditorUtility.SetDirty(t.gameObject); Physics.SyncTransforms();
