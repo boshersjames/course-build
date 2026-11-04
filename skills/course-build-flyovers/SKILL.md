@@ -65,3 +65,5 @@ Use with `course-build-gates` and `course-build-look` (say which look each sheet
 3. Whether a flag shows in a per-pin variant (parked).
 
 - Commercial flyover shape (`rules/flyovers.json` cinematic): `intro.seconds` 5 eye-level hold by the hole sign with the packager's banner (`package.banner`: hole, card yardage, par), then `flight_s` 15 tee to green ending over the green on the pin, `orbit.degrees` 0; the path tool prints intro + flight against `target_duration_s` and FAILs on the yaw/pitch limits; a hole that cannot make 15 s within the limits gets a longer `flight_s` in `course.json` rule_overrides.
+
+- `python ../course-build/tools/flyover_path.py [--holes 10] [--tee Black] [--set cinematic.key=value]`: headless twin of CommercialFlyoverPath; builds and checks every hole's flight against `flyovers.cinematic.limits` on the LiDAR ground; `--set` tries a rule value on all 18 before it is committed. `run_pipeline.py` runs it before asking Unity for a path.

@@ -37,7 +37,7 @@ public class CommercialFlyoverPath : EditorWindow
     {
         public float start_behind_tee_m = 15, start_height_m = 12, reveal_height_m = 28, reveal_fov_deg = 42, approach_fov_deg = 52, fov_blend_m = 40;
         public float bunker_dip_height_m = 3.5f, bunker_dip_entry_m = 40, bunker_cluster_m = 25, bunker_corridor_m = 28; public float[] bunker_along_range = { 0.25f, 0.85f };
-        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0, flight_s = 0, end_height_m = 15, end_short_m = 20, fast_flight_m_s = 20, bunker_dip_height_fast_m = 8; public string end_look = "green"; public float end_gaze_fraction = 0.6f; public Intro intro = new Intro(); public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
+        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0, flight_s = 0, end_height_m = 15, end_short_m = 20, fast_flight_m_s = 20, bunker_dip_height_fast_m = 8; public string end_look = "green"; public float end_gaze_fraction = 1.0f, end_ease_m = 60, end_speed_factor = 0.15f, rise_keep_offset = 0.7f, rise_ahead_m = 25, reveal_fraction = 0.3f; public Intro intro = new Intro(); public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
     }
     [Serializable] public class FlyRules { public Cinematic cinematic = new Cinematic(); }
     [Serializable] class P { public float x, y, z; }
@@ -162,8 +162,10 @@ public class CommercialFlyoverPath : EditorWindow
         var introPos = new Vector3(introXZ.x, Ground(introXZ.x, introXZ.y) + R.intro.eye_height_m, introXZ.y); var introLook = along(Mathf.Min(R.intro.look_ahead_m, holeLen)); introLook.y = Ground(introLook.x, introLook.z) + R.intro.eye_height_m;
         add(introPos, "start");
         // first flight point: ahead of the intro camera along the line, never behind it (a sign 3 m forward of the tee with a rise point 7 m behind it made a hairpin on Tierra 10)
-        var s0 = along(Mathf.Min(alongOf(introPos) + 15f, holeLen * 0.2f)); add(new Vector3(s0.x, GroundMax(s0.x, s0.z, 10) + R.start_height_m, s0.z), "rise");
-        float revealD = Mathf.Min(holeLen * 0.3f, Mathf.Max(60f, holeLen * 0.3f)); var rv = along(revealD); add(new Vector3(rv.x, GroundMax(rv.x, rv.z, 20) + R.reveal_height_m, rv.z), "reveal");
+        float latOff = Vector2.Dot(XZ(introPos) - XZ(along(alongOf(introPos))), right);   // the camera's sideways offset from the line (beside the sign)
+        var s0 = along(Mathf.Min(alongOf(introPos) + R.rise_ahead_m, holeLen * 0.2f)) + new Vector3(right.x, 0, right.y) * latOff * R.rise_keep_offset;   // keep part of it: the return to the line is spread over two legs
+        add(new Vector3(s0.x, GroundMax(s0.x, s0.z, 10) + R.start_height_m, s0.z), "rise");
+        float revealD = Mathf.Max(60f, holeLen * R.reveal_fraction); var rv = along(revealD); add(new Vector3(rv.x, GroundMax(rv.x, rv.z, 20) + R.reveal_height_m, rv.z), "reveal");
         float lastD = revealD;
         bool fastFlight = R.flight_s > 0 && holeLen / R.flight_s > R.fast_flight_m_s;
         if (fastFlight) clusters.Clear();   // a fast commercial flight follows the line: a bunker detour at 25 m/s is an 18 m sideways swing in 80 m, 43 deg/s of yaw (Tierra 10)
@@ -204,7 +206,8 @@ public class CommercialFlyoverPath : EditorWindow
             float v = R.speed.base_m_s; int i = Mathf.Clamp(arc.BinarySearch(d) < 0 ? ~arc.BinarySearch(d) : arc.BinarySearch(d), 0, pts.Count - 1);
             float easeIn = Smootherstep(d / Mathf.Max(total * R.speed.ease_in_fraction, 1)); v *= Mathf.Lerp(R.speed.ease_in_start_factor, 1f, easeIn);
             if (straight[i]) v *= R.speed.straight_boost;
-            if (d >= orbitArc) v = R.speed.base_m_s * R.orbit.speed_factor; else if (d >= orbitArc - R.orbit.decel_lead_m) v = Mathf.Lerp(v, R.speed.base_m_s * R.orbit.speed_factor, Smootherstep((d - (orbitArc - R.orbit.decel_lead_m)) / R.orbit.decel_lead_m));
+            if (R.orbit.degrees >= 15f) { if (d >= orbitArc) v = R.speed.base_m_s * R.orbit.speed_factor; else if (d >= orbitArc - R.orbit.decel_lead_m) v = Mathf.Lerp(v, R.speed.base_m_s * R.orbit.speed_factor, Smootherstep((d - (orbitArc - R.orbit.decel_lead_m)) / R.orbit.decel_lead_m)); }
+            else if (R.end_ease_m > 0 && d > total - R.end_ease_m) v = Mathf.Lerp(v, R.speed.base_m_s * R.end_speed_factor, Smootherstep((d - (total - R.end_ease_m)) / R.end_ease_m));   // settle into the end: a near look target at full speed sweeps the pitch
             return Mathf.Max(v, 1f);
         };
         Func<float, Vector3> posAt = d => { d = Mathf.Clamp(d, 0, total); int i = arc.BinarySearch(d); if (i < 0) i = ~i; i = Mathf.Clamp(i, 1, pts.Count - 1); float u = (d - arc[i - 1]) / Mathf.Max(arc[i] - arc[i - 1], 1e-4f); return Vector3.Lerp(pts[i - 1], pts[i], u); };

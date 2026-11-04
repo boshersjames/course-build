@@ -64,3 +64,6 @@ New: Find / SetOff / SetOn / RebakeCollider / UndoActive through the bridge; act
 
 ## CommercialFlyoverPath intro + flight_s (2026-11-04)
 Intro hold frames (static camera by the sign, FindSign from paths.signs via JsonUtility list wrapper), no-orbit end point over the green, two-pass speed scale to flight_s, lookAt settles on the pin over the last decel_lead_m. Locals p/fwd/yaw/pitch/fov are declared in both the intro for-body and the flight while-body (sibling scopes). Not yet compiled on the PC.
+
+## CommercialFlyoverPath end ease / rise offset (2026-11-04)
+Ported from tools/flyover_path.py after the sweep: end_ease_m / end_speed_factor in speedAt for no-orbit flights, rise point keeps rise_keep_offset of the sideways offset (latOff via Vector2.Dot with `right`, declared in the intro block), reveal_fraction. `right` is declared before use in the intro block. Not yet compiled on the PC.

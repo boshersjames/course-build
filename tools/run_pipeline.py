@@ -9,6 +9,7 @@ Steps, in order (each logged with status, seconds, outputs; the run ABORTS on th
   2 calibrate   Unity GSProPostProfileCalibrator.RunCalibration (sun lock + measured post profile; needs the editor open)
   3 osm         Unity SpeedTreeOSMImporter.Run IF that class exists in the project (asked with 'describe'); otherwise logged as skipped.
                 No such tool exists in course-build today (trees come from PlantLidarTrees / the tree tools); this slot is for it when it does.
+  4 path-check  tools/flyover_path.py: the headless twin builds and checks every hole's flight first (LiDAR ground, same limits)
   4 path        Unity CommercialFlyoverPath.RunPathGeneration per hole (hole, tee)
   5 render      Unity RenderQueue4K.RunRenderQueue for the hole list (4K/60 PNG; ~18 GB per hole; the disk guard can halt it)
   6 package     tools/flyover_packager.py --holes <hole> per hole (python subprocess; verify, overlays, HEVC, verify, purge)
@@ -127,9 +128,12 @@ def main():
             if ans.get("status") != "ok" and "isn't compiled" in (ans.get("message") or ""): record("osm", "skipped", t0, "SpeedTreeOSMImporter is not compiled in this project (no such tool in course-build yet)")
             elif not record("osm", "ok" if ans.get("status") == "ok" else "failed", t0, ans.get("message")): fail()
 
-    # 4 path per hole
+    # 4 path per hole: the headless twin first (tools/flyover_path.py, same spline and limits, LiDAR ground), so Unity only builds a path that already passes
     if "path" in skip: record("path", "skipped", time.time(), "skipped by flag")
     else:
+        t0 = time.time(); tw = subprocess.run([sys.executable, os.path.join(TOOLS, "flyover_path.py"), "--holes", ",".join(map(str, holes)), "--tee", a.tee, "--out", os.path.join(C.dir, "progress", "flyover_path")], cwd=cdir, capture_output=True, text=True)
+        tw_rows = [l for l in tw.stdout.splitlines() if l.startswith("| ") and l.split("|")[1].strip().isdigit()]
+        if not record("path-check", "ok" if tw.returncode == 0 else "failed", t0, "headless flight check (flyover_path.py):\n" + "\n".join(tw_rows) + ("" if tw.returncode == 0 else "\n" + tw.stderr[-800:] + "\nfix the flight in rules/flyovers.json cinematic (or this course's rule_overrides) and re-run; Unity is not asked for a failing path")): fail()
         for h in holes:
             t0 = time.time(); ans = br.send("invoke", "CommercialFlyoverPath", "RunPathGeneration", {"hole": h, "tee": a.tee})
             outs = sorted(glob.glob(os.path.join(AO, "flyovers", "H%02d_cinematic_*.json" % h)))[-1:]

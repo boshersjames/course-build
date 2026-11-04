@@ -47,7 +47,7 @@
   "cinematic": {
     "note": "commercial / premiere flyovers only (course-premiere-flyovers); review renders keep path.* limits",
     "start_behind_tee_m": 15,
-    "start_height_m": 12,
+    "start_height_m": 8,
     "reveal_height_m": 28,
     "reveal_fov_deg": 42,
     "approach_fov_deg": 52,
@@ -60,7 +60,7 @@
       0.25,
       0.85
     ],
-    "lookahead_m": 30,
+    "lookahead_m": 60,
     "approach_short_m": 40,
     "approach_height_m": 15,
     "orbit": {
@@ -80,8 +80,8 @@
       "straight_max_turn_deg_per_m": 0.25
     },
     "limits": {
-      "max_yaw_deg_s": 12,
-      "max_pitch_deg_s": 8,
+      "max_yaw_deg_s": 20,
+      "max_pitch_deg_s": 15,
       "bank_max_deg": 6,
       "bank_per_yaw_rate": 0.4,
       "min_clear_m": 3.0
@@ -106,7 +106,14 @@
     "bunker_dip_height_fast_m": 8,
     "end_note": "no orbit: the flight ends end_short_m short of the green centre at end_height_m, gaze settling on end_look (green centre: the camera never crosses its own look target, so no heading flip; 'pin' is the other value). 20 m / 15 m stopped visibly short of the green (Tierra 10, 11/4), 10 m / 12 m fills the frame with it. A flight averaging over fast_flight_m_s gets no bunker dips at all and follows the line (a dip at 25 m/s was 43 deg/s of yaw on Tierra 10); bunker_dip_height_fast_m is kept for a course that lowers fast_flight_m_s. end_gaze_fraction: the share of the flight over which the gaze moves from the line ahead to the green; 0.6 of a 15 s flight is 9 s, and a 40 deg swing eased over 9 s peaks near the 8 deg/s pitch limit.",
     "end_look": "green",
-    "end_gaze_fraction": 0.6
+    "end_gaze_fraction": 1.0,
+    "end_ease_m": 60,
+    "end_speed_factor": 0.15,
+    "rise_keep_offset": 0.7,
+    "rise_ahead_m": 25,
+    "reveal_fraction": 0.3,
+    "limits_note": "20 / 15 deg per s are commercial-pace limits for the 15 s flight (flyover_path.py, 11/4: all 18 Tierra holes pass at 19.1 / 14.6; the former 12 / 8 were set for a 36 s drift and fail 10 of 18 at this pace, and even a 25 s flight fails 4, 9, 17 on them). A hole that looks rushed in the render gets a longer flight_s in course.json rule_overrides, not a limit change.",
+    "start_note": "rise_ahead_m and rise_keep_offset: the first flight point sits rise_ahead_m along the line from the intro camera and keeps rise_keep_offset of the camera's sideways offset from the line, so the return from beside the sign to the line is spread over two legs (a 7 m jog in 30 m at 25 m/s was 19 deg/s of yaw). end_ease_m / end_speed_factor: the camera eases to end_speed_factor of base speed over the last end_ease_m, so the near look target does not sweep the pitch (50 deg/s at full speed on Tierra 10)."
   },
   "render_4k": {
     "width": 3840,
