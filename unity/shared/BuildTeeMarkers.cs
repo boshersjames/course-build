@@ -52,12 +52,12 @@ public static class BuildTeeMarkers
         foreach (var h in course.Holes)
         {
             if (!h.Enabled || h.Tees == null) continue;
-            Vector3? aim = null; foreach (var t in h.Tees) if (t.TeeType == "AimPoint1" && t.Position != null) aim = new Vector3(t.Position.x, 0, t.Position.z);
-            if (aim == null) foreach (var t in h.Tees) if (t.TeeType == "GreenCenterPoint" && t.Position != null) aim = new Vector3(t.Position.x, 0, t.Position.z);
+            Vector3? aim = null; foreach (var t in h.Tees) if (t.TeeType == "AimPoint1" && t.Position != null && (t.Position.x != 0 || t.Position.z != 0)) aim = new Vector3(t.Position.x, 0, t.Position.z);
+            if (aim == null) foreach (var t in h.Tees) if (t.TeeType == "GreenCenterPoint" && t.Position != null && (t.Position.x != 0 || t.Position.z != 0)) aim = new Vector3(t.Position.x, 0, t.Position.z);
             var hg = new GameObject("Hole" + h.HoleNumber.ToString("00")); hg.transform.SetParent(root.transform);
             foreach (var t in h.Tees)
             {
-                if (!t.Enabled || t.Position == null || !colours.ContainsKey(t.TeeType)) continue;
+                if (!t.Enabled || t.Position == null || (t.Position.x == 0 && t.Position.z == 0) || !colours.ContainsKey(t.TeeType)) continue;
                 var p = new Vector3(t.Position.x, 0, t.Position.z);
                 var dir = aim.HasValue ? (aim.Value - p) : Vector3.forward; dir.y = 0; dir.Normalize();
                 var right = Vector3.Cross(Vector3.up, dir);

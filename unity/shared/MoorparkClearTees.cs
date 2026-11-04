@@ -38,13 +38,13 @@ public static class MoorparkClearTees
                 var pin = new Vector2(h.Pins[0].Position.x, h.Pins[0].Position.z);
                 foreach (var t in h.Tees)
                 {
-                    if (!t.Enabled || t.Position == null || t.TeeType.StartsWith("AimPoint")) continue;
+                    if (!t.Enabled || t.Position == null || (t.Position.x == 0 && t.Position.z == 0) || t.TeeType.StartsWith("AimPoint")) continue;
                     var p = new Vector2(t.Position.x, t.Position.z);
                     string k = Mathf.Round(p.x * 10) + "," + Mathf.Round(p.y * 10);
                     if (!seen.Add(k)) continue;
                     // the shot goes to the first aim point if there is one, else the pin
                     Vector2 to = pin;
-                    foreach (var a in h.Tees) if (a.TeeType == "AimPoint1" && a.Position != null && a.Enabled) to = new Vector2(a.Position.x, a.Position.z);
+                    foreach (var a in h.Tees) if (a.TeeType == "AimPoint1" && a.Position != null && (a.Position.x != 0 || a.Position.z != 0) && a.Enabled) to = new Vector2(a.Position.x, a.Position.z);
                     list.Add(new TeeDir { p = p, d = (to - p).normalized });
                 }
             }

@@ -172,7 +172,7 @@ public class CourseGreenChecks : EditorWindow
         foreach (var h in g.Holes.OrderBy(ho => ho.HoleNumber))   // desk-check: lambda param renamed, loop var and lambda param shared a name (CS0136 before C# 8)
         {
             if (only.Count > 0 && !only.Contains(h.HoleNumber)) continue;
-            var gc = h.Tees == null ? null : h.Tees.FirstOrDefault(t => t.TeeType == "GreenCenterPoint" && t.Position != null);
+            var gc = h.Tees == null ? null : h.Tees.FirstOrDefault(t => t.TeeType == "GreenCenterPoint" && t.Position != null && (t.Position.x != 0 || t.Position.z != 0));
             var row = new Row { hole = h.HoleNumber }; rows.Add(row);
             if (gc == null || greens.Count == 0) { row.notes.Add("no green centre or no green meshes"); continue; }
             var gcp = new Vector2(gc.Position.x, gc.Position.z);
@@ -245,7 +245,7 @@ public class CourseGreenChecks : EditorWindow
             row.crown = worstOver;
 
             // 5. pins: GreenKeeper pin-area test + edge distance; usable % and valid areas on the green
-            var pins = (h.Pins ?? new Pin[0]).Where(p => p.Position != null).ToList(); row.pins = pins.Count;
+            var pins = (h.Pins ?? new Pin[0]).Where(p => p.Position != null && (p.Position.x != 0 || p.Position.z != 0)).ToList();   // JsonUtility: a null Position reads as (0,0,0) row.pins = pins.Count;
             foreach (var p in pins)
             {
                 float ang = PinArea(opcd, p.Position.x, p.Position.z, P); var on = TopHit(opcd, p.Position.x, p.Position.z); float ed = DistToEdges(edges, w, new Vector2(p.Position.x, p.Position.z));

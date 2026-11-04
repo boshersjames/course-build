@@ -58,3 +58,6 @@ Rewritten: direction from the vertex-to-neighbour residual (probe_m outside the 
 
 ## CourseSceneOps.cs (2026-11-03, cloud)
 New: Find / SetOff / SetOn / RebakeCollider / UndoActive through the bridge; active changes logged in COURSEBUILD_LOG. `name` is a static string field (bridge -Set). Not yet compiled on the PC.
+
+## GKD positions and JsonUtility (2026-11-04)
+`"Position": null` in a GKD becomes P(0,0,0) under JsonUtility. Every shared reader now treats x == 0 && z == 0 as missing (CommercialFlyoverPath, CourseGreenChecks, BuildTeeMarkers, MoorparkClearTees). Tierra 10 flew a 4,023 m line through the course origin before this.

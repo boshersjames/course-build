@@ -133,7 +133,8 @@ def main():
         for h in holes:
             t0 = time.time(); ans = br.send("invoke", "CommercialFlyoverPath", "RunPathGeneration", {"hole": h, "tee": a.tee})
             outs = sorted(glob.glob(os.path.join(AO, "flyovers", "H%02d_cinematic_*.json" % h)))[-1:]
-            if not record("path", "ok" if ans.get("status") == "ok" else "failed", t0, ans.get("message"), outs, {"hole": h}): fail()
+            msg = ans.get("message") or ""; smooth_fail = "-> FAIL" in msg   # the path tool's own yaw/pitch/bank check: a failing path is not rendered
+            if not record("path", "ok" if (ans.get("status") == "ok" and not smooth_fail) else "failed", t0, msg + ("\npath smoothness check FAILED: not rendering this path" if smooth_fail else ""), outs, {"hole": h}): fail()
 
     # 5 render queue
     t0 = time.time()
