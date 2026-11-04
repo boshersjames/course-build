@@ -178,7 +178,9 @@
       ],
       "margin_px": 72,
       "label": "PIN {yd} yd",
-      "show_after_s": 3.0
+      "show_after_s": 3.0,
+      "enabled": false,
+      "note": "off by default (2026-11-04): the brief is the banner over the intro hold and nothing else; the piecewise bar expression was also refused by the PC's ffmpeg build. The packager falls back to a plain encode when the overlay graph is refused and flags the file."
     },
     "verify": {
       "check_png_integrity": true,

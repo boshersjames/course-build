@@ -151,7 +151,7 @@ def main():
         tee_name = (traj or {}).get("tee"); tee_m = (tees.get(tee_name) or (max(tees.values(), key=lambda t: t.get("Distance", 0)) if tees else {})).get("Distance", 0)
         intro = {"title": R["banner"]["title"].format(hole=hn), "sub": R["banner"]["sub"].format(yd=int(round(tee_m * 1.09361)), par=h.par, tee=tee_name or "")}   # the lower-left banner over the intro hold: hole, card yardage of the flyover tee, par
         ext = "mp4" if codec == "hevc" else "mov"; out_path = os.path.join(out_dir, "%s_H%02d_4K.%s" % (C["name"], hn, ext))
-        cmds = os.path.join(logs, "hud_H%02d.cmd" % hn); hud_on = bool(traj and traj.get("frames_data")) and not a.no_overlays
+        cmds = os.path.join(logs, "hud_H%02d.cmd" % hn); hud_on = bool(R["hud"].get("enabled", False)) and bool(traj and traj.get("frames_data")) and not a.no_overlays   # the pin-distance HUD is off unless package.hud.enabled
         bar_w_expr = "2"
         if hud_on:
             pin = traj["frames_data"][-1]["lookAt"]; hud_cmds(traj, fps, R["hud"]["interval_s"], R["hud"]["label"], pin, cmds)
@@ -166,6 +166,11 @@ def main():
         item["ffmpeg"] = " ".join(cmd)
         if a.dry_run: item["status"] = "dry-run"; items.append(item); print("hole %d: %d frames verified; would encode -> %s" % (hn, n, out_path)); continue
         t0 = time.time(); r = sh(cmd); item["encode_s"] = round(time.time() - t0, 1)
+        if (r.returncode != 0 or not os.path.exists(out_path)) and "-filter_complex" in vf:
+            # the overlay graph was refused (ffmpeg build, font, expression): encode the plain video so a render always ends in a file, and say so
+            item["overlay_error"] = r.stderr[-600:]; item["warning"] = "overlays failed in ffmpeg; encoded WITHOUT banner/HUD/logo (see overlay_error)"
+            cmd2 = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y"] + inputs[:4] + ["-vf", "format=%s" % R["pix_fmt"]] + ["-r", str(fps)] + enc + [out_path]
+            item["ffmpeg_fallback"] = " ".join(cmd2); r = sh(cmd2); item["encode_s"] = round(time.time() - t0, 1); print("hole %d: overlays refused by ffmpeg, encoded without them: %s" % (hn, item["overlay_error"][-200:].replace("\n", " ")))
         if r.returncode != 0 or not os.path.exists(out_path): item["status"] = "ENCODE_FAILED"; item["stderr"] = r.stderr[-800:]; any_fail = True; items.append(item); print("hole %d: encode failed: %s" % (hn, r.stderr[-300:])); continue
         pr = sh(["ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries", "stream=nb_read_frames,width,height,r_frame_rate", "-of", "json", out_path])
         try:
