@@ -204,6 +204,8 @@
       "margin_y_px": 96,
       "pad_px": 28,
       "note": "lower-left banner over the intro hold, as a commercial flyover card: hole number, the flyover tee's card yardage, par; sizes for 2160 px, scaled to the frame"
-    }
+    },
+    "frame_tolerance": 6,
+    "frame_tolerance_note": "frames may fall short of seconds x fps by up to this many at the tail (clip length rounding); any gap in the sequence still fails"
   }
 }

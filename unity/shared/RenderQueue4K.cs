@@ -105,15 +105,14 @@ public class RenderQueue4K : EditorWindow
         var accShader = Shader.Find("Hidden/CourseBuild/Accumulate"); if (!accShader) return "shader Hidden/CourseBuild/Accumulate missing: copy unity/shared/Accumulate.shader into Assets/Editor/Resources (or anywhere in Assets)";
         var accMat = new Material(accShader); var tex = new Texture2D(R.width, R.height, TextureFormat.RGB24, false);
         int sub = Mathf.Max(1, R.motion_blur.subframes); float shutter = Mathf.Clamp(R.motion_blur.shutter_deg, 0, 360) / 360f; float dt = 1f / R.fps;
-        var started = DateTime.Now;
+        var started = DateTime.Now; int skippedTotal = 0;
         try
         {
             UnityEditor.AnimationMode.StartAnimationMode();
-            int skipped = 0;
             for (int f = 0; f < frames; f++)
             {
                 string outPath = folder + "/frame_" + f.ToString("00000") + ".png";
-                if (R.resume && File.Exists(outPath) && new FileInfo(outPath).Length > 1024) { skipped++; continue; }   // resume after a crash: frames already on disk are kept
+                if (R.resume && File.Exists(outPath) && new FileInfo(outPath).Length > 1024) { skippedTotal++; continue; }   // resume after a crash: frames already on disk are kept
                 // housekeeping: the editor leaked GPU resources across thousands of manual Camera.Render calls (Tierra 10 died in D3DKMTOpenResource at frame 401 of 1,200)
                 if (R.housekeeping_every_frames > 0 && f % R.housekeeping_every_frames == 0 && f > 0) { GL.Flush(); Resources.UnloadUnusedAssets(); GC.Collect(); }
                 // accumulate sub-frames across the open shutter, then average: a true 180 deg shutter blur, deterministic
@@ -136,7 +135,7 @@ public class RenderQueue4K : EditorWindow
             UnityEngine.Object.DestroyImmediate(go); big.Release(); acc.Release(); acc2.Release(); tmp.Release(); UnityEngine.Object.DestroyImmediate(tex); UnityEngine.Object.DestroyImmediate(accMat);
         }
         int onDisk = Directory.GetFiles(folder, "frame_*.png").Length;
-        return string.Format(CI, "rendered {0} frames in {1:F0} s ({2} on disk) -> {3}", frames, (DateTime.Now - started).TotalSeconds, onDisk, folder);
+        return string.Format(CI, "rendered {0} frames in {1:F0} s ({2} kept from disk, {3} on disk now) -> {4}", frames - skippedTotal, (DateTime.Now - started).TotalSeconds, skippedTotal, onDisk, folder);
     }
 
     public static string RunRenderQueue()

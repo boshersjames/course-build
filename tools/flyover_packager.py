@@ -34,6 +34,8 @@ def esc(s):
     return str(s).replace("\\", "\\\\").replace(":", "\\:").replace("'", "\\'").replace(",", "\\,").replace("%", "\\%")
 
 
+FRAME_TOL = 6   # overwritten from rules package.frame_tolerance in main()
+
 def verify_frames(folder, expect, check_png, dims_must_match):
     files = sorted(glob.glob(os.path.join(folder, "frame_*.png")))
     idx = [int(re.search(r"frame_(\d+)\.png$", f).group(1)) for f in files]
@@ -50,7 +52,10 @@ def verify_frames(folder, expect, check_png, dims_must_match):
             except Exception as e:
                 res["corrupt"].append(os.path.basename(f))
         res["dims"] = list(dims) if dims else None
-    res["ok"] = bool(files) and res["contiguous"] and (expect is None or len(files) == expect) and not res["corrupt"] and not res["size_mismatch"]
+    # the clip is a few hundredths of a second shorter than the trajectory's nominal seconds (19.97 vs 20.0 s on Tierra 10): a tail shortfall of up to
+    # package.frame_tolerance frames is a rounding, not a gap; gaps in the middle (contiguous False) always fail
+    res["missing"] = (expect - len(files)) if expect is not None else 0
+    res["ok"] = bool(files) and res["contiguous"] and (expect is None or 0 <= res["missing"] <= FRAME_TOL) and not res["corrupt"] and not res["size_mismatch"]
     return res, files
 
 
