@@ -15,6 +15,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from course_io import course, rules, Heightmap, GKD, svg_outlines
 
 
+TREES = None   # x, z, y, height_m, crown_radius_m from course.json paths.trees_csv (loaded in main)
+
+
 def smoother(t): t = min(1.0, max(0.0, t)); return t * t * t * (t * (t * 6 - 15) + 10)
 
 
@@ -95,9 +98,21 @@ def build(C, HM, R, G, hole, tee, sign, green_r, limits):
     else:
         e = along(holeLen - R.get("end_short_m", 20)); add([e[0], gmax(e[0], e[2], 10) + R.get("end_height_m", 15), e[2]], "end")
     pts = sample_spline(cps, R["sample_m"]); lifted = 0
+    # the climb out of the hold is monotonic: between the start and the rise point the height never drops below the straight line between them (a spline can sag there and put the camera in the tee bank)
+    riseP = cps[1]; dRise = float(np.linalg.norm(xz(riseP) - xz(cps[0])))
+    for i, p in enumerate(pts):
+        dd = float(np.linalg.norm(xz(p) - xz(cps[0])))
+        if dd <= dRise + 0.5: pts[i] = np.array([p[0], max(p[1], cps[0][1] + (riseP[1] - cps[0][1]) * min(1.0, dd / max(dRise, 1e-3))), p[2]])
     for i, p in enumerate(pts):
         gm = gmax(p[0], p[2], 4)
         if p[1] < gm + limits["min_clear_m"]: pts[i] = np.array([p[0], gm + limits["min_clear_m"], p[2]]); lifted += 1
+        # tree crowns are ground too: inside a crown's horizontal radius the camera stays crown_clear_m above its top (the Unity ground test used to skip LODGroups and the camera flew through canopies)
+        if TREES is not None and len(TREES):
+            near = TREES[(np.abs(TREES[:, 0] - p[0]) < TREES[:, 4] + 1) & (np.abs(TREES[:, 1] - p[2]) < TREES[:, 4] + 1)]
+            for t in near:
+                if math.hypot(t[0] - p[0], t[1] - p[2]) <= t[4]:
+                    top = ground(t[0], t[1]) + t[3] + R.get("crown_clear_m", 1.5)
+                    if pts[i][1] < top: pts[i] = np.array([p[0], top, p[2]]); lifted += 1
     arc = [0.0]
     for i in range(1, len(pts)): arc.append(arc[-1] + float(np.linalg.norm(pts[i] - pts[i - 1])))
     total = arc[-1]; arcA = np.array(arc)
@@ -174,10 +189,13 @@ def main():
         if sp and os.path.exists(sp):
             for e in json.load(open(sp, encoding="utf-8-sig")): signs[int(e["hole"])] = e
     except Exception: pass
-    greens = {}
+    global TREES
     try:
-        for k, poly in svg_outlines(C, "green").items(): pass
-    except Exception: pass
+        tp = C.path("trees_csv")
+        if tp and os.path.exists(tp):
+            rows = list(csv.DictReader(open(tp, encoding="utf-8-sig"))); cr = "crown_radius_m" if "crown_radius_m" in rows[0] else "crown"
+            TREES = np.array([[float(r["x"]), float(r["z"]), 0.0, float(r.get("height_m", r.get("height", 10))), float(r.get(cr, 4))] for r in rows])
+    except Exception as e: print("trees_csv not read:", e)
     out = a.out or os.path.join(C.dir, "progress", "flyover_path"); os.makedirs(out, exist_ok=True)
     holes = [int(x) for x in a.holes.split(",")] if a.holes else [h.number for h in G.holes if h.green_centre is not None]
     md = ["# Cinematic flight check: %s (%s tee)" % (C["name"], a.tee), "", "Rules flyovers.cinematic%s: target %s s (intro %s + flight %s), limits yaw %s / pitch %s deg per s, clearance %s m." % (" + " + ", ".join(a.set) if a.set else "", R.get("target_duration_s"), R["intro"]["seconds"], R.get("flight_s"), limits["max_yaw_deg_s"], limits["max_pitch_deg_s"], limits["min_clear_m"]), "",

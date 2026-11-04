@@ -1,7 +1,8 @@
 // CourseSceneOps: small, logged scene operations through the bridge (course-build-unity-tools). No course names, no constants.
 //   Find          -Set @{ name = "<substring>" }   lists active and inactive objects (any root) whose name contains it
 //   FindPlants    -Set @{ px = "1688"; pz = "815"; pr = "15" }  LODGroup plants within pr m of a point: name, root, height, crown
-//   FindNear      -Set @{ px = ...; pz = ...; pr = "10" }  every renderer near a point, collider or not (render-only props): active, position, collider
+//   FindNear      -Set @{ px = ...; pz = ...; pr = "10" }  every renderer near a point, collider or not (render-only props)
+//   FindOnHole    -Set @{ hole = "10"; width = "30" }       every non-plant renderer within width m of the hole line (rocks, props on a fairway): active, position, collider
 //                                                  vs render dy (MeshCollider raycast at 1/50 of the vertices), physic material
 //   SetOff/SetOn  -Set @{ name = "<exact name>" }  SetActive(false/true) on that object; logged "active|<name>|<was>" in COURSEBUILD_LOG
 //   RebakeCollider -Set @{ name = "<exact name>" } MeshCollider.sharedMesh re-pointed at the MeshFilter's mesh (dy back to 0 when the
@@ -55,6 +56,33 @@ public class CourseSceneOps : EditorWindow
         }
         return o.Count + " renderers within " + pr.ToString(CI) + " m of (" + px.ToString("F1", CI) + ", " + pz.ToString("F1", CI) + ")\n" + string.Join("\n", o.OrderBy(x => x).Take(80).ToArray());
     }
+
+    public static string hole = ""; public static float width = 30f;
+    // every non-plant renderer within `width` m of a hole's line (tee -> aims -> green from the GKD in Assets/CourseBuild), collider or not:
+    // rocks, props and stray meshes on a fairway (the boulder on Tierra 10). OPCD course meshes are listed only when they carry no collider.
+    public static string FindOnHole()
+    {
+        int hn; if (!int.TryParse(hole, out hn)) return "set hole = <number>";
+        var gkdPath = "Assets/CourseBuild/course.json"; if (!System.IO.File.Exists(gkdPath)) return "no Assets/CourseBuild/course.json (run the tool sync)";
+        var cj = JsonUtility.FromJson<CourseJsonLite>(System.IO.File.ReadAllText(gkdPath).TrimStart('\uFEFF')); string gp = cj != null && cj.paths != null ? cj.paths.gkd : null; if (string.IsNullOrEmpty(gp)) return "no paths.gkd in course.json";
+        if (!System.IO.Path.IsPathRooted(gp)) gp = System.IO.Path.GetFullPath(System.IO.Path.Combine(cj.paths.course_repo_abs ?? ".", gp)); if (!System.IO.File.Exists(gp)) return "GKD not found: " + gp;
+        var g = JsonUtility.FromJson<GLite>(System.IO.File.ReadAllText(gp).TrimStart('\uFEFF')); var H = g.Holes.FirstOrDefault(h => h.HoleNumber == hn); if (H == null) return "hole " + hn + " not in the GKD";
+        var line = new List<Vector2>(); foreach (var k in new[] { "Black", "Blue", "White", "Gold", "Green", "Red", "Yellow" }) { var t = H.Tees.FirstOrDefault(x => x.TeeType == k && x.Position != null && (x.Position.x != 0 || x.Position.z != 0)); if (t != null) { line.Add(new Vector2(t.Position.x, t.Position.z)); break; } }
+        foreach (var k in new[] { "AimPoint1", "AimPoint2", "GreenCenterPoint" }) { var t = H.Tees.FirstOrDefault(x => x.TeeType == k && x.Position != null && (x.Position.x != 0 || x.Position.z != 0)); if (t != null) line.Add(new Vector2(t.Position.x, t.Position.z)); }
+        if (line.Count < 2) return "hole " + hn + ": no line (tee and green centre needed)";
+        Func<Vector2, float> off = q => { float best = 1e9f; for (int i = 1; i < line.Count; i++) { var a = line[i - 1]; var ab = line[i] - a; float u = Mathf.Clamp01(Vector2.Dot(q - a, ab) / Mathf.Max(ab.sqrMagnitude, 1e-6f)); best = Mathf.Min(best, Vector2.Distance(q, a + ab * u)); } return best; };
+        var opcd = GameObject.Find("OPCD Meshes"); var o = new List<string>();
+        foreach (var r in UnityEngine.Object.FindObjectsOfType<Renderer>())
+        {
+            if (r.GetComponentInParent<Terrain>() || r.GetComponentInParent<LODGroup>()) continue; var b = r.bounds; var c = new Vector2(b.center.x, b.center.z); float d = off(c); if (d > width) continue;
+            bool isOpcd = opcd && r.transform.IsChildOf(opcd.transform); bool hasCol = r.GetComponent<Collider>(); if (isOpcd && hasCol) continue; if (b.size.x > 60 || b.size.z > 60) continue;
+            var t = r.transform; string path = t.name; for (var u = t.parent; u; u = u.parent) path = u.name + "/" + path;
+            o.Add(string.Format(CI, "{0}  at ({1:F1}, {2:F1})  {3:F1} m off the line, size {4:F1}x{5:F1}x{6:F1}{7}", path, b.center.x, b.center.z, d, b.size.x, b.size.y, b.size.z, hasCol ? "  collider" : "  no collider"));
+        }
+        return o.Count + " non-plant renderers within " + width.ToString(CI) + " m of hole " + hn + "'s line (OPCD meshes with colliders left out)\n" + string.Join("\n", o.OrderBy(x => x).Take(120).ToArray());
+    }
+    [Serializable] class PLite { public float x, y, z; } [Serializable] class TeeLite { public string TeeType; public PLite Position; } [Serializable] class HoleLite { public int HoleNumber; public TeeLite[] Tees; } [Serializable] class GLite { public HoleLite[] Holes; }
+    [Serializable] class PathsLite { public string gkd, course_repo_abs; } [Serializable] class CourseJsonLite { public PathsLite paths; }
 
     public static string Find()
     {

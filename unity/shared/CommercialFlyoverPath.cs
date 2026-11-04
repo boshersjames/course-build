@@ -37,7 +37,7 @@ public class CommercialFlyoverPath : EditorWindow
     {
         public float start_behind_tee_m = 15, start_height_m = 12, reveal_height_m = 28, reveal_fov_deg = 42, approach_fov_deg = 52, fov_blend_m = 40;
         public float bunker_dip_height_m = 3.5f, bunker_dip_entry_m = 40, bunker_cluster_m = 25, bunker_corridor_m = 28; public float[] bunker_along_range = { 0.25f, 0.85f };
-        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0, flight_s = 0, end_height_m = 15, end_short_m = 20, fast_flight_m_s = 20, bunker_dip_height_fast_m = 8; public string end_look = "green"; public float end_gaze_fraction = 1.0f, end_ease_m = 60, end_speed_factor = 0.15f, rise_keep_offset = 0.7f, rise_ahead_m = 25, reveal_fraction = 0.3f; public Intro intro = new Intro(); public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
+        public float lookahead_m = 30, approach_short_m = 40, approach_height_m = 15, approach_outside_orbit_m = 8, target_duration_s = 0, flight_s = 0, end_height_m = 15, end_short_m = 20, fast_flight_m_s = 20, bunker_dip_height_fast_m = 8; public string end_look = "green"; public float end_gaze_fraction = 1.0f, end_ease_m = 60, end_speed_factor = 0.15f, rise_keep_offset = 0.7f, rise_ahead_m = 25, reveal_fraction = 0.3f, crown_clear_m = 1.5f; public Intro intro = new Intro(); public Orbit orbit = new Orbit(); public Speed speed = new Speed(); public Limits limits = new Limits(); public int fps = 25; public float sample_m = 0.5f;
     }
     [Serializable] public class FlyRules { public Cinematic cinematic = new Cinematic(); }
     [Serializable] class P { public float x, y, z; }
@@ -96,6 +96,13 @@ public class CommercialFlyoverPath : EditorWindow
         return best == float.MinValue ? 0 : best;
     }
     static float GroundMax(float x, float z, float r) { float m = float.MinValue; for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) m = Mathf.Max(m, Ground(x + i * r, z + j * r)); return m; }
+    // everything including tree and shrub colliders (LODGroups): what the clearance lift must stay above (the camera flew through a canopy by the 10th tee)
+    static float ObstacleTop(float x, float z)
+    {
+        float best = Ground(x, z);
+        foreach (var h in Physics.RaycastAll(new Vector3(x, 800, z), Vector3.down, 1600)) if (h.collider.GetComponentInParent<LODGroup>() && h.point.y > best) best = h.point.y;
+        return best;
+    }
     static float Smootherstep(float t) { t = Mathf.Clamp01(t); return t * t * t * (t * (t * 6 - 15) + 10); }
     static Vector2 XZ(Vector3 v) { return new Vector2(v.x, v.z); }
 
@@ -188,7 +195,14 @@ public class CommercialFlyoverPath : EditorWindow
         log.Add(string.Format(CI, "hole {0} par {1}: tee {2}, line {3:F0} m, green r {4:F1} m, {5} bunker complex(es) dipped, orbit r {6:F1} m at {7:F1} m/s ({8} control points)", hole, H.Par, tee, holeLen, greenR, clusters.Count, radius, vOrbit, cps.Count));
         // sample, clearance lift, arc length
         var pts = SampleSpline(cps, R.sample_m); int lifted = 0;
-        for (int i = 0; i < pts.Count; i++) { float gmax = GroundMax(pts[i].x, pts[i].z, 4); if (pts[i].y < gmax + R.limits.min_clear_m) { pts[i] = new Vector3(pts[i].x, gmax + R.limits.min_clear_m, pts[i].z); lifted++; } }
+        float dRise = Vector2.Distance(XZ(cps[1]), XZ(cps[0]));
+        for (int i = 0; i < pts.Count; i++)
+        {
+            float dd = Vector2.Distance(XZ(pts[i]), XZ(cps[0]));   // climb out of the hold: never below the straight line start -> rise (a sagging spline put the camera in the tee bank)
+            if (dd <= dRise + 0.5f) pts[i] = new Vector3(pts[i].x, Mathf.Max(pts[i].y, Mathf.Lerp(cps[0].y, cps[1].y, Mathf.Clamp01(dd / Mathf.Max(dRise, 1e-3f)))), pts[i].z);
+            float gmax = GroundMax(pts[i].x, pts[i].z, 4); if (pts[i].y < gmax + R.limits.min_clear_m) { pts[i] = new Vector3(pts[i].x, gmax + R.limits.min_clear_m, pts[i].z); lifted++; }
+            float top = ObstacleTop(pts[i].x, pts[i].z) + R.crown_clear_m; if (pts[i].y < top) { pts[i] = new Vector3(pts[i].x, top, pts[i].z); lifted++; }   // crowns are ground too
+        }
         var arc = new List<float> { 0 }; for (int i = 1; i < pts.Count; i++) arc.Add(arc[i - 1] + Vector3.Distance(pts[i - 1], pts[i])); float total = arc[arc.Count - 1];
         float orbitArc = total; if (R.orbit.degrees >= 15f) { var oin = cps[orbitStart]; int bi = 0; float bd = 1e9f; for (int i = 0; i < pts.Count; i++) { float d = Vector3.Distance(pts[i], oin); if (d < bd) { bd = d; bi = i; } } orbitArc = arc[bi]; }
         // straight sections: turn per metre below threshold over >= straight_min_len_m

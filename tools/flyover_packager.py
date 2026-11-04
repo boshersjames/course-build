@@ -98,10 +98,16 @@ def build_filter(R, W, H, font, intro, logo, cmds_path, hud_on, bar_w_expr="2"):
     alpha = "if(lt(t\\,%.2f)\\,t/%.2f\\,if(lt(t\\,%.2f)\\,1\\,max(0\\,(%.2f-t)/%.2f)))" % (fade, fade, T - fade, T, fade)
     y_box = H - my - bh
     box_f = "drawbox=x=%d:y=%d:w=%d:h=%d:color=%s:t=fill:enable='lt(t\\,%.2f)'" % (mx, y_box, bw, bh, B["bg"], T)
-    intro_f = ("drawtext=fontfile='%s':text='%s':fontsize=%d:fontcolor=%s:x=%d:y=%d:alpha='%s':enable='lt(t\\,%.2f)'"
-               % (font, esc(intro["title"]), tpx, B["color"], mx + pad, y_box + pad, alpha, T))
-    sub_f = ("drawtext=fontfile='%s':text='%s':fontsize=%d:fontcolor=%s:x=%d:y=%d:alpha='%s':enable='lt(t\\,%.2f)'"
-             % (font, esc(intro["sub"]), spx, B["color"], mx + pad, y_box + pad + tpx + int(8 * k), alpha, T))
+    # text through UTF-8 files (textfile=): no quoting, hash or encoding trouble in the graph (ffmpeg 9 on Windows refused the bullet inline); the font path's drive colon escaped as the ffmpeg docs show
+    ffont = font.replace("\\", "/").replace(":", "\\:")
+    tdir = os.path.dirname(cmds_path) if cmds_path else "."; os.makedirs(tdir, exist_ok=True)
+    tf1 = os.path.join(tdir, "banner_title.txt"); tf2 = os.path.join(tdir, "banner_sub.txt")
+    open(tf1, "w", encoding="utf-8").write(intro["title"]); open(tf2, "w", encoding="utf-8").write(intro["sub"])
+    f1 = tf1.replace("\\", "/").replace(":", "\\:"); f2 = tf2.replace("\\", "/").replace(":", "\\:")
+    intro_f = ("drawtext=fontfile='%s':textfile='%s':fontsize=%d:fontcolor=%s:x=%d:y=%d:alpha='%s':enable='lt(t\\,%.2f)'"
+               % (ffont, f1, tpx, B["color"], mx + pad, y_box + pad, alpha, T))
+    sub_f = ("drawtext=fontfile='%s':textfile='%s':fontsize=%d:fontcolor=%s:x=%d:y=%d:alpha='%s':enable='lt(t\\,%.2f)'"
+             % (ffont, f2, spx, B["color"], mx + pad, y_box + pad + tpx + int(8 * k), alpha, T))
     chain = vin + box_f + "," + intro_f + "," + sub_f
     if hud_on:
         Hh = dict(R["hud"]); m = int(Hh["margin_px"] * k); bw, bh = int(Hh["bar_px"][0] * k), max(2, int(Hh["bar_px"][1] * k)); Hh["font_px"] = max(10, int(Hh["font_px"] * k))
