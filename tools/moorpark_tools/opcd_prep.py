@@ -314,29 +314,38 @@ def load_zones(path):
 
 
 def split_by_zone(polys, zones):
-    """Cut each polygon along the hole zones -> [(name part, polygon)]: rough_h03L_<k> instead of rough_<i>."""
+    """Cut each polygon along the hole zones -> [(name part, polygon)]: rough_h03L_<k> instead of rough_<i>.
+    Bits too small to mesh, and slivers outside every zone, join the piece of the same polygon they touch most,
+    so the split never opens a gap."""
     out, count = [], {}
     for poly in polys:
-        left = poly
+        pieces, left = [], poly
         for z, tag, zp in zones:
             if left.is_empty or not zp.intersects(left):
                 continue
             piece = left.intersection(zp); left = left.difference(zp)
-            for p in (piece.geoms if hasattr(piece, "geoms") else [piece]):
-                if isinstance(p, Polygon) and p.area >= MIN_AREA:
-                    k = count.get(tag, 0); count[tag] = k + 1
-                    out.append(("%s_%d" % (tag, k), p))
-        for p in (left.geoms if hasattr(left, "geoms") else [left]):
-            if not isinstance(p, Polygon) or p.area < MIN_AREA:
-                continue
-            pb = p.buffer(0.05)                                     # a sliver outside every zone joins the piece it touches most
-            best = max(range(len(out)), key=lambda j: pb.intersection(out[j][1]).area if pb.intersects(out[j][1]) else 0, default=None)
-            if best is not None and pb.intersects(out[best][1]):
-                g = shapely.make_valid(unary_union([out[best][1], p]))
-                if isinstance(g, Polygon):
-                    out[best] = (out[best][0], g); continue
-            k = count.get("out", 0); count["out"] = k + 1
-            out.append(("out_%d" % k, p))
+            pieces += [[tag, p] for p in (piece.geoms if hasattr(piece, "geoms") else [piece]) if isinstance(p, Polygon) and p.area > 0]
+        pieces += [["out", p] for p in (left.geoms if hasattr(left, "geoms") else [left]) if isinstance(p, Polygon) and p.area > 0]
+        keep = [q for q in pieces if q[0] != "out" and q[1].area >= max(MIN_AREA, 10.0)]
+        if not keep:
+            keep = [[max(pieces, key=lambda q: q[1].area)[0] if pieces else "out", poly]]
+            pieces = keep
+        small = [q for q in pieces if q not in keep]
+        for _ in range(3):                                   # a bit may only touch another small bit at first
+            rest = []
+            for q in small:
+                qb = q[1].buffer(0.05)
+                j = max(range(len(keep)), key=lambda j: qb.intersection(keep[j][1]).area if qb.intersects(keep[j][1]) else 0)
+                if qb.intersects(keep[j][1]):
+                    g = shapely.make_valid(unary_union([keep[j][1], q[1].buffer(0.02, join_style=2)]))
+                    if isinstance(g, Polygon):
+                        keep[j][1] = g; continue
+                rest.append(q)
+            small = rest
+        keep += small                                        # still apart: mesh it on its own rather than lose it
+        for tag, p in keep:
+            k = count.get(tag, 0); count[tag] = k + 1
+            out.append(("%s_%d" % (tag, k), p))
     return out
 
 
@@ -347,10 +356,25 @@ def plan_tiled(code, polys, objs, zones=None):
     for i, poly in named:
         x0, y0, x1, y1 = poly.bounds
         t = 0
+        parts = []
         for gx in np.arange(np.floor(x0 / TILE) * TILE, x1, TILE):
             for gy in np.arange(np.floor(y0 / TILE) * TILE, y1, TILE):
                 piece = poly.intersection(box(gx, gy, gx + TILE, gy + TILE))
-                for p in (piece.geoms if hasattr(piece, "geoms") else [piece]):
+                parts += [p for p in (piece.geoms if hasattr(piece, "geoms") else [piece]) if isinstance(p, Polygon) and p.area > 0]
+        if zones:                                         # zone cuts make many more tile slivers: join them to a neighbour, never drop
+            big = [p for p in parts if p.area >= 10.0] or parts[:1]
+            for q in [p for p in parts if not any(p is b for b in big)]:
+                qb = q.buffer(0.05)
+                j = max(range(len(big)), key=lambda j: qb.intersection(big[j]).area if qb.intersects(big[j]) else 0)
+                g = shapely.make_valid(unary_union([big[j], q.buffer(0.02, join_style=2)]))
+                if qb.intersects(big[j]) and isinstance(g, Polygon):
+                    big[j] = g
+                elif q.area >= MIN_AREA:
+                    big.append(q)
+            parts = big
+        if True:
+            if True:
+                for p in parts:
                     if not isinstance(p, Polygon) or p.area < MIN_AREA:
                         continue
                     p = shapely.geometry.polygon.orient(p, 1.0)
