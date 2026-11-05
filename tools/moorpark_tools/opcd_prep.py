@@ -14,6 +14,7 @@ simplified as a coverage (shapely.coverage_simplify), so neighbouring surfaces m
 
     python tools/opcd_prep.py            # -> build/opcd_plan.pkl, with the smoothed outlines of tools/outline_smooth.py
     python tools/opcd_prep.py --pixels   # the first build's pixel outlines (stair-stepped)
+    python tools/opcd_prep.py --zones course_zoned_hole_zones.png   # rough/deep cut per hole: Spline_rough_h03L_0_<tile>
 """
 import os, pickle, sys, time
 import numpy as np
@@ -293,10 +294,57 @@ def triangulate(loops, istep):
     return B["vertices"], B["triangles"], None
 
 
-def plan_tiled(code, polys, objs):
+def load_zones(path):
+    """hole_zones png (uint16 ids, 1 px = res m, row 0 = SVG y 0; res from the .json beside it) -> [(id, tag, polygon)]."""
+    import json
+    from PIL import Image
+    here = os.path.dirname(os.path.abspath(__file__))
+    sys.path[:0] = [here, os.path.join(here, "..")]          # hole_zones.py beside this file or one up (course-build/tools)
+    import hole_zones as HZ
+    meta = os.path.splitext(path)[0] + ".json"
+    res = json.load(open(meta))["res"] if os.path.exists(meta) else 1.0
+    zone = np.asarray(Image.open(path)).astype(np.int32)
+    parts = {}
+    for g, v in features.shapes(zone, transform=Affine(res, 0, 0, 0, res, 0), connectivity=4):
+        parts.setdefault(int(v), []).append(shape(g))
+    zs = sorted(parts)
+    simp = shapely.coverage_simplify(np.array([unary_union(parts[z]) for z in zs], dtype=object), res * 0.6)
+    log("zones from", path, len(zs))
+    return [(z, HZ.zone_tag(z), shapely.make_valid(g)) for z, g in zip(zs, simp)]
+
+
+def split_by_zone(polys, zones):
+    """Cut each polygon along the hole zones -> [(name part, polygon)]: rough_h03L_<k> instead of rough_<i>."""
+    out, count = [], {}
+    for poly in polys:
+        left = poly
+        for z, tag, zp in zones:
+            if left.is_empty or not zp.intersects(left):
+                continue
+            piece = left.intersection(zp); left = left.difference(zp)
+            for p in (piece.geoms if hasattr(piece, "geoms") else [piece]):
+                if isinstance(p, Polygon) and p.area >= MIN_AREA:
+                    k = count.get(tag, 0); count[tag] = k + 1
+                    out.append(("%s_%d" % (tag, k), p))
+        for p in (left.geoms if hasattr(left, "geoms") else [left]):
+            if not isinstance(p, Polygon) or p.area < MIN_AREA:
+                continue
+            pb = p.buffer(0.05)                                     # a sliver outside every zone joins the piece it touches most
+            best = max(range(len(out)), key=lambda j: pb.intersection(out[j][1]).area if pb.intersects(out[j][1]) else 0, default=None)
+            if best is not None and pb.intersects(out[best][1]):
+                g = shapely.make_valid(unary_union([out[best][1], p]))
+                if isinstance(g, Polygon):
+                    out[best] = (out[best][0], g); continue
+            k = count.get("out", 0); count["out"] = k + 1
+            out.append(("out_%d" % k, p))
+    return out
+
+
+def plan_tiled(code, polys, objs, zones=None):
     lid, own, mat, bstep, istep, _, _ = CLS[code]
     n = 0
-    for i, poly in enumerate(polys):
+    named = split_by_zone(polys, zones) if zones else list(enumerate(polys))
+    for i, poly in named:
         x0, y0, x1, y1 = poly.bounds
         t = 0
         for gx in np.arange(np.floor(x0 / TILE) * TILE, x1, TILE):
@@ -311,7 +359,7 @@ def plan_tiled(code, polys, objs):
                     V, F, _ = triangulate([ext] + holes, istep)
                     if V is None:
                         continue
-                    sid = "%s_%d_%d" % (lid, i, t)
+                    sid = "%s_%s_%d" % (lid, i, t)
                     objs.append(dict(name="Spline_%s_%s_-_Mesh" % (sid, own), kind="mesh", shape_id=sid, parent_id=sid,
                                      material=mat, verts=to_blender(V), faces=[tuple(int(k) for k in f) for f in F],
                                      col=np.zeros(len(V), np.uint8)))
@@ -331,8 +379,11 @@ def main():
         outline_smooth.write_svg(polys, "course_smooth.svg")
         log("wrote course_smooth.svg")
     objs = []
+    zones = None
+    if "--zones" in sys.argv:                             # per-hole rough: hole_zones png from svg_zone_split.py / hole_zones.py
+        zones = load_zones(sys.argv[sys.argv.index("--zones") + 1])
     for code in (1, 2):
-        log("tiled", CLS[code][0], plan_tiled(code, polys[code], objs), "pieces")
+        log("tiled", CLS[code][0], plan_tiled(code, polys[code], objs, zones), "pieces")
     for code in (3, 4, 5, 6, 7):
         skipped = 0
         for i, p in enumerate(polys[code]):

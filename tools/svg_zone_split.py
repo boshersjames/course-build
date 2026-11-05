@@ -59,7 +59,11 @@ def zone_polygons(zone, res):
     parts = {}
     for geom, z in features.shapes(zone.astype(np.int32), transform=Affine(res, 0, 0, 0, res, 0)):
         parts.setdefault(int(z), []).append(shape(geom))
-    return {z: unary_union(g).simplify(res * 0.5) for z, g in parts.items()}
+    import shapely
+    zs = sorted(parts)
+    merged = [unary_union(parts[z]) for z in zs]
+    simp = shapely.coverage_simplify(np.array(merged, dtype=object), res * 0.6)   # shared edges stay shared
+    return {z: shapely.make_valid(g) for z, g in zip(zs, simp)}
 
 
 def hole_lines_px(osm, c, res):
@@ -88,6 +92,7 @@ def main():
     ap.add_argument("--svg", default="course.svg"); ap.add_argument("--osm", default="map.osm")
     ap.add_argument("--course", default="course.json"); ap.add_argument("--out", default="course_zoned.svg")
     ap.add_argument("--res", type=float, default=1.0)
+    ap.add_argument("--pad", type=float, default=10.0, help="zones reach this far past the drawn course (m)")
     ap.add_argument("--band", type=float, default=12.0); ap.add_argument("--max-dist", type=float, default=150.0)
     ap.add_argument("--min-piece", type=float, default=20.0, help="pieces smaller than this (m2) join a neighbour of the same path")
     ap.add_argument("--satellite", default="satellite.jpg")
@@ -105,9 +110,14 @@ def main():
     for d in re.findall(r'\sd="([^"]+)"', s):
         for r in rings_of(d):
             drw.polygon([(x / a.res, y / a.res) for x, y in r], fill=255)
-    zone = HZ.zone_grid(holes, N, a.res, np.asarray(img) > 0, a.band, a.max_dist)
+    from scipy import ndimage
+    area = ndimage.binary_dilation(np.asarray(img) > 0, iterations=max(1, int(round(a.pad / a.res))))   # mesh outlines are smoothed later: cover their wobble
+    zone = HZ.zone_grid(holes, N, a.res, area, a.band, a.max_dist)
     print("holes %s; %d zones" % (",".join(map(str, sorted(holes))), len(np.unique(zone))))
     zpolys = zone_polygons(zone, a.res)
+    zone_png = os.path.splitext(a.out)[0] + "_hole_zones.png"
+    Image.fromarray(zone.astype(np.uint16)).save(zone_png)      # 1 px = res m, row 0 = SVG y 0; for opcd_prep --zones
+    json.dump({"res": a.res, "size": S, "png": os.path.basename(zone_png)}, open(zone_png[:-4] + ".json", "w"))
 
     rows, counter = [], {}
     def repl(m):
