@@ -23,7 +23,7 @@ Use this to stand up a new course's data folder: frame, OSM, LiDAR, satellite, h
 1. Frame and fetch (OSM, LiDAR, satellite); hillshade and a quick elevation sanity check against the card altitude.
 2. Holes: hole lines, pars from OSM vs the card; loops for 27-hole courses; map OSM greens to holes (G-numbers north to south, matched by routing and distance; practice greens left out).
 3. Vegetation masks and shrub/tree CSVs; overlay checks on the satellite.
-4. SVG with collars, deep rough offsets, bunker plan, smoothed fairways; `svg_check.py` clean.
+4. SVG with collars, deep rough offsets, bunker plan, smoothed fairways; `svg_check.py` clean. Add `--hole-zones` so rough and deep rough come out one shape per side of each hole plus a shape per between-holes band (`course_svg_zones.csv` maps each path to its hole). Without it the whole course's rough is one or two shapes that OPCD cuts on a square grid, so no rough mesh follows a hole and every planter or edit has to be clipped by hand (Tierra: 2 rough paths, rough_0_7 spans holes 3 and 4; BoJa 11/05). Not yet proven: seams between neighbouring rough shapes in OPCD, so check one hole after the first build.
 5. Card → GKD with OB draft; checklist fixes; previews; README "to check" list; commit.
 6. Hand to the PC: own Unity project per course (`C:\GSP\<Name>_Project`), own scene, tools with no foreign constants, batch build, then the Unity checklist passes (00).
 

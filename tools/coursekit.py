@@ -1238,6 +1238,7 @@ def cmd_svg(a):
         nodes[nd.get("id")] = ((e - c["sw_e"]) / R, (S - (n - c["sw_n"])) / R)
     names = ("green", "tee", "bunker", "water", "fairway", "line", "course", "exclude")
     imgs = {k: Image.new("L", (N, N), 0) for k in names}
+    hole_lines = {}                                  # hole number -> hole lines in pixel coords (for --hole-zones)
     drw = {k: ImageDraw.Draw(v) for k, v in imgs.items()}
     road_w = {"motorway": 30, "motorway_link": 14, "trunk": 24, "primary": 20, "secondary": 16, "tertiary": 12, "residential": 10, "service": 6}
     for w in root.findall("way"):
@@ -1249,6 +1250,9 @@ def cmd_svg(a):
         poly = len(p) > 2
         if g == "hole":
             drw["line"].line(p, fill=255, width=max(1, int(1 / R)))
+            num = int(re.sub(r"\D", "", tg.get("ref", "")) or 0)
+            if num:
+                hole_lines.setdefault(num, []).append(p)
         elif g in ("green", "tee", "bunker", "fairway") and poly:
             drw[g].polygon(p, fill=255)
         elif (g in ("water_hazard", "lateral_water_hazard") or tg.get("natural") == "water") and poly:
@@ -1312,39 +1316,62 @@ def cmd_svg(a):
     label[~course & ~feats] = 0
     label[~near_course] = 0          # ignore greens/tees/bunkers/water mapped outside the course (creeks, other facilities)
 
+    # --hole-zones: cut rough and deep rough along hole zones (each side of each hole, bands between holes), so OPCD's
+    # meshes follow the holes instead of one course-wide shape cut on a grid. Fairways/greens/tees/bunkers stay whole.
+    zone = None
+    if a.hole_zones:
+        if not hole_lines:
+            sys.exit("--hole-zones needs golf=hole lines with a ref in map.osm")
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import hole_zones as HZ
+        zone = HZ.zone_grid(hole_lines, N, R, label > 0, a.zone_band, a.zone_max)
+        print("Hole zones: %d holes, %d zones (band %.0f m)" % (len(hole_lines), len(np.unique(zone[label > 0])), a.zone_band))
+
     out = ['<?xml version="1.0" encoding="UTF-8" standalone="no"?>',
            '<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" '
            'xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" width="%dmm" height="%dmm" viewBox="0 0 %d %d" version="1.1">' % (S, S, S, S)]
     counts = {}
+    zone_rows = []
     for code, (title, pid, col) in enumerate(SVG_LAYERS, start=1):
         out.append('<g inkscape:groupmode="layer" id="layer_%s" inkscape:label="%s">' % (pid, title))
-        m = label == code
-        m = ndimage.binary_opening(m, iterations=1) if code in (1, 2, 3) else m
-        comp, n = ndimage.label(m)
-        sl = ndimage.find_objects(comp)
+        m_all = label == code
+        m_all = ndimage.binary_opening(m_all, iterations=1) if code in (1, 2, 3) else m_all
+        split = zone is not None and code in (1, 2)
         idx = 0
-        for i, s_ in enumerate(sl, start=1):
-            if s_ is None:
-                continue
-            sub = np.pad((comp[s_] == i).astype(float), 1)
-            if sub.sum() * R * R < (max(a.min_area, 150) if code in (2, 3) else a.min_area):
-                continue
-            loops = []
-            for cont in measure.find_contours(sub, 0.5):
-                cont = measure.approximate_polygon(cont, tolerance=a.simplify / R)
-                if len(cont) < 4:
+        for zid in (np.unique(zone[m_all]) if split else [None]):
+            m = (m_all & (zone == zid)) if split else m_all
+            comp, n = ndimage.label(m)
+            sl = ndimage.find_objects(comp)
+            for i, s_ in enumerate(sl, start=1):
+                if s_ is None:
                     continue
-                ys = (cont[:, 0] - 1 + s_[0].start + 0.5) * R
-                xs = (cont[:, 1] - 1 + s_[1].start + 0.5) * R
-                loops.append("M " + " L ".join("%.3f,%.3f" % (x, y) for x, y in zip(xs, ys)) + " Z")
-            if loops:
-                out.append('<path id="%s_%d" style="fill:%s;fill-opacity:1;fill-rule:evenodd;stroke:none" d="%s"/>' % (pid, idx, col, " ".join(loops)))
-                idx += 1
+                sub = np.pad((comp[s_] == i).astype(float), 1)
+                if sub.sum() * R * R < (max(a.min_area, 150) if code in (2, 3) else a.min_area):
+                    continue
+                loops = []
+                for cont in measure.find_contours(sub, 0.5):
+                    cont = measure.approximate_polygon(cont, tolerance=a.simplify / R)
+                    if len(cont) < 4:
+                        continue
+                    ys = (cont[:, 0] - 1 + s_[0].start + 0.5) * R
+                    xs = (cont[:, 1] - 1 + s_[1].start + 0.5) * R
+                    loops.append("M " + " L ".join("%.3f,%.3f" % (x, y) for x, y in zip(xs, ys)) + " Z")
+                if loops:
+                    lab_attr = ' inkscape:label="%s %s"' % (title, HZ.zone_label(int(zid))) if split else ""
+                    out.append('<path id="%s_%d"%s style="fill:%s;fill-opacity:1;fill-rule:evenodd;stroke:none" d="%s"/>' % (pid, idx, lab_attr, col, " ".join(loops)))
+                    if split:
+                        zone_rows.append(("%s_%d" % (pid, idx), title, int(zid), HZ.zone_tag(int(zid)), HZ.zone_label(int(zid)), round(float(sub.sum()) * R * R)))
+                    idx += 1
         counts[title] = idx
         out.append("</g>")
     out.append("</svg>")
     open("course.svg", "w").write("\n".join(out))
     print("Wrote course.svg:", ", ".join("%s %d" % kv for kv in counts.items()))
+    if zone is not None:
+        with open("course_svg_zones.csv", "w", newline="") as f:
+            w = csv.writer(f); w.writerow(["path_id", "layer", "zone", "tag", "zone_label", "area_m2"]); w.writerows(zone_rows)
+        Image.fromarray(zone.astype(np.uint16)).save("hole_zones.png")
+        print("Wrote course_svg_zones.csv (which hole each rough/deep path belongs to) and hole_zones.png")
     print("Areas (ha):", ", ".join("%s %.1f" % (t_, (label == i).sum() * R * R / 1e4) for i, (t_, _, _) in enumerate(SVG_LAYERS, start=1)))
 
     try:
@@ -1397,6 +1424,9 @@ def main():
     p.add_argument("--min-green", type=float, default=0.37, help="min green share of RGB for fairway")
     p.add_argument("--min-area", type=float, default=25, help="drop pieces smaller than this (m2)")
     p.add_argument("--simplify", type=float, default=0.15, help="outline simplification (m)")
+    p.add_argument("--hole-zones", action="store_true", help="cut rough and deep rough per hole side and between-holes band")
+    p.add_argument("--zone-band", type=float, default=12, help="between-holes band width (m) for --hole-zones")
+    p.add_argument("--zone-max", type=float, default=150, help="rough further than this from every hole is zone 'outside'")
     a = ap.parse_args()
     {"card": cmd_card, "holes": cmd_holes, "svg": cmd_svg, "osm": cmd_osm, "new": cmd_new, "lidar": cmd_lidar, "satellite": cmd_satellite, "heightmap": cmd_heightmap,
      "trees": cmd_trees, "brush": cmd_brush, "vegetation": cmd_vegetation}[a.cmd](a)
