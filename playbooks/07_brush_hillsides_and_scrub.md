@@ -30,6 +30,7 @@ Use this for native hillsides, scrub and sage density and colour, shrubs from Li
 
 - Plants-on-turf 0 after every hillside pass; no shrubs on mown turf, no "scattered shrubs on turf where the photo has bare soil".
 - No brush on any tee box or pad (BoJa 11/05); near tees, keep cover to its side of the flight line from the tee (Tierra 4 `h4west_cover` came too far in).
+- Plain rough grass for about 8-10 yards (7-9 m) off each side of every fairway before any shrubs or dense brush start (BoJa 11/05: "8 yards off the fairway on each side" on Tierra 5; "10 yards or so" on hole 4's right hillside).
 - Hill mean colour in the render inside the target band; if dark, lift the leaf tint, don't add plants.
 - No dead-grass scatter or invented tees on hillsides; every brushed area checked against a photo.
 - Cliff drapes on the right cells (mask rows not flipped); detail grass restored where the drape was wrong.

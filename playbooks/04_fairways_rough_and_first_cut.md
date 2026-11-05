@@ -10,6 +10,7 @@ Use this for fairway outlines and undulation, the first cut, deep rough, hillsid
 | Fairway shape | Keep the LiDAR undulation, especially landing zones; never smooth for looks | BoJa 10/29 |
 | Fairway firmness | GKD `FairwayFirmnessDefault` 0 (the "firmer" trial caused big bounces); moderate, never max | playtest |
 | First cut | ~4 m of rough physics next to fairways, greens and tees; deep rough beyond it and under tree lines where the real rough is penal | Penmar |
+| Shrub-free rough band | About 8-10 yd (7-9 m) of plain rough grass each side of the fairway before any shrubs or dense brush | BoJa 11/05 (Tierra 4, 5) |
 | Deep rough | From the satellite (tan/golden) masked by LiDAR (no trees/shrubs >0.8 m), brush, play surfaces +5 m, paths, roads, OB; patches kept only if touching brush/OB or ≥2,500 m² and ≥12 m from a fairway | deep_rough/README |
 | Deep rough physics | GSPdeeprough on hillsides and outer rough; a ball stops within a few yards | playtest 10/27 |
 | Deep rough height | Patches 3 cm above the course surface; `Terrain (Inner)` detail layers from `terrain_masks/` | automation check |
