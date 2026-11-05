@@ -32,6 +32,8 @@ The order of work and the checks that stop a hole going back for a second or thi
 8. **Photos first.** Photo inventory per hole before building; photo | before | after pairs from the same pose for every edit; a verdict per photo before BoJa sees a flyover. BoJa should never be the one to find a mismatch.
 9. **Ask once, with a default.** Every question carries a default that gets built if unanswered. Goal-changing questions (what is OB, which green plays, where the real forward tee is) are asked before building.
 10. **Back up before every change** (scene, terrain, GKD). Never touch `C:\GSProV1\Core\GSP\Courses\` without BoJa's go.
+11. **No brush on tee boxes.** Brush, scrub and shrubs never come onto a tee box or pad; near tees keep cover to its side of the flight line from the tee (BoJa 11/05, playbook 05).
+12. **4K videos first, then slim for GSPro.** Render every 4K flyover from the full-detail course; only afterwards cut size to stay well under ~2.1 GB (BoJa 11/05, playbooks 13 and 21).
 
 ## Defaults that worked
 

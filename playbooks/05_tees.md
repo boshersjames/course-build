@@ -47,6 +47,10 @@ Use this for tee boxes, pads, tee colours and slots, yardages, aim points, tee s
 
 Black and Grey/Green tees share the same box on every hole unless BoJa says otherwise; on Tierra the exceptions are holes 5 and 8. On a shared box set Grey a couple of yards in front of Black so the markers don't overlap. Don't push forward tees up too far ("you are moving everything up too much"): a tee moves only when a pin, a reading or a photo puts it on another box. Per-hole table: `course-build/tonight_1031/flyover/tee_yardages_1031.md` (project files).
 
+## Standing rule (BoJa, 11/05): no brush on tee boxes
+
+Brush, scrub, shrubs and hillside cover never come onto a tee box or its pad, on any course. When planting near tees, use the flight line from the tee (the line of play shown in the tee-box view) as the marker and keep the brush to its side of that line; Tierra hole 4's `h4west_cover` crossed into the boxes and had to come back.
+
 ## Decision points for BoJa
 
 **Needs an in-person look:** which colour plays from which box, and any tee more than ~15 m from a mapped box. QL1 data settles which flat is the tee and the deck count (D17); on QL2 courses (Tierra, Hansen, Moorpark) confirm the decks from photos.

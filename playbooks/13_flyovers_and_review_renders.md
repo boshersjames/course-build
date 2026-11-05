@@ -25,6 +25,7 @@ Use this for photo-pose renders (the pairs), gate sheets, before/after sheets, a
 3. Gate sheet: every pair, automated check results, rule ticks, flyover poster frames (first / rise / mid / approach / end).
 4. Flyover render with the speed guard; review the first frame, the sign, the end on the green; then send.
 5. Showcase flyovers (for the course/online): fix the known gaps in frame first (species behind the green, orchard, speed bump colour), then render.
+6. **4K first, then slim (BoJa 11/05, standing rule).** Render every 4K flyover video from the full-detail course before any size reduction for GSPro. Only after the 4K exports are done and approved, slim the course (textures, tree counts, LODs, detail) to get it well under the ~2.1 GB GSPro limit. Never trim detail to fit GSPro while 4K videos are still to be made.
 
 ## Checks
 

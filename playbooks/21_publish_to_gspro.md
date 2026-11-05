@@ -2,6 +2,8 @@
 
 Use this for every push of a course into GSPro: the local install on BoJa's PC, the playtest, the rollback, and the beta-submission gate for the OPCD/GSPro community. A local push needs the install and rollback steps; a beta submission needs the whole pre-beta gate below. Nothing goes into `C:\GSProV1\Core\GSP\Courses\` without BoJa's go (standing rule, 00).
 
+**Order (BoJa 11/05, standing rule): 4K flyover videos first, then slim for GSPro.** All 4K exports are rendered from the full-detail scene (13, step 6); size cuts to stay well under ~2.1 GB come after, never before.
+
 ## Defaults that worked
 
 | Setting | Value | Source |
