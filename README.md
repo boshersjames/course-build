@@ -1,5 +1,7 @@
 # course-build
 
+Start here if you are new to this: `docs/HANDOFF.md` (state and next steps) and `docs/PHOTO_PIPELINE.md` (the photo loop).
+
 Start with `docs/BLUEPRINT.md`: the objective, why hand-offs are the cost, the three data layers, and coverage per hole.
 
 Everything learned building Tierra Rejada, Moorpark, Penmar, Harding, Wilson, Hansen Dam and Angeles National for GSPro,
