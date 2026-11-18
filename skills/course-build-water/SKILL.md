@@ -51,7 +51,7 @@ Each water system (source, channel reaches, pools, drops, crossings, ponds, outl
 - No boxed banks or brown slabs; no lily pads hugging the shore; one mid-pond cluster at most.
 - GKD hazard outline moves with any water edit; red/yellow set from the card.
 - Route offset against the evidence trace per station, inside the recorded tolerance (`skillcheck.py` ROUTE).
-- Every pond level within 2 cm; every ribbon monotone with its bed below it (`TierraWaterCheck` ribbons and ponds); no point covered by two water surfaces; every source, outlet and crossing marked confirmed or provisional.
+- Every pond level within 2 cm, the stream never rising along its evidence route, and no stacked water beyond a join overlap (`skillcheck.py` WATER, visible water only); bed below every ribbon (`TierraWaterCheck` ribbons); every source, outlet and crossing marked confirmed or provisional (a manual record, not yet checked by a tool).
 
 ## Pitfalls
 

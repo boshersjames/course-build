@@ -87,7 +87,7 @@ One process for every feature type. LiDAR and satellite lay the broad base first
 
 ## Procedure: the audit per hole
 
-1. Inventory from the photos, object by object, each with a verdict against the build. The audit is the last check after the enhancement procedure above, not a substitute for it.
+1. Inventory from the photos, object by object, each with a verdict against the build, in both directions (BoJa 11/18): every object the photo shows must be in the build, and every built object inside the photo's view (trees, shrubs, props, surfaces, beds, structures) must be shown by the photo or have its own recorded evidence. Each discrepancy is recorded as `corrected`, `retained with evidence` (the evidence named) or `unresolved`. A feature left unchanged is never photo-verified just because it sits beside its reference photo: it needs its own verdict from a matched view. The record and its gate are in `course-build-gates` step 3. The audit is the last check after the enhancement procedure above, not a substitute for it. (Tierra 10, 11/18: a 13 m pepper on open fairway and a placeholder mulch dome round the monument passed a planting-only review.)
 2. Rank the mismatches into the hole's top-8 (hillsides and species were the top two on every Tierra hole).
 3. Judge by measurement: cover share, r/g and b/g in same-light boxes, positions in metres, bunker face height over width.
 4. Re-render the same poses after the edits; a photo is `fixed` only when its pass rule is met. BoJa never sees a flyover before every high/medium pose on the hole has a verdict.
