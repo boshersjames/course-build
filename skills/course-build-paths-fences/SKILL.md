@@ -3,17 +3,6 @@ name: "course-build-paths-fences"
 description: "Use when building cart paths, curbs, dirt paths, public roads, entrances, fences, ropes, nets or retaining walls on a GSPro/OPCD course."
 ---
 
-Rules file: `rules/paths_fences.json` (every number below is defined there; read it with `tools/rules.py paths_fences`). Course overrides: `course.json` → `rule_overrides.paths_fences`.
-
-## Tools
-
-Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
-
-- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h`: concrete tone against the photo in the same light (sand is judged relative to it: `bunkers.sand.bg_ratio_vs_concrete_pct`).
-- Unity `Course Look > Cart Paths and Turf` (`CourseLook.cs`): shared concrete look and graded satellite on every layer; check the found count.
-- `BuildCartPaths.cs` / `BuildFences.cs` / `BuildBridges.cs` (`unity/shared/`): paths from `cartpaths.csv`, fences from `fences.csv`, bridges; run through `Send-UnityCommand.ps1 invoke -Tool <name> -Method <method>` (`describe -Tool <name>` lists the methods).
-- (no tool yet: roundabout solid-disc check, turf-over-path raycast grid at `paths_fences.checks.overlap_grid_m`, edge line-up at `edge_sample_m` / `edge_gap_max_m` / `edge_step_max_m`, rough poke-through %, fence continuity; candidate for a `CoursePathChecks.cs`)
-
 # Cart paths, roads and fences
 
 Use with `course-build-gates`. Full guide: `course-build/playbooks/09_cart_paths_roads_and_fences.md` in the moorpark repo.
@@ -42,7 +31,7 @@ Use with `course-build-gates`. Full guide: `course-build/playbooks/09_cart_paths
 2. Fix junction geometry: arcs not kinks, widths 2.4-3 m against photos, one continuous strip past buildings. Replace every roundabout or turnaround with a solid disc (see Standing rules) and weld the strips into it.
 3. Trim turf to the path: for every turf mesh (green, collar, fairway, tee, rough, blend, patches), drop or clip triangles whose footprint crosses the path polygon, then ease the turf edge so it meets the path edge on one line (never by dropping whole triangles that leave a saw-tooth). Tee pads and greens never spill onto concrete (Tierra 10 S-bend near the tees, 11/2).
 4. Clear plants: no trunk, crown or shrub footprint over a path (renderer bounds tested in 16 directions, as for greens). Move away from the path, never onto mown turf, keep the photographed side; shrink if it can't clear; never delete.
-5. Fences from `fences.csv` (`BuildFences`): real post line from photos/satellite, snapped to terrain, no segments past either end; move runs behind tree belts when photos show them there.
+5. Fences from `fences.csv` (`BuildFences`): real post line from photos/satellite, snapped to terrain, no segments past either end; move runs behind tree belts when photos show them there. `fences.csv` stays the fence's one authority: a fence moved in the scene is moved in the file in the same change, and posts are re-seated whenever the ground under them changes (Tierra 1117f: Fence_7, 8 and 9 stand up to 12 m from `fences_all.csv` after the 10/29-10/31 moves; `BuildFences` seats posts only when it builds them).
 6. Ropes with a script marching the path collider edge; end stakes at bare cart entries.
 7. Roads as a prefab package built in editor C, applied in A; no vertex on mown turf, asphalt drape check, island check.
 
@@ -51,10 +40,13 @@ Use with `course-build-gates`. Full guide: `course-build/playbooks/09_cart_paths
 - Roundabouts: every one is a single solid disc; no grass or dirt centre, no holes or slivers inside it.
 - Overlap: zero turf triangles inside any path polygon (top-down raycast grid at 0.25 m over every path: the top hit is concrete everywhere); zero tree crowns or shrub footprints over a path.
 - Edge line-up: sample the path edge every 0.5 m; turf meets it with no gap > 3 cm, no step > 2 cm, no overlap, and joining strips share rim vertices.
+- Path on the ground: across its width and 1 m either side, a path follows the surveyed ground and its neighbours share its edge; a path standing as a bench more than 5 cm above the ground beside it fails (Tierra 18 dirt path 1117f: 0.5-1.0 m).
 - Visual: a high oblique still along every path near tees and greens shows clean edges, no spill, no plants on the wrong side.
 - Rough pokes through ≤2% of path samples; no z-fighting.
 - Surface type matches the photo (concrete / dirt / mulch) in material and physics.
 - Fence gate check: no broken sections, tight post groups, or fence on turf where photos show none.
+- Post seating over the whole footprint, every fence, rope stake and split-rail post, after every ground change under it: a visible gap over 5 cm under any part of a post fails (`skillcheck.py` SEAT).
+- Every post within 0.5 m of its line in `fences.csv`; a fence with no source line is listed unmeasured (`skillcheck.py` ROUTE fences).
 - Mulch never on concrete; sign beds end at the curb.
 - Tee pads ≥2 m off paths; no GKD tee on a path.
 
@@ -75,5 +67,3 @@ Use with `course-build-gates`. Full guide: `course-build/playbooks/09_cart_paths
 1. Which off-course roads/entrances are in the flyover envelope (default: anything visible from flyover height along the edge).
 2. Ropes as photographed per hole (default yes where a photo shows one).
 3. Fence tint per course from a photo.
-
-- Unity `BuildCartPaths` bridge `invoke -Tool BuildCartPaths -Method CheckTurf [-Set @{ hole = "10" }]`: share of each cart path's surface where a turf mesh is the top collider, by mesh and extent, against `paths_fences.checks.rough_poke_max_pct`; `-Method SinkTurf` sinks those turf vertices `checks.turf_under_path_sink_m` under the path (no triangles removed, so no sawtooth; revert via `CourseCollarFlush.Revert`).

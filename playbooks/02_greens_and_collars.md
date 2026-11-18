@@ -1,5 +1,9 @@
 # 02. Greens and collars
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-greens` and `course-build-edges` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. `SinkUnder` / "collar on top" are legacy (edges skill): never the default for new builds, and any run makes the touched joins stale.
+
+
+
 Use this for green surfaces, the green-to-collar edge, collars and approach cuts, pins and GKD green settings.
 
 ## Defaults that worked

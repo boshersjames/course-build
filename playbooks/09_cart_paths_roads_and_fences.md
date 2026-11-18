@@ -1,5 +1,9 @@
 # 09. Cart paths, roads and fences
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-paths-fences` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. `fences.csv` is the fence authority (a moved fence is moved in the file), posts are re-seated after any ground change and judged over their whole foot, and a path may not stand as a bench above the ground beside it.
+
+
+
 Use this for cart paths and curbs, dirt paths, public roads and entrances, fences, ropes and range nets.
 
 ## Defaults that worked
@@ -29,7 +33,7 @@ Check that catches all three: a top-down raycast grid every 0.25 m over every pa
 
 1. `BuildCartPaths` from OSM; check alignment vs the painted paths; lift ≥4 cm; `CourseLook > Apply to cart paths` (check the found count first).
 2. Fix junction geometry: smooth kinks into arcs, no stacked slabs, widths 2.4-3 m against photos, one continuous strip past buildings.
-3. Fences from `fences.csv` (`BuildFences`): real post line from photos/satellite, regular spacing, snapped to terrain, no segments past either end; move runs behind tree belts when the photos show them there (15).
+3. Fences from `fences.csv` (`BuildFences`): real post line from photos/satellite, regular spacing, snapped to terrain (and re-seated after any later ground change; `fences.csv` updated whenever a fence is moved, 11/18), no segments past either end; move runs behind tree belts when the photos show them there (15).
 4. Ropes with the `TierraRope` script marching the path collider edge; end stakes at bare cart entries.
 5. Roads as a prefab package (ROAD_TR: 634 objects, built in C, applied in A): road, drive, walls, signs, poles, hedge, tree screen; "no vertex on mown turf", asphalt drape check, island check.
 
@@ -85,7 +89,7 @@ Lines that were in `course-build-paths-fences` but not in this playbook when the
 2. Fix junction geometry: arcs not kinks, widths 2.4-3 m against photos, one continuous strip past buildings. Replace every roundabout or turnaround with a solid disc (see Standing rules) and weld the strips into it.
 3. Trim turf to the path: for every turf mesh (green, collar, fairway, tee, rough, blend, patches), drop or clip triangles whose footprint crosses the path polygon, then ease the turf edge so it meets the path edge on one line (never by dropping whole triangles that leave a saw-tooth). Tee pads and greens never spill onto concrete (Tierra 10 S-bend near the tees, 11/2).
 4. Clear plants: no trunk, crown or shrub footprint over a path (renderer bounds tested in 16 directions, as for greens). Move away from the path, never onto mown turf, keep the photographed side; shrink if it can't clear; never delete.
-5. Fences from `fences.csv` (`BuildFences`): real post line from photos/satellite, snapped to terrain, no segments past either end; move runs behind tree belts when photos show them there.
+5. Fences from `fences.csv` (`BuildFences`; the file stays the authority and posts are re-seated after ground changes, 11/18): real post line from photos/satellite, snapped to terrain, no segments past either end; move runs behind tree belts when photos show them there.
 6. Ropes with a script marching the path collider edge; end stakes at bare cart entries.
 7. Roads as a prefab package built in editor C, applied in A; no vertex on mown turf, asphalt drape check, island check.
 

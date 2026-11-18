@@ -3,27 +3,13 @@ name: "course-build-greens"
 description: "Use when building or checking green surfaces, the green-to-collar edge, collars, approach cuts, pins or GKD green settings in a GSPro course build."
 ---
 
-Rules file: `rules/greens.json` (every number below is defined there; read it with `tools/rules.py greens`). Course overrides: `course.json` → `rule_overrides.greens`.
-
-## Tools
-
-Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
-
-- `python ../course-build/tools/green_report.py [--holes 7,9] [--smooth 0.6] [--sheets]`: LiDAR slope mean/p90, relief, GreenKeeper pin-area test on every GKD pin, usable %, valid areas; rules `greens.pins.*`, `greens.internal_slope_pct`, `greens.checks.noise_lowpass` (the only smoothing allowed, via `--smooth`).
-- `python ../course-build/tools/pin_mover.py [--holes 1,3] [--write]`: on the Unity collider grids (`checks/grid_heights_h<NN>.csv`) every failing pin moves to the nearest cell under `greens.pins.max_lie_angle_deg - placement_margin_deg`, >= `greens.pins.min_from_edge_m` inside the edge and >= `greens.pins.min_area_spacing_m` from the other pins; contours untouched; `--write` edits the GKD after a backup; verify with CourseGreenChecks.RunAll.
-- `python ../course-build/tools/gkd_tools.py pins`: each pin's lie angle and height offset against the LiDAR; rules `greens.pins.max_lie_angle_deg`, `terrain.checks.pin_height_tol_m`.
-- `python ../course-build/tools/scan_index.py`: phone LAS scans registered to the LiDAR, MAD inside the green outline, coverage, doubled ground, ACCEPT / RESCAN; rules `photos.scan.*` (5 cm MAD, 80% coverage).
-- Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`): the mandatory all-18 table before every install: edge step/lip, collider dy, three tiers, crown overhang, pins, areas; writes `AutomationOutput/checks/greens_all18.csv` and the 0.5 m height grids; rules `greens.checks.edge_survey`, `collider_vs_render_max_dy_m`, `crown_overhang`, `tiers`. The edge profile reads ground colliders only (trees, shrub chunks and plant-physics props are skipped) and names the collider pair at the worst step.
-- Unity `Course Tools > Greens > Collar flush` (`CourseCollarFlush.cs`, bridge `invoke -Tool CourseCollarFlush -Method DryRun | Apply | Revert`, `-Set @{ only = "<collar mesh>" }` for one): every collar rim pinned to its neighbours, interior a membrane, turf under it sunk; rules `greens.collar.height` = flush and `greens.collar.flush_tool.*`; the rim pins by surface class (`flush_tool.pin_priority`) and `flush_tool.conform_max` caps every collar vertex at the designed surface beside it; pass = the all-18 table's step column under `greens.checks.edge_survey.max_step_m`. `-Method RelaxDryRun | RelaxApply` after the rim reset: rims held, interior a membrane, for the kinks inside the collar band; cap `flush_tool.relax_max_move_m`.
-- Unity `Course Tools > Greens > Rim reset` (`CourseRimReset.cs`, bridge `invoke -Tool CourseRimReset -Method DryRun | Apply | Revert`, `-Set @{ hole = "14" }` or `only = "<collar mesh>"`): moves each collar rim vertex by its own residual to the neighbour sampled `rim_reset.probe_m` outside the rim, signed as measured, near the failing samples in `checks/steps.csv`; the dry run's share-down and net signed move gate the apply (`rim_reset.min_share_down`, 0.7); a mesh whose name also carries a rough, fairway or green mesh token is never a collar (`rim_reset.collar_name_excludes`); `-Set @{ target = "blend" }` seats the green blends instead (inner rim to the green, outer to the collar: the green-edge class); rules `greens.collar.rim_reset.*`; loop RunAll, `edge_profiles.py --steps-out`, Apply, RunAll, `edge_profiles.py`; pass = the pair table under `rim_reset.pass_criterion`.
-- `python ../course-build/tools/edge_profiles.py`: headless twin of the edge survey on `checks/profiles.csv`; real steps per hole with slope removed (`greens.checks.edge_survey.step_definition`, `slope_window`) and the step table by surface pair across all greens.
-- `python ../course-build/tools/edge_survey_summary.py`: groups the edge-survey steps over `greens.checks.edge_survey.max_step_m` by the collider pair they cross; one pair on every green is a convention to fix once, not eighteen edits.
-- `python ../course-build/tools/gate_report.py`: merges the above into one table and adds fall direction vs LiDAR from the height grids; rules `greens.checks.fall_direction`.
-- (no tool yet: SinkUnder / CollarLaplace / RegionLaplace as course-agnostic editor commands; they are in `unity/course-templates/TierraNight1031.cs`; candidate for `unity/shared/`)
-
 # Course build: greens and collars
 
 Follow the standing rules in `course-build-gates`. Green surfaces and contours never change without a scan. LiDAR review decision points for greens are D7-D10 in `playbook/LIDAR_DETAIL_REVIEW.md` (moorpark repo). Full guide: `course-build/playbooks/02_greens_and_collars.md`.
+
+Rules file: `rules/greens.json` (read it with `tools/rules.py greens`); course overrides in `course.json` → `rule_overrides.greens`.
+
+**Edges:** the green-to-collar, collar-to-rough and lip joins are built as one coordinated boundary at the Blender/OPCD conform stage, before export (`course-build-edges`). That stage is documented but not yet implemented as a tool; until it is, new courses report it UNIMPLEMENTED and existing courses use the fixed-boundary repair below. Any later geometry change in Unity near a green makes the touched joins stale until rebuilt or re-checked.
 
 ## Defaults that worked
 
@@ -31,16 +17,16 @@ Follow the standing rules in `course-build-gates`. Green surfaces and contours n
 |---|---|---|
 | Stimp / firmness (GKD) | `DefaultStimp 2` (= stimp 10), `MaxStimp 5`, greens Normal | BoJa approved on every course |
 | Collar width | 1.2 m fairway-height ring on every green; 3 m sides / 5 m back where the surround is flat and BoJa approved (Tierra 6, 8, 15); 1.5 m where a bank sits right behind (18) | green_edges_1029 |
-| Collar height | FLUSH with the green edge and the surround: no proud cut step. Re-grade each collar as a membrane between its rim neighbours (`CollarLaplace`); a 2-3 cm proud collar and its 6-14 cm raised band played as a bumper on every Tierra green (BoJa 11/1: hole 1 rejection, 7 run-out) | BoJa 11/1 |
+| Collar height | FLUSH with the green edge and the surround: no proud cut step. New builds: built flush at the conform stage (`course-build-edges`). Legacy repair on a built course: re-grade each collar as a membrane between its rim neighbours (`CollarLaplace`); a 2-3 cm proud collar and its 6-14 cm raised band played as a bumper on every Tierra green (BoJa 11/1: hole 1 rejection, 7 run-out) | BoJa 11/1 |
 | Three surface tiers | Green: GSPgreen. Collar: distinct longer-cut band, OPCD `Fairway Apron` material, GSPfairway (rolls less than the green, "a slightly denser fairway"). Next band out: GSPrough first cut (light rough, never deep rough). Tiers differ in material and physics only, never in height | BoJa 11/1 + real 17 photo |
-| Collar on top | Any rough/blend/fairway mesh under a collar footprint sits 5 mm under the collar within 0.4 m of the collar rim and 3 cm under further in (`SinkUnder`); otherwise it pokes through as light patches and the ball plays on rough inside the collar | Tierra 14, 11/1 |
+| One playing sheet | New builds: exactly one playable turf sheet at every point of the collar zone; competing rough/blend/fairway faces are clipped and retriangulated, never sunk under (`course-build-edges`). Legacy (`SinkUnder`, repair of existing courses only): other turf 5 mm under the collar within 0.4 m of the rim and 3 cm under further in, otherwise it pokes through as light patches. Whether the 5 mm spacing caused Tierra's dark edge lines is unproven (test: layer kept vs removed, same camera) | Tierra 14, 11/1; review 11/15 |
 | Green edge blend | 0.12 m strip in exactly the fairway/rough tone, no lime, no extra brightness | Wilson 1b |
 | Uphill banks behind | Rough, not collar | Tierra 10, 18 |
 | Deep rough | ≥6 m off any green | Tierra 6, 15 |
 | Pins | None within 3 m of the edge; pin area ≤1.7° (= 3%) by the GreenKeeper method below; flag, don't move silently | pin_check, Green Studio review 10/31 |
 | Pin areas | ≥4 valid pin areas per green, ≥3 m apart (Thu-Sun) | Green Studio review |
 | Internal slope | 1-3%, run-offs into surrounds, no dead-flat greens; flag greens >3% | Hansen |
-| Transition | One profile (collar width, step, rolloff) on all 18 greens, from the clean scans; banks follow each green's LiDAR | BoJa 10/29 |
+| Transition | One profile (collar width, step, rolloff) on every expected green (27 at Temecula), from the clean scans; banks follow each green's LiDAR | BoJa 10/29 |
 | Green tint (Tierra) | OverallColor ×(1.85, 1.68, 1.42), desaturate 0.2, on `*_Tierra` copies; milder stayed grey, no-desaturate went neon | green_test |
 
 ## Procedure
@@ -48,28 +34,81 @@ Follow the standing rules in `course-build-gates`. Green surfaces and contours n
 1. Data: `coursekit.py svg --collar --collar-back --deep-off-green`; `apply_checklist.py` writes `green_slopes.csv`.
 2. Confirm the green in play where the satellite shows two (Hansen 11); dress the other as rough; ask BoJa if photos don't settle it.
 3. Surface from the LiDAR; apply a clean phone LAS scan where there is one (|course − scan| median 1 mm, p90 6 mm). Spike/pit cleanup on scan-less greens.
-4. Apply the course edge profile: ring on greens without one; rebuild wider approved collars; re-grade every collar FLUSH (no proud step; see Collar height). Never lift a collar to hide rough, not even render-only for a video (a 3 cm render lift put pale shards round every green in the Tierra showcase v2).
-5. Seams: weld the collar's inner edge to the green edge vertices (a gap where the green blend strip meets the collar shows as a thin line or dark slit: Tierra 11); weld collar holes; ease the rough under the collar rim so the outer edge is one smooth line (Tierra 10, `SinkUnder` rule), never by dropping whole triangles (saw-tooth); collar skirts that show as dark slits or pale shards are a mesh fault, fix them in the scene; drop rough triangles overlapping collar/green/blend (a rough mesh hid Tierra 11's collar behind a saw-tooth band); fade the fringe over ~1.8 m on a hole-only rough copy if a dark band remains. Patches (fairway, first cut, soil) never lie over a green or collar; trim them at the collar's outer edge.
+4. Apply the course edge profile: ring on greens without one; rebuild wider approved collars; collars FLUSH (no proud step; see Collar height). Never lift a collar to hide rough, not even render-only for a video (a 3 cm render lift put pale shards round every green in the Tierra showcase v2). New builds: the collar is a feature in the manifest even when drawn as fairway grass, and it is built with its neighbours at the conform stage (`course-build-edges`).
+5. Seams: the collar's inner ring is the green's own edge vertices (a gap where the green blend strip meets the collar shows as a thin line or dark slit: Tierra 11); no collar holes; one smooth outer edge shared with the rough (Tierra 10), never by dropping whole triangles (saw-tooth); collar skirts that show as dark slits or pale shards are a mesh fault, fix them in the build; clip rough/blend/fairway faces that overlap the collar, green or blend and retriangulate (a rough mesh hid Tierra 11's collar behind a saw-tooth band); fade the fringe over ~1.8 m on a hole-only rough copy if a dark band remains (colour only). Patches (fairway, first cut, soil) never lie over a green or collar; trim them at the collar's outer edge. On an existing course, the same seams are repaired with the fixed-boundary method below.
 6. Surrounds: one approach cut collar→fairway where photographed, not a long-blade rough ring; bank rough close in on uphill banks.
+6b. **Photo shaping of the surround (BoJa 11/16)**, before the green counts as built: run the photo enhancement procedure (`course-build-photo-index`) on the collar and surround with BoJa's notes. The photos set collar width per side (within the course profile unless BoJa approves wider), the approach cut, and bank height and slope behind and beside the green; the 1.2 m ring and LiDAR banks stay as `verified unchanged` where they already match the photos, stay `open` with the provisional choice built where the photos conflict with the measurements or are uncertain, and are `provisional base` where no photo covers that side. Photos never change the green surface, contours or pins (scan or LiDAR only). The outline changes from a photo only on BoJa's explicit answer with contours unchanged (Ask item 2); an approved outline edit makes the green's collar and joins stale, so rebuild them through `course-build-edges` and re-run the collar, join, putt-roll and shot checks on that candidate before it counts. Never copy faults from a photo: ball marks, worn collars, dead or bare patches are built clean. Edges still go through `course-build-edges`.
 7. Pins raycast to the new surface and run the pin-area test, after any edit near a green and after every install (raycast on the installed build, not only the editor); when a green moves, move the pins and say so.
 8. Contour edits (crest, tier, flatten): smootherstep falloff `6t^5-15t^4+10t^3` with a core ≥1.25 m and outer radius ≥6 m (10 m if the surround moves too); vertical change ≤0.35 m on the green (0.6 m with the surround); fade to zero within 1.5 m of the green edge; green/blend/collar boundary vertices fixed (≤1e-4 m) unless the surround moves with them. Split triangle edges >0.75 m within 1.8 m of the edit first. Keep the edit only if the pin-area test still passes ≥4 areas and the usable-area % didn't drop (Tierra 9 crest: build it, test, ship only on a pass).
 
-## All-18 checks before every install (BoJa 11/1: "collar height and even flush need to be checked on every hole")
+## Green-edge and collar repair: rebuild from fixed boundaries (BoJa spec 11/10, Tierra 16)
 
-Mandatory on all 18 greens before every install, not a sample and not only edited holes. The install report carries a per-hole pass/fail table; any failing hole blocks the install. Thresholds are the ones used on the PC (last section); tighten them from roll tests.
+This is the repair method for courses already built. New builds run the same method at the conform stage (`course-build-edges`), so the edge never starts layered.
+
+Never repair a broken edge by moving existing vertices. `GreenTie` (`TierraBeta1109.cs`: raise everything within 3.5 m to the green edge, then tuck rim vertices 8 cm past it) folded 105 + 65 collar triangles on 16, slid collar vertices 38 cm sideways and 45 cm up, also lowered some 5-7 cm, and changed its result on every re-run because it read its own output. Retired; never run it or anything like it across holes.
+
+1. **Immutable baseline**: the mesh assets the saved scene references (sha256 in `baseline.json`), never a previous repair output. Two builds from the same baseline must be byte-identical.
+2. **Lock the green**: vertices, transform, collider, pins unchanged. The collar's inner ring IS the green's boundary vertices (seam 0.000 mm by construction). Find the loop from the green's triangles (weld split vertices at 1 mm in xz only to find it).
+3. **Outer ring** at the approved surrounding turf height.
+4. **Fresh triangles**: rings between the two boundaries (K = 6, width from the old collar footprint, clamp 0.4-3.0 m), new triangles from scratch.
+5. **One playing surface**: clip every fairway/rough/blend/patch/duplicate-collar layer inside the strip AND under the green (a fairway patch 3 cm under 16's edge showed as "turf under the green"); cut edges take the strip's outer heights. Never stack another collider underneath.
+6. **Hanging edge strips/skirts** from older edges poke through as thin dark lines: trim them only inside the new strip.
+7. **Rough band** (≤0.6 m, 3 rings, narrower at the sand) where old rough ends in a stair-step; cut old pieces along its outer edge. Pin every seam between rough pieces before any smoothing (smoothing one side made the zig-zag worse).
+8. **Bunker lips are separate constraints**: running the band onto the sand (v10) opened new cracks; rebuild the lip ring as its own mesh band-edge to sand-edge and compare with the bunker reference. Narrow collar beside a bunker = flag for BoJa, never raise or flatten the bunker.
+9. **Banks are a separate reviewed step**: where the green sits above the ground (16 west: up to 44-55 cm) the strip makes a clean slope; raising the ground is BoJa's call.
+10. **Versioned candidates**: new named asset per version, baseline and undo lists kept, references switched only after checks. Later collar/bunker tools must preserve an approved strip or invalidate its approval (11/09 `CourseCollarFlush` rewrote an asset a 16 repair used).
+
+Every known failing spot (coordinates, surfaces, symptom, run that found it) goes into the regression register and stays there after it is fixed; a sampled zero on that green never clears it (Tierra 16 scored 0 of 288 in the release protocol while its known spot still failed about 21 targeted rolls). Putt-lab and other roll results count toward release only from a qualified test. Until the putt lab is validated (`course-build-shot-test`), run and report every known site every time; a failing roll is an open event pending investigation: it stays on the report, is never cleared by a later sampled zero, and on its own neither passes nor blocks a release.
+
+Rollout: read-only all-hole boundary inventory first; prove on 16, then one simple and one concave or bunker-adjacent green; repair only confirmed defects; validate all holes.
+
+Acceptance per repaired hole: green unchanged; seam ≤1 mm both ways; 0 degenerate (area < 1e-5 m²), 0 facing down, 0 mixed winding, no T-junctions/open edges; old collar footprint uncovered ≤ ~0.5 m² and explained; every hole/terrain flag located; right physics per region and collider = render; banks and lips classified separately; repeatable; play-tested across the joins both ways (shot test chips from four sides, then BoJa's putts in GSPro, since the shot test's putt model is too weak). Reference tool: `C:\GSP\course-build-staging\h16strip_1110\h16strip.py` (offline, writes only its folder). Full spec: playbook 02, "Green-edge and collar repair".
+
+`EdgeScan` counts ("58 flags down to 22") never close an edge defect: it starts 10 cm outside the green, ignores the green-edge height and upward steps, flags only drops > 4 cm, takes directions from the centroid (wrong on concave greens), counts any non-OPCD collider as a hole and logs three examples per green. Use it to find suspects only.
+
+## Tools (listed in the PC toolkit source)
+
+These are in the PC toolkit source (`C:\Users\user\Documents\course-build`, checked read-only by BoJa 11/15). Source availability is not installation: confirm each is installed in the course's Unity project and behaves before relying on it.
+
+**Collar flush and Rim reset are reference tools, not the broken-edge repair.** They move existing vertices, which the fixed-boundary method above forbids for a broken edge. Use them to reproduce an old build or as DryRun diagnostics. An Apply needs a written, scoped reason (which joins, why the fixed-boundary rebuild doesn't fit), runs on an isolated copy, and is followed by the full geometry check and matched views on that candidate; it makes the touched joins stale (`course-build-edges`). A height-table pass (step column, pair table) never clears a seam on its own. `GreenTie` stays prohibited outright.
+
+Known limits of these tools (BoJa source review 11/15), to be closed before any of them gates a release:
+- `gate_report.py` can gate a row on flyover evidence while the Unity evidence is missing: missing required evidence must fail the row.
+- `CourseGreenChecks` records missing boundary probes as notes outside the row's pass expression: required coverage must count.
+- `CourseCollarFlush` finds collars by object name, can report zero collars, and catches failures into report text: zero expected-feature coverage or a caught failure must fail the run; a semantic feature inventory replaces name matching.
+- `CourseCollarFlush` can replace a mesh asset at its existing path: copying the scene is not isolation; clone mutable dependencies and check source fingerprints before and after.
+
+Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
+
+- `python ../course-build/tools/green_report.py [--holes 7,9] [--smooth 0.6] [--sheets]`: LiDAR slope mean/p90, relief, GreenKeeper pin-area test on every GKD pin, usable %, valid areas; rules `greens.pins.*`, `greens.internal_slope_pct`, `greens.checks.noise_lowpass` (the only smoothing allowed, via `--smooth`).
+- `python ../course-build/tools/pin_mover.py [--holes 1,3] [--write]`: on the Unity collider grids (`checks/grid_heights_h[NN].csv`) every failing pin moves to the nearest cell under `greens.pins.max_lie_angle_deg - placement_margin_deg`, >= `greens.pins.min_from_edge_m` inside the edge and >= `greens.pins.min_area_spacing_m` from the other pins; contours untouched; `--write` edits the GKD after a backup; verify with CourseGreenChecks.RunAll.
+- `python ../course-build/tools/gkd_tools.py pins`: each pin's lie angle and height offset against the LiDAR; rules `greens.pins.max_lie_angle_deg`, `terrain.checks.pin_height_tol_m`.
+- `python ../course-build/tools/scan_index.py`: phone LAS scans registered to the LiDAR, MAD inside the green outline, coverage, doubled ground, ACCEPT / RESCAN; rules `photos.scan.*` (5 cm MAD, 80% coverage).
+- Unity `Course Checks > Greens: all-18 report` (`CourseGreenChecks.cs`; the menu name is historical): the mandatory table, one row per expected green, before every install: edge step/lip, collider dy, three tiers, crown overhang, pins, areas; writes `AutomationOutput/checks/greens_all18.csv` and the 0.5 m height grids; rules `greens.checks.edge_survey`, `collider_vs_render_max_dy_m`, `crown_overhang`, `tiers`. The edge profile reads ground colliders only (trees, shrub chunks and plant-physics props are skipped) and names the collider pair at the worst step.
+- Reference only (see above): Unity `Course Tools > Greens > Collar flush` (`CourseCollarFlush.cs`, bridge `invoke -Tool CourseCollarFlush -Method DryRun | Apply | Revert`, `-Set @{ only = "[collar mesh]" }` for one): every collar rim pinned to its neighbours, interior a membrane, turf under it sunk; rules `greens.collar.height` = flush and `greens.collar.flush_tool.*`; the rim pins by surface class (`flush_tool.pin_priority`) and `flush_tool.conform_max` caps every collar vertex at the designed surface beside it; pass = the all-18 table's step column under `greens.checks.edge_survey.max_step_m`. `-Method RelaxDryRun | RelaxApply` after the rim reset: rims held, interior a membrane, for the kinks inside the collar band; cap `flush_tool.relax_max_move_m`.
+- Reference only (see above): Unity `Course Tools > Greens > Rim reset` (`CourseRimReset.cs`, bridge `invoke -Tool CourseRimReset -Method DryRun | Apply | Revert`, `-Set @{ hole = "14" }` or `only = "[collar mesh]"`): moves each collar rim vertex by its own residual to the neighbour sampled `rim_reset.probe_m` outside the rim, signed as measured, near the failing samples in `checks/steps.csv`; the dry run's share-down and net signed move gate the apply (`rim_reset.min_share_down`, 0.7); a mesh whose name also carries a rough, fairway or green mesh token is never a collar (`rim_reset.collar_name_excludes`); `-Set @{ target = "blend" }` seats the green blends instead (inner rim to the green, outer to the collar: the green-edge class); rules `greens.collar.rim_reset.*`; loop RunAll, `edge_profiles.py --steps-out`, Apply, RunAll, `edge_profiles.py`; pass = the pair table under `rim_reset.pass_criterion`.
+- `python ../course-build/tools/edge_profiles.py`: headless twin of the edge survey on `checks/profiles.csv`; real steps per hole with slope removed (`greens.checks.edge_survey.step_definition`, `slope_window`) and the step table by surface pair across all greens.
+- `python ../course-build/tools/edge_survey_summary.py`: groups the edge-survey steps over `greens.checks.edge_survey.max_step_m` by the collider pair they cross; one pair on every green is a convention to fix once, not eighteen edits.
+- `python ../course-build/tools/gate_report.py`: merges the above into one table and adds fall direction vs LiDAR from the height grids; rules `greens.checks.fall_direction`.
+- (no tool yet: SinkUnder / CollarLaplace / RegionLaplace as course-agnostic editor commands; they are in `unity/course-templates/TierraNight1031.cs`; candidate for `unity/shared/`)
+
+## Every-green checks before every install (BoJa 11/1: "collar height and even flush need to be checked on every hole")
+
+Mandatory on every expected green (all 18 on Tierra, 27 at Temecula) before every install, not a sample and not only edited holes. The install report carries a per-hole pass/fail table; any failing hole blocks the install. Thresholds are the ones used on the PC (last section); tighten them from roll tests.
 
 | Check | Tool | Pass |
 |---|---|---|
 | Flush and collar height (edge survey, every ~1 m, -0.5 to +2 m at 5 cm) | `EdgeSurvey` | no step > 1 cm that isn't plain slope; lip ≤ 2 cm above the chord; bunker rims exempt |
 | Collider = render on green, blend, collar; one collider per green point | `ColMismatch`, `ColVsRender`, `AllHits` | dy ≤ 1 cm on every vertex, no duplicates |
-| Three tiers: green GSPgreen; collar GSPfairway (never rough or green); next band GSPrough first cut | Collider Inspector / scene query | all 18 correct |
+| Three tiers: green GSPgreen; collar GSPfairway (never rough or green); next band GSPrough first cut | Collider Inspector / scene query | correct on every expected green |
 | Fall direction vs LiDAR (Tierra 7) | `GridHeights` | median aspect diff ≤ 20°, ≥ 80% within 45°, ≤ 5% reversed, slope corr ≥ 0.7; no mirror/180° test matches better |
 | Approach ledges, aim point → green centre and ±5 m lines | `Profile` | no step > 3 cm or slope > 25° between samples |
 | Crowns over greens and collars (Tierra 16) | `CrownsOver`, `PlacementGate` | no trunk on a green or collar; crown overhang < 1.0 m (build blocked at ≥ 1.0 m; smaller overhangs listed for review) |
 | Pin areas | `TierraPinArea` | every GKD pin ≤ 1.7°; ≥ 4 valid areas per green |
 | Visual edge look (oblique still of every green) | render / flyover end pose | no pale shards, slits, double lines, creases or bunker-lip cracks |
+| Joins current (no stale joins after Unity geometry edits) | `course-build-edges` evidence record per boundary ID | every join has geometry and matched views from the installed candidate's hash; every regression-register site executed and reported; no established geometry defect and no qualified acceptance failure (unqualified roll events listed as open) |
 
-Report table (all 18 rows, every install): hole, max step (cm), max lip (cm), collider dy (cm), tiers OK, fall-direction median (°), approach max step (cm), crown overhang (m), pins OK, visual OK, pass.
+Report table (one row per green in the course's feature inventory, every install; practice or alternate greens listed with their documented exclusion): hole, max step (cm), max lip (cm), collider dy (cm), tiers OK, fall-direction median (°), approach max step (cm), crown overhang (m), pins OK, visual OK, pass.
 
 ## Pin-area test (GreenKeeper method)
 
@@ -91,6 +130,7 @@ Report table (all 18 rows, every install): hole, max step (cm), max lip (cm), co
 - Collider = render: `ColMismatch` / `ColVsRender` on the green, blend and collar; one green collider, no duplicates.
 - Steep or "fast" greens: compare mesh grade (mean, p90, % over 3/4%) and fall direction (aspect, point by point) with the LiDAR before touching anything. A green that matches the scan is the real green; only a noise low-pass (Gaussian sigma 0.6-1.5 m, edge fixed) is allowed without a scan, and only when the mesh is steeper or spikier than the LiDAR (Tierra 10: spikes; Tierra 7 and 17 matched the scan).
 - Approach: profile the line from the aim point to the green centre; no ledge where fairway, rough and collar meet (Tierra 1: 0.27 m drop 13 m short).
+- Green seam / putt-roll test (PENDING VALIDATION, BoJa 11/11; part of every new-course bring-up): step-size proof on clean splits first, then a 100-run crossing test on every green join (0 events at 0.4-2.0 m/s once validated) and full putts toward the lips that matter. `PuttLab.cs` in `C:\GSP\putt_lab`; see `course-build-shot-test`. Even 1 cm steps, gaps or overlap edges change how the ball rolls, and a ball can slip under a raised turf sheet.
 
 ## Checks
 
@@ -98,6 +138,7 @@ Report table (all 18 rows, every install): hole, max step (cm), max lip (cm), co
 - Vertex paint on green, collar, blend after any rebuild.
 - No lime outline ring; no black slits at the green edge.
 - Collar renders 10-20% darker and deeper green than its green (tint the per-green collar material copy), never paler.
+- The stock OPCD `Fairway Apron` material (overall colour 0.64) renders as a near-black band: use a lightened collar-tone copy (~1.19, as `_ct11` on Tierra) on every course.
 - Visual edge check from a high oblique still of every green (the flyover end pose): no pale shards, slits, double lines, creases or bunker-lip cracks; a clean measured edge can still look wrong from above (Tierra 10, 11, 14, 11/2).
 - No surface crosses its boundary: turf/tee/green never spills onto a cart path or into a bunker.
 - Collar-to-rough height gap ≤ a few cm, bridged in exactly the rough's settings.
@@ -115,8 +156,9 @@ Report table (all 18 rows, every install): hole, max step (cm), max lip (cm), co
 - Tierra 9's flat crest waits for a green scan and the pin test; no relief edit from photos.
 - Green Studio (Blender add-on) is GPL-3.0: borrow its ideas and numbers, never paste its code.
 - The OPCD template post profile `v4_Sunny_Pop` (+2.3 EV, ACES) washes greens near-white so contours and putt lines can't be read; ship a course copy with lower exposure (Tierra `TR_Sunny_C`: Neutral, +1.2 EV, contrast 22, saturation +8, bloom 0.6) and check a white line still stands out on the green.
-- Re-grading a collar flush makes overlapping rough show through unless it's sunk under the collar (see "Collar on top").
+- Re-grading a collar flush makes overlapping rough show through unless the rough under it is removed: clip it (new builds); `SinkUnder` is the legacy repair (see "One playing sheet").
 - Measured checks passed while the greens still looked wrong in the flyover (pale shards, seams, creases): the edge survey measures height, not appearance. Always look at an oblique render of every green before calling it done.
+- Raise-and-tuck repairs (GreenTie) fold collar triangles and drift on every re-run; rebuild the strip from fixed boundaries instead (section above).
 - A revised skill only helps once it is saved: the flush-collar rules sat in a draft file for a day while sessions loaded the old skill (1.5 cm proud collars).
 
 ## Ask BoJa once (with a default)

@@ -1,5 +1,9 @@
 # 07. Brush, hillsides and scrub
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-brush` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. Clearing removes whole plant instances; the 38 triangle-clearing methods are retired (`PlantClearRetired`), and `skillcheck.py` PLANT fails any 1-3 triangle remnant of a card.
+
+
+
 Use this for native hillsides, scrub and sage density and colour, shrubs from LiDAR, rock faces and cliffs, the dirt toe where a hillside meets turf, and hillside physics.
 
 ## Defaults that worked

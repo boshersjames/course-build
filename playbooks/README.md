@@ -33,7 +33,7 @@ Each file is written so it can be turned into an account skill later: the first 
 
 These came up on more than one element and more than one course. They are repeated in the guides only where the detail differs.
 
-1. **Never invent ground.** Everything visible comes from the satellite, the LiDAR, a clean scan or BoJa's photos. Where a photo and the LiDAR disagree on a *shape*, the photo wins (BoJa, 10/31), except that green surfaces and contours never change without a scan.
+1. **Never invent ground.** Everything visible comes from the satellite, the LiDAR, a clean scan or BoJa's photos. ~~Where a photo and the LiDAR disagree on a *shape*, the photo wins (BoJa, 10/31), except that green surfaces and contours never change without a scan.~~ (superseded 11/16, see `course-build-gates` rule 1)
 2. **No defects on in-play turf.** Tees, fairways, greens, collars and surrounds are built clean, even and healthy even when a photo shows wear, divots or dry patches. Bare soil and wear go only on out-of-play hillsides and banks, or where BoJa asked (the 17 dirt path).
 3. **No plants on mown turf.** Shrubs, grass cards, tufts and detail grass stay off tees, fairways, greens, collars, sand and cart paths. Run the plants-on-turf check after every planting pass.
 4. **No islands in bunkers.** The only exception is a grass nose joined to the bank (Tierra 11 greenside), approved by BoJa for that bunker.

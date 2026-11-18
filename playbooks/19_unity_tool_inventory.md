@@ -1,5 +1,9 @@
 # 19. Unity tool inventory
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-unity-tools` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. Retired tools (plant clearing by triangle), the GPU/Unity lock wrapper `Use-GpuLock.ps1`, and the geometry checks and gates in `E:\GSP\course-build-staging\geometry_gate`.
+
+
+
 Use this before writing any editor script for a new course. Most of what a build needs already exists as a menu item or a batch job; reuse it, parameterise it from `course.json`, and only write new code for what is missing. Tools live in `unity_editor/` on `claude/moorpark-unity` (the shared set), in each course's thread branch, and in `tierra-rejada-lidar/unity_automation/` (batch runner).
 
 ## Shared editor tools (`unity_editor/`, Unity 2018.2.8f1)

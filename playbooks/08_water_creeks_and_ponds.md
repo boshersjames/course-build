@@ -1,5 +1,9 @@
 # 08. Water, creeks and ponds
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-water` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. Water is built and checked as connected features (route from the evidence, bed below the water, level ponds, never rising, no stacked strips, unsupported sources and outlets provisional). The "water lifted 4 cm above the course meshes" alternative is retired.
+
+
+
 Use this for lakes, ponds, streams, waterfalls, dry washes, reeds and pond edges, and the matching GKD hazards.
 
 ## Defaults that worked
@@ -9,7 +13,7 @@ Use this for lakes, ponds, streams, waterfalls, dry washes, reeds and pond edges
 | Inventory | OSM water + satellite + drone/photo frames (`water_inventory.py`, `water.json`); rivers/canals (OSM water=river/canal) and natural water away from the holes are *not* hazards (LA River) | Wilson, Hansen |
 | Lakes/ponds | Dug to the LiDAR bed, flat water plane at the real surface height, Tierra's water material (OPCD-WaterPlane_AquasLite) and GSPwater physics; hazard outline moves with the water | Moorpark water |
 | Pond look | Reflective (mirror) water as one shared copy (TR_PondWater_reflect) reused per course, retinted per hole only where photos differ; no opaque olive/brown water, no beige rim; thin mud ring with grass to the edge | 13, 14, 18 |
-| Streams | 3 m channel dug 0.35 m with a sloped surface, or (Tierra 13) water lifted 4 cm above the course meshes so it isn't buried; narrow to the photo (1.5-2 m by a bridge) | Moorpark, creek13 |
+| Streams | 3 m channel dug 0.35 m with a sloped surface, ~~or (Tierra 13) water lifted 4 cm above the course meshes so it isn't buried~~ (retired 11/18: no stream without a channel); narrow to the photo (1.5-2 m by a bridge) | Moorpark, creek13 |
 | Creek edging | Cream concrete lip / thin curb where photographed; tan sandstone boulders, thinned; not rows of "potato" boulders or white pebble rows | 13 |
 | Waterfalls | Boulder sill, 2-3 uneven falls in two tiers with foam, base lowered ~1 m into a green-level pool; no identical thin sheets, no columnar sprites, no dark panel | 13 |
 | Reeds | Pond-edge reeds and foxtail band 1-4.5 m from the water (`make_reed_mask.py`); not a vertical fence-like wall | 13 pond |
@@ -66,7 +70,7 @@ Lines that were in `course-build-water` but not in this playbook when the skill 
 - **Pond banks**: shelf width = depth ÷ tan(slope), default slope ~11°, eased into the bed.
 - **Shoreline wobble**: inward only, so water never pushes onto turf.
 - **Pond look**: reflective (mirror) water as one shared copy (TR_PondWater_reflect), retinted per hole only where photos differ; no opaque olive/brown water, no beige rim; thin mud ring with grass to the edge.
-- **Streams**: 3 m channel dug 0.35 m with a sloped surface, or water lifted 4 cm above the course meshes so it isn't buried; width to the photo (1.5-2 m by a bridge). Sample the bed every 1 m, never rising downstream; the water surface is monotone too.
+- **Streams**: 3 m channel dug 0.35 m with a sloped surface, ~~or water lifted 4 cm above the course meshes so it isn't buried~~ (retired 11/18: no stream without a channel; water 4-10 cm over its own bed); width to the photo (1.5-2 m by a bridge). Sample the bed every 1 m, never rising downstream; the water surface is monotone too.
 - **Creek edging**: white broken concrete lip or thin grey curb only where photographed; tan sandstone boulders, thinned; no rows of potato boulders or white pebbles.
 - **Waterfalls**: angular tan sandstone tiers on a boulder sill, 2-3 thin uneven falls with foam at each drop, wet faces only behind the falls, base lowered ~1 m into a pool that stays GSPro water; no identical sheets, columnar sprites or dark panels.
 - **Reeds**: band 1-4.5 m from the water (`make_reed_mask.py`), reads as plants not a wall.

@@ -1,5 +1,9 @@
 # 20. LiDAR detail review (D1-D18) as a pre-build pass
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-lidar-review` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. "Photos win" is superseded (BoJa 11/16): photos shape what the LiDAR cannot resolve, never override measured geometry automatically; conflicts stay open with a provisional choice.
+
+
+
 Use this before the first gate on any course: run the 18 decision points against the course's LiDAR, satellite and OSM, record the answers per hole in `course_photos/decisions.csv` (columns: point, hole, answer, source, photo, decided_by, date), and write the in-person list for the visit (16). The full review with the Tierra cases, checks and pass rules is `playbook/LIDAR_DETAIL_REVIEW.md` (from the LiDAR detail review thread); this guide is the working summary.
 
 ## First: which survey is the course on
@@ -93,7 +97,7 @@ Each course README states it. Tierra, Hansen Dam, Moorpark: 2018 SoCal Wildfires
 | D16 | Lower surface covering a higher one | Build check: water > bunker > green > collar > tee > fairway > rough | Same | Clip order, zero violations | No |
 | D17 | Which flat is the tee, decks | Flats ≥40 m² within 60 m of an OSM tee | Flats and steps | LiDAR flat nearest card yardage; unused pads = mounds | Which colour on which deck |
 | D18 | Tree, shrub, hedge, building | <3 m wider than tall = shrub; >3 m = tree, species blank | Crown shape | Oak <16 m, eucalyptus over, species blank | **Yes** within 35 m of tee/green |
-QL1 courses skip the data-side guesses in D4, D5, D8, D12, D17 and still get the in-person list (D1, D3, D6, D9, D14, D18 + scan per green). Photos win on bunker faces, banks, lips; LiDAR wins on green surfaces, water levels, fairway relief; a clean scan wins over both.
+QL1 courses skip the data-side guesses in D4, D5, D8, D12, D17 and still get the in-person list (D1, D3, D6, D9, D14, D18 + scan per green). ~~Photos win on bunker faces, banks, lips; LiDAR wins on green surfaces, water levels, fairway relief; a clean scan wins over both.~~ (superseded 11/16, see the skill)
 
 ### What the LiDAR gets right (keep as checks)
 Fairway relief (95-100% kept, RMS 1.3-3.1 cm; never smooth for looks), green tiers and false fronts, tee pads, water levels, roof blocks, rangefinder geometry (the card runs long, not the model).

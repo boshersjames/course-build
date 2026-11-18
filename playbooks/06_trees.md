@@ -1,5 +1,9 @@
 # 06. Trees
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-trees` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. Clearing, corridor and swap passes move or remove whole tree instances, never parts of a combined mesh.
+
+
+
 Use this for LiDAR tree extraction, species assignment, planting, colliders, corridors, hero trees, and new tree models.
 
 ## Defaults that worked

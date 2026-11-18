@@ -3,20 +3,13 @@ name: "course-build-bunkers"
 description: "Use when mapping, grading, rebuilding or checking any bunker in a GSPro course build: depth by type, crisp low lips, flashed faces, sand colour, noses, tree clearance and the package workflow."
 ---
 
-Rules file: `rules/bunkers.json` (every number below is defined there; read it with `tools/rules.py bunkers`). Course overrides: `course.json` → `rule_overrides.bunkers`.
-
-## Tools
-
-Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
-
-- `python ../course-build/tools/scan_index.py`: a bunker scan gives rim-to-floor depth per sand blob against the LiDAR (`extra` column); rules `bunkers.greenside.depth_m`, `bunkers.fairway.depth_m` are the targets to compare against.
-- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h --target sand`: sand colour in a same-light frame, PASS/FAIL against `bunkers.sand`, suggested multiplier; render sand b/g must sit `bunkers.sand.bg_ratio_vs_concrete_pct` below render concrete.
-- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate`: crown clearance along the flight shows trees over sand near the line (rules `bunkers.tree_clearance` is checked in Unity, not here).
-- (no tool yet: island check, black-pocket check, lip height and face angle from the mesh, outline vs satellite offset; Tierra versions in `unity/course-templates/TierraBunkerIslands.cs`, `BunkerDepth.cs` in `unity/shared/`; candidate for a `CourseBunkerChecks.cs`)
-
 # Course build: bunkers
 
 Follow the standing rules in `course-build-gates` (no islands, never invent ground, shared sand stays shared, photo pairs for every edit). LiDAR review decision points for bunkers are D4-D6 in `playbook/LIDAR_DETAIL_REVIEW.md` (moorpark repo). Full guide: `course-build/playbooks/03_bunkers.md`.
+
+Rules file: `rules/bunkers.json` (read it with `tools/rules.py bunkers`); course overrides in `course.json` → `rule_overrides.bunkers`.
+
+**Lips:** the sand-to-lip-to-surround join is built as one coordinated boundary at the Blender/OPCD conform stage, after bunker depth and before export (`course-build-edges`). Sand grading alone never completes a bunker edge. That stage is documented but not yet a tool: until it is, new courses report it UNIMPLEMENTED, and existing courses use the lip-ring rebuild below. A later Unity change to sand, lip or surround (`BunkerDepth`, `LipDrop`, Lower Terrain Under Meshes) makes that bunker's joins stale until rebuilt or re-checked.
 
 ## Defaults that worked
 
@@ -40,18 +33,27 @@ Follow the standing rules in `course-build-gates` (no islands, never invent grou
 | Physics | Material name contains "sand"/"Bunk" → GSPro TVGsand | playtest |
 | Rim rings / undersides | None under or around the sand (z-fighting, black skirts); terrain lowered under deepened bunkers by depth + 5 cm | Hansen 1, Tierra 18 |
 
+## Physics and lip ridges (Tierra beta 11/10)
+
+- **Lip ridges are playing surface**: a ridge between green/collar and sand stops or kicks a slow roll (ball 4.3 cm). Tierra measured 12 (two at 25 cm), 11 (20, 12), 2 and 8 (12), 5, 7 and 16 (10), 12's third (8), 1 (7). Fix >10 cm first. Most were formed by the collar or edge blend, not the rough, so a rough-only cap missed them.
+- **Fix**: rebuild the lip ring as one mesh from the rough band edge to the sand edge (fixed-boundary method, see `course-build-greens`), not height nudges on overlapping layers. On new courses the same band is built at the conform stage (`course-build-edges`).
+- **Drop test** (`course-build-shot-test`): balls dropped in every bunker stay on sand. BUNKER_ROLLOUT on a real sand mesh is a fix (Tierra 12 b30, 16 b11, 5 `Spline_bunker_54`).
+- **False positives**: waste bunkers' rough-blend rings (`Spline_bunker_*_B_Rough_Bunker_-_Blend`, "Sand ... to Rough" blends) play as rough on purpose; most of Tierra's 29 roll-outs. Don't convert them to sand.
+- **Looks like sand, plays as something else**: 13 waterfall rocks (balls sat on them as if sand), sandstone cliff layers (fell through 99%). Rock faces get stone/timber physics and a collider, never sand.
+
 ## Seams
 
 - The surround's outer edge stays fixed; only its inner row follows the sand.
 - Reject a surround stretched outside 0.75-1.5× its width.
-- Use one shared, averaged normal on both sides of the sand seam, so no lit line shows.
-- Every sand outline vertex has a matching surround vertex (no slit).
+- Use one shared, averaged normal on both sides of the sand seam, so no lit line shows; keep a deliberate shading break only at a photographed sharp cut.
+- Every sand outline vertex has a matching surround vertex (no slit), including endpoints and three-way junctions with a nose or a neighbouring bunker.
 
 ## Procedure
 
 1. Data: `bunkers.csv` from `coursekit.py svg` (type, depth, face, lip); `clear_bunker_crowns.py`; `bunker_plan.py`.
-2. Unity: BunkerDepth "Apply Graded" by type (the old 0.25/0.35/0.5 m by area was too shallow); SandLook for colour and rake normals.
-3. Per photographed bunker: match GPS photos to bunkers in view (within 30° of heading, 6-110 m), render photo | game, compare outline, lip height, face, depth, sand line. A clean scan wins.
+1a. **Photo shaping on the base (BoJa 11/16).** The satellite outline and the LiDAR and by-type depths from step 1 are every bunker's base. Then, before a bunker counts as built, every bunker with indexed photos runs the photo enhancement procedure (`course-build-photo-index`): solve the poses and write a per-bunker shape sheet from the photos and BoJa's description of it: which side is high, face angle and height on each side, how far sand flashes up the face, lip height around the rim, floor slope and low point, and the shape of the turf surround leading in. Those values go into `bunkers.csv` / `bunker_plan.py` and replace the by-type defaults for that bunker before the final grade in step 2. They don't automatically override measured heights: where a photo face or lip disagrees with the LiDAR or a clean scan, the bunker stays `open` with the measured shape built and one question to BoJa (see Checks). A bunker whose base already matches its photos is recorded `verified unchanged`. Bunkers with no usable photo stay on the by-type base (`provisional base`), and the plan lists which bunkers those are. The outline still needs the satellite to confirm; a clean scan still wins on heights.
+2. Unity: BunkerDepth "Apply Graded" by type (the old 0.25/0.35/0.5 m by area was too shallow); SandLook for colour and rake normals. `BunkerDepth` does not shape lips (the OPCD conform lip of 0.05 m stays), so the lip is a separate step: built at the conform stage on new courses (`course-build-edges`), rebuilt as a lip ring on existing ones. On a new course, grade depth at the conform stage too, so the lip is built on the final sand.
+3. Per photographed bunker: match GPS photos to bunkers in view (within 30° of heading, 6-110 m), render photo | game, compare outline, lip height, face, depth, sand line and the surround against the shape sheet from step 1a. A clean scan wins. This is a check on a build that started from the photos, not the first time the photos are opened.
 4. Rebuild as a *package* (editor B) on a named save: keep sand-edge vertices, re-mesh the floor to scan/LiDAR, build the lip cut and dirt band, re-mesh the surround rough, lower the terrain, re-run vertex paint, island check, render photo | now | package at the same poses plus a top view and a low view along the lip. Editor A applies on a fresh reload.
 5. Noses/mounds: own mesh in the plain (non-satellite) semi-rough material with white vertex colours, domed ~0.4 m, soil cut along the sand side; edge against the bank is the old sand outline, not triangle teeth. Bury the rim ~2 cm; sinking the outer rings deeper shrinks the visible bulb (Tierra 15 round 4).
 
@@ -60,7 +62,7 @@ Follow the standing rules in `course-build-gates` (no islands, never invent grou
 - Island check clean (approved noses listed).
 - No black pockets (max channel <28 within 6 px of sand), creases, spikes, facets, kinks; footprint unchanged after a dressing-only edit.
 - No turf squares in sand, no overhanging lips, no saw-tooth edges.
-- No turf flaps over a neighbouring bunker's sand: drop surround triangles within 3 cm of a neighbour's outline.
+- No turf flaps over a neighbouring bunker's sand: clip the surround at the neighbour's outline and retriangulate (dropping whole triangles within 3 cm of the outline is the legacy fix and can open a new gap).
 - The LiDAR mound between bunker and green survives Lower Terrain Under Meshes.
 - Photos show ~3× more face than the render while the LiDAR supports today's shape → BoJa question (raise the bank), not a silent fix.
 - Mesh vs satellite sand offset (Tierra 18: 1.5-2 m): report; re-seat only what BoJa names.

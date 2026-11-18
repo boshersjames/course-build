@@ -1,5 +1,9 @@
 # LiDAR detail review: what Tierra Rejada taught us about reading the LiDAR
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-lidar-review` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. "Photos win" is superseded (BoJa 11/16), see the skill.
+
+
+
 Written 2026-10-31 from the Tierra Rejada build notes (course-build/progress/tierra, BOJA_FEEDBACK_CHECKLIST.md, the per-hole gate lists, the scan reports and the Oct 29 visit notes). Purpose: before any new course is built, run these decision points against its LiDAR, satellite and OSM data, so we stop guessing on things that cost hours of rework at Tierra.
 
 Each decision point has the same shape, so the photo check can be added later without rewriting the list:
@@ -85,7 +89,7 @@ Work through these in order for each new course. Record the answer per hole in a
 - *LiDAR says:* floor depth only where the bunker is wider than about 3 m, and it under-reads every face. Hole 10's scan read both fairway bunkers 0.6 to 0.8 m deeper rim-to-floor than the model. On hole 11 the greenside faces still read three times flatter than the photos (height/width 0.07 to 0.08 against 0.21 to 0.25) even though "the LiDAR supports the current shape".
 - *Tierra case:* bunkers were first graded at 0.25 / 0.35 / 0.5 m, then 0.8 to 1.4 m, then re-done per photo. 16's fairway bunkers got a tall turf wall where the photos show sand flashed up the far face to a thin lip. BoJa's rule after Hansen: greenside 0.8 to 1.2 m below the green with a 0.2 to 0.4 m lip and a steep green-side face; fairway 0.4 to 0.7 m; flat floor.
 - *Check now:* depth by type as above, floor flat under 3°, face on the green or high side. Treat the LiDAR depth as a floor, never a ceiling: build at least the LiDAR depth plus 0.3 m.
-- *Photo check (slot):* face height over width measured in the photo from the fairway side. Pass within 20 %. Photos win over the LiDAR on faces, banks and lips, even beyond the LiDAR (BoJa's photos-win rule, hole 16). Green surfaces never change.
+- *Photo check (slot):* face height over width measured in the photo from the fairway side. Pass within 20 %. ~~Photos win over the LiDAR on faces, banks and lips, even beyond the LiDAR (BoJa's photos-win rule, hole 16).~~ (superseded 11/16) Green surfaces never change.
 - *Default:* the Hansen rule depths with a steep green-side face and sand flashed up the far face.
 
 **D6. Grass inside the sand: island, nose, or nothing?**
@@ -209,7 +213,7 @@ When the photo pass is added, each decision point gets its photo slot filled wit
 2. Render photo | before | after from that pose, one edit at a time.
 3. Judge by measured cover, colour ratios and positions, not by impression.
 4. In-play turf (tees, fairways, greens, collars) is always built clean even when the photo shows wear. Bare soil only on out-of-play banks.
-5. Photos win over the LiDAR on bunker faces, banks, lips and anything the 1 m grid can't hold. The LiDAR wins on green surfaces, water levels and fairway relief. A clean scan wins over both.
+5. ~~Photos win over the LiDAR on bunker faces, banks, lips and anything the 1 m grid can't hold.~~ (superseded 11/16) The LiDAR wins on green surfaces, water levels and fairway relief. A clean scan wins over both.
 
 ## 5. Next inputs that would remove the guessing
 

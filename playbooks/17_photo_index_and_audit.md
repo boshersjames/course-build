@@ -1,5 +1,9 @@
 # 17. Photo index and audit
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-photo-index` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. Every photo row links location, direction, feature and confidence plus reviewed / reviewed_build / supports; uncovered areas stay `unverified`; step 0 overlays and measures the proposed feature before building; reviews check absent objects too, and each discrepancy is corrected, retained with evidence, or unresolved.
+
+
+
 Use this the day a photo dump lands (a phone download, a drone folder, Street View grabs, scans) and whenever a hole is reviewed against photos. The aim is one index that says, for every image, which hole and which spot on the hole it shows, so a build runs tee to green from the photos without anyone re-sorting them.
 
 ## Folder layout (project files share, one per course)

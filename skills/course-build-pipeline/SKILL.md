@@ -3,22 +3,11 @@ name: "course-build-pipeline"
 description: "Use when standing up a new GSPro course's data before Unity: frame, OSM, LiDAR, satellite, heightmap, vegetation masks, course SVG, scorecard and GKD with coursekit."
 ---
 
-Rules file: `rules/pipeline.json` (every number below is defined there; read it with `tools/rules.py pipeline`). Course overrides: `course.json` → `rule_overrides.pipeline`.
-
-## Tools
-
-Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
-
-- `python ../course-build/tools/new_course.py <Name> --square 2000 --unity "C:/GSP/<Name>_Project" [--holes 18]`: the course folder, `course.json` (toolkit keys), `CLAUDE.md`, automation config, editor set copied into the Unity project.
-- `python ../course-build/tools/doctor.py [--fix-lfs]`: the folder is complete before anything is fetched or built.
-- `python coursekit.py new|lidar|satellite|heightmap|osm|holes|trees|brush|vegetation|svg|card` (from the course folder; copy in `tools/coursekit.py`): the data pipeline; flags per step in `pipeline.svg_flags`, `pipeline.card_flags`. `course.json` must carry both coursekit's keys (`size`, `sw_e`, `sw_n`, `y_offset`, `epsg`, `loops`) and the toolkit's (`frame`, `paths`).
-- `python ../course-build/tools/gkd_tools.py check`: the drafted GKD against the limits before it reaches the PC.
-- `python ../course-build/tools/green_report.py --smooth 0.6` and `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate --end-fit`: the first headless pass on the data alone.
-- (no tool yet: `svg_check.py`, `apply_checklist.py`, `surrounds.py` and the tee fixers are still per-course copies with constants; `pipeline.grep_before_run` lists what to grep for; candidates for `tools/`)
-
 # Data pipeline (coursekit) before Unity
 
 Use with `course-build-lidar-review` (run it right after the fetch) and `course-build-ob`. Full guide: `course-build/playbooks/14_data_pipeline_coursekit.md` in the moorpark repo; tool: `coursekit.py` and the per-course `scripts/`.
+
+Rules file: `rules/pipeline.json` (read it with `tools/rules.py pipeline`); course overrides in `course.json` → `rule_overrides.pipeline`.
 
 ## Defaults that worked
 
@@ -32,6 +21,7 @@ Use with `course-build-lidar-review` (run it right after the fetch) and `course-
 - **Tees / card**: `scorecard.csv`, `tees.csv`, `tee_pins.csv`; `coursekit.py card [--loops] --ob --line-tees [--habitat-penalty --drop-holes]` → `<Course>.GKD`.
 - **Fixes**: `apply_checklist.py`, `fix_tees.py`, `fix_box_tees.py`, `teepads.py`, `clear_pads.py`, `pads_off_fairway_edge.py`, `surrounds.py` (set `S` from course.json), `clear_bunker_crowns.py`, `tree_species.py`, `bunker_plan.py`, `approach_profiles.py`, `surfaces_05m.py`, `backdrop.py`, `offsite_trees.py`. Copies live per course; move the good ones into core.
 - **Previews**: `ob_preview.py`, `*_on_satellite.png`, `course_svg_preview.png`, profiles per hole; always sent with the draft.
+- **Feature manifest**: a stable ID per green, collar region, blend strip and bunker, with its source outline, neighbours and owner, written with the SVG and carried through conform, export and Unity. A collar drawn as fairway grass (Hansen, Temecula) is still a collar. Expected vs found vs processed counts from the course's own layout (27 greens at Temecula), never an assumed 18.
 - **README per course**: frame, survey line, holes, vegetation, GKD, files, `visit: planned | none`, "to check" list.
 
 ## Procedure
@@ -40,9 +30,10 @@ Use with `course-build-lidar-review` (run it right after the fetch) and `course-
 2. Holes: hole lines, pars from OSM vs the card; loops for 27 holes; map OSM greens to holes (numbered north to south, matched by routing and distance; practice greens left out).
 3. LiDAR review D1-D18, registration shifts recorded (D13).
 4. Vegetation masks and shrub/tree CSVs; overlay checks on the satellite.
-5. SVG with collars, deep-rough offsets, bunker plan, smoothed fairways; `svg_check.py` clean.
+5. SVG with collars, deep-rough offsets, bunker plan, smoothed fairways; `svg_check.py` clean; feature manifest written.
 6. Card → GKD with OB draft; checklist fixes; previews; README "to check" list; commit.
-7. Hand to the PC: own Unity project per course (`C:\GSP\<Name>_Project`), own scene, tools with no foreign constants, batch build, then the Unity checklist passes.
+7. Blender/OPCD conform (Tierra's headless copy: `tierra-rejada/blender_scripts/conform.py`): terrain, gap snap, conform all, bunker depth, water, tees; then the coordinated boundary build and its checks (`course-build-edges`, documented, not yet a tool); then save and `export.py` (one FBX per mesh), recording each FBX hash with its boundary IDs.
+8. Hand to the PC: own Unity project per course (`C:\GSP\<Name>_Project`), own scene, tools with no foreign constants, batch build, then the Unity checklist passes. Unity steps that move geometry near a join (lower terrain, collar or lip tools, patches) make those joins stale until rebuilt or re-checked.
 
 ## Checks before anything goes to the PC
 

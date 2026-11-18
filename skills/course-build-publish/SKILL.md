@@ -3,19 +3,6 @@ name: "course-build-publish"
 description: "Use when pushing a course into GSPro: local install, Greenkeeper save, rollback, playtest, and the OPCD beta-submission gate."
 ---
 
-Rules file: `rules/publish.json` (every number below is defined there; read it with `tools/rules.py publish`). Course overrides: `course.json` → `rule_overrides.publish`.
-
-## Tools
-- Before the Greenkeeper save: `Course Checks > Physics` audit must show 0 fix / 0 missing-asset, and `tools/physics_check.py` PASS on every class (the Collider Inspector red = no physic material is the same check by eye).
-
-Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
-
-- `python ../course-build/tools/doctor.py` then `python ../course-build/tools/gkd_tools.py check`: GKD limits (`ob.limits`), stimp (`greens.gkd`), firmness, designer, DZ flags; nothing goes to Greenkeeper with a FAIL.
-- `python ../course-build/tools/gate_report.py --out progress/gate_report`: the all-18 table (Unity checks + flyover gate + GKD); exit 1 blocks the install.
-- `python ../course-build/tools/flyover_gate.py --out progress/flyover_gate`: flyover first frames clear on all 18.
-- `..\course-build\automation\Install-PlaytestBuild.ps1 [-Go] [-SkipSync] [-InstallGkd <gkd>]`: dry run by default; backup, sync A -> C, build staged, size gate (`publish.gspcrse_max_bytes`), placement gate, install, verify. Tierra-shaped today (paths inside); generalise before a second course publishes.
-- (no tool yet: Greenkeeper pre-beta checklist as a headless report (OOB never crosses a hazard, water wholly inside its hazard, Collider Inspector colours); candidate for `gkd_tools.py`)
-
 # Publish to GSPro
 
 Use with `course-build-gates` and `course-build-ob`. Full guide: `course-build/playbooks/21_publish_to_gspro.md` in the moorpark repo. Nothing goes into `C:\GSProV1\Core\GSP\Courses\` without BoJa's go.
@@ -52,6 +39,19 @@ Greenkeeper:
 - **Collider Inspector** from the 1st tee: green = wood, blue = leaves, pink = meshes, yellow = timber/stone. Red = collider without physics material (fix); fully visible mesh = probably no collider; orange = mesh collider set to Leaves (not allowed; use capsule/sphere).
 - **Benchmark**: Tools → Benchmark at 1080p or 4K with a target FPS shown; 100/100 average and min is the ideal; investigate lower by area.
 
+## The beta checklist as run on Tierra (11/10)
+
+1. **Nothing else on the GPU**: 0 UnrealEditor and Unity processes, no renders queued. Unreal at 100% GPU and 11.3/12 GB VRAM dropped hole 12 to a 30 fps minimum; closed, 107 avg / 65 min.
+2. **Tee cameras**: every colour, all 18, click and hold, nothing blocking.
+3. **Collider Inspector** from the 1st tee (red/orange = defect; solid-looking with no colour = no collider). **Untick Spheres, Capsules, Boxes and Meshes before the benchmark**: the overlay costs a lot of frame rate.
+4. **Benchmark**: resolution **1920×1080** (or 3840×2160) first, else "not verified" (Tierra's first 99/100 wasn't). Target **60** for a 60 Hz screen if GSPro allows; at 140 ("GPU Limit") the same frame rates score lower (Tierra ~146 fps avg, holes 86-215 avg, min ≥56 → **70/100** vs 140). Post-processing on; hands off until done.
+5. **Greenkeeper save**, then verify on disk: `<course>_benchmark.jpg` and fresh scorecards written, the GKD rewritten with `BenchMarkComplete` true. On Tierra the GKD stayed at its old time with `BenchMarkComplete` false: fill any benchmark field and save again; otherwise the image is the record.
+6. **Release list** tied to the installed bundle (path, bytes, sha256, time), source scene sha256, GKD/scorecard times, rollback folder (template: `TIERRA_RELEASE_LIST.md`, project files).
+
+Raising the score: measure each slow hole first (tee/fairway/green views: triangles, draw calls, groups), then cut only off-play brush and distant tree fill (far LOD up close, FarOnly groups) and hidden plants; nothing playable. 70/100 with every hole > 85 fps avg is submittable.
+
+Before the build: physics shot test on all 18, fixes, re-run (`course-build-shot-test`). Install preflight: GSPro and Greenkeeper closed (Finish-Course.ps1 refuses otherwise), scene clean, installed course backed up; rollback is one copy from `gspro_backups\<stamp>_pre_<pass>_build`.
+
 ## Checks (ours, first)
 
 - Gate set at zero per hole; shot sweep clean; no magenta; prop placement clean.
@@ -65,6 +65,7 @@ Greenkeeper:
 - DZ hazards with innerOOB ticked only offered re-hits.
 - Sideways splash from an un-rotated phone photo; the cache kept the old one.
 - A push without a backup made a rollback a rebuild.
+- Benchmark run with Unreal open, the Collider Inspector overlay on, or a 140 target: low scores that weren't the course.
 
 ## Decision points (ask once, with a default)
 

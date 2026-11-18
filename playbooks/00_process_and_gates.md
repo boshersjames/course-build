@@ -1,5 +1,9 @@
 # 00. Process and gates
 
+> **Synced with the saved skills, 11/18 (skills audit after Tierra 1117f).** Where this playbook and the saved skill `course-build-gates` differ, the skill wins. Lines that conflicted are struck through below with the replacement beside them. New since 11/17: standing rule 15 (one owner per shared boundary, 1 mm), whole-footprint seating, shared-boundary, terrain-intrusion, partial-plant and route checks run by `skillcheck.py`, the candidate gate (`Gate-Candidate.ps1`) and release gate (`Build-Install-Tierra.ps1` step 2c), the defect register, three kinds of evidence, and photo reviews that check absent objects as well as present ones.
+
+
+
 Use this before starting a hole or a course, and before anything is shown to BoJa. It is the order of work and the checks that stop a hole going back for a second or third round.
 
 ## Defaults that worked
@@ -29,7 +33,7 @@ Use this before starting a hole or a course, and before anything is shown to BoJ
 
 - Bunker islands (turf inside sand): clean, except approved noses.
 - Plants on turf (shrubs, cards, detail grass on tee/fairway/green/collar/sand/path): 0, including the own-soil-patch case.
-- Floating overlays and objects (anything above its ground by more than its own height, e.g. the 5.0 m floating flag, the sky grass-card strip on 14).
+- ~~Floating overlays and objects (anything above its ground by more than its own height, e.g. the 5.0 m floating flag, the sky grass-card strip on 14).~~ Floating and buried objects are judged over the whole footprint against the visible ground; a visible gap over 5 cm fails (skill, 11/18).
 - Unsupported bins (bins where no photo shows one).
 - Broken or gapped fences; fence pieces with a free end.
 - Objects on turf inside a rope line.
@@ -69,7 +73,7 @@ Lines that were in `course-build-gates` but not in this playbook when the skill 
 The order of work and the checks that stop a hole going back for a second or third round. Learned on Tierra Rejada (Oct 2026) and reused on Penmar, Harding, Wilson, Hansen Dam, Angeles National and Moorpark. The full set of element guides is in the moorpark repo under `course-build/playbooks/` (one per element: terrain, greens, bunkers, rough, tees, trees, brush, water, paths, OB, props, look, flyovers, data pipeline); read the matching one before building that element.
 
 ### Standing rules (apply to every element)
-1. **Never invent ground.** Everything visible comes from the satellite, the LiDAR, a clean scan or BoJa's photos. Where a photo and the LiDAR disagree on a shape, the photo wins, except green surfaces and contours never change without a scan.
+1. **Never invent ground.** Everything visible comes from the satellite, the LiDAR, a clean scan or BoJa's photos. ~~Where a photo and the LiDAR disagree on a shape, the photo wins, except green surfaces and contours never change without a scan.~~ (superseded 11/16: the conflict stays open with a provisional choice and a question to BoJa; a photo does not automatically override measured geometry)
 2. **No defects on in-play turf.** Tees, fairways, greens, collars and surrounds are built clean and even even when a photo shows wear. Bare soil only on out-of-play hillsides and banks, or where BoJa asked.
 3. **No plants on mown turf.** Run the plants-on-turf check after every planting pass.
 4. **No islands in bunkers.** Only a grass nose joined to the bank, approved by BoJa per bunker.
@@ -98,7 +102,7 @@ The order of work and the checks that stop a hole going back for a second or thi
 ### Automated checks (every time)
 - Bunker islands: clean except approved noses.
 - Plants on turf: 0 (incl. the own-soil-patch case).
-- Floating overlays/objects (above ground by more than their height).
+- ~~Floating overlays/objects (above ground by more than their height).~~ Whole-footprint seating, gap over 5 cm fails (skill, 11/18).
 - Unsupported bins; broken/gapped fences; free-ended fence pieces; objects on turf inside a rope line.
 - Vertex paint on every rebuilt mesh (else bare dirt).
 - Null/magenta materials; z-fighting at low angles from 30-80 m.

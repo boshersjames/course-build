@@ -3,18 +3,6 @@ name: "course-build-brush"
 description: "Use when building or fixing native hillsides, scrub, sage, shrubs, rock faces or the dirt toe on a GSPro/OPCD course in Unity."
 ---
 
-Rules file: `rules/brush.json` (every number below is defined there; read it with `tools/rules.py brush`). Course overrides: `course.json` → `rule_overrides.brush`.
-
-## Tools
-
-Run from the course folder (or with `COURSE_JSON` set). Every number these enforce comes from `rules/*.json`.
-
-- `python ../course-build/tools/colour_match.py photo.jpg render.png --box x,y,w,h --target scrub|cliff`: hillside colour b/g against `brush.color.scrub_bg` / `brush.color.cliff_bg` in a same-light frame; suggested multiplier for the hole-only copy.
-- `python ../course-build/tools/coursekit.py vegetation [--buffer 200] [--yard 14]`: the four `terrain_masks/*.mask` layers and `shrubs_clean.csv` / `shrubs_removed.csv`; rules `brush.exclusion`, `brush.density`.
-- Unity `Tierra > Plant Shrubs` / `Tierra > Paint Grass and Brush` (`TierraPlantShrubs.cs`, `TierraPaintGrass.cs` in `unity/shared/`, names kept): instanced shrubs and detail layers from the masks.
-- `python ../course-build/tools/flyover_gate.py`: the left/right sweep from every flyover start shows empty hillside ground.
-- (no tool yet: hill mean colour inside the target band per hillside, plants-on-turf count, mask row-orientation check; candidate for `tools/`)
-
 # Brush, hillsides and scrub
 
 Use with `course-build-gates` (process, editors, photo pairs, hole-10 control). Full guide: `course-build/playbooks/07_brush_hillsides_and_scrub.md` in the moorpark repo. LiDAR decision points: `playbook/LIDAR_DETAIL_REVIEW.md` D1-D3, D18.
@@ -35,13 +23,14 @@ Use with `course-build-gates` (process, editors, photo pairs, hole-10 control). 
 
 1. `coursekit.py vegetation` → `brush_sage_scrub.mask`, `grass_dry_hillside.mask`, `grass_deep_rough.mask`, `no_grass.mask` (1 px = 1 m, north up), `shrubs_clean.csv`; `--wash`, `--parkland` as needed. Keep scrub/golden-grass ground out of the rough mesh in the SVG.
 2. Unity: Plant Shrubs (instanced chunks), Paint Grass and Brush from the masks; native-slopes script for in-play banks.
-3. Photo pass per hillside, BoJa's own hillside photo first. Match cover, colour, bare-soil share, toe, accent bushes. Hole-only copies of the ground layer and sage material where a hill's tint differs.
+3. **Photo enhancement per hillside and tee surround (BoJa 11/16)**, before the hillside counts as built: run the procedure in `course-build-photo-index`, BoJa's own hillside photos and notes first. The photos set where scrub starts and stops (move the mask edges to the traced lines, such as a hillside between two fairways or around a tee), the species mix, cover, colour, bare-soil share, toe line and accent bushes. A mask from steps 1-2 that already matches its photos stays and is recorded `verified unchanged`; where the photos disagree but are uncertain, it stays `open` with the provisional edge built and one question to BoJa; slopes no photo covers are `provisional base`, and all three are listed. Never copy faults from a photo: dead or burnt patches, fire scars, dumped debris or temporary works are left out unless BoJa asks for them. Hole-only copies of the ground layer and sage material where a hill's tint differs.
 4. Cliff/rock from the LiDAR steep band at the photographed bearing; report width and elevations; clear trees/shrubs on the face; remove pale patches draped on the wrong slope.
 5. Model swaps: TR_Sage (0.88 × 1.7 m, no collider) base; dormant twiggy variant on forward-tee banks; native evergreen for accents/hedges.
 
 ## Checks
 
 - Plants-on-turf = 0 after every pass.
+- Clearing removes whole plant instances: a cleared plant loses all of its cards or none, and no 1-3 triangle remnant of a 4-triangle card is left in a combined tile (`skillcheck.py` PLANT). Tierra 1117f: 1,680 remnant cards, 179 of them visible as floating sheets, from clearing tools that dropped triangles by nearest shrub centre (`course-build-unity-tools`, known tool defects). Until planting records a plant ID per vertex, clear by rebuilding the tile from the shrub list minus the cleared plants.
 - Hill mean colour inside the target band; if dark, lift the leaf tint, don't add plants.
 - No dead-grass scatter or invented tees on hillsides; every brushed area checked against a photo.
 - Cliff drapes on the right cells (mask rows not flipped).
@@ -64,5 +53,3 @@ Use with `course-build-gates` (process, editors, photo pairs, hole-10 control). 
 2. Density on signature hillsides (one photo per flagged hill).
 3. Which hills are OB vs deep rough in play.
 4. Accent species only from photos.
-
-- `invoke -Tool CourseSceneOps -Method DetailsOnTurfDryRun` then `DetailsOnTurfClear`: painted terrain details on mown turf (`brush.no_details_on_mown_turf`); `TerrainReport -Set @{ px; pz; pr }` lists what is painted near a point.
